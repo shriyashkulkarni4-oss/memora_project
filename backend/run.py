@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Memora Backend Runner
+"""Memoryhive Backend Runner
 
 Start the FastAPI application with uvicorn.
 
@@ -14,7 +14,7 @@ import uvicorn
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Memora Backend")
+    parser = argparse.ArgumentParser(description="Run Memoryhive Backend")
     parser.add_argument(
         "--host",
         default="127.0.0.1",

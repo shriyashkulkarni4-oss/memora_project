@@ -55,11 +55,11 @@ body {
 
 /* Custom utilities */
 @layer utilities {
-  .gradient-memora {
+  .gradient-memoryhive {
     background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4c1d95 100%);
   }
 
-  .gradient-memora-light {
+  .gradient-memoryhive-light {
     background: linear-gradient(135deg, #f5f3ff 0%, #ede9fe 50%, #ddd6fe 100%);
   }
 
@@ -83,7 +83,7 @@ body {
 
 /* Button styles */
 .btn-primary {
-  @apply bg-memora-600 hover:bg-memora-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
+  @apply bg-memoryhive-600 hover:bg-memoryhive-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200;
 }
 
 .btn-secondary {
@@ -96,7 +96,7 @@ body {
 
 /* Input styles */
 .input-field {
-  @apply w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-memora-500 focus:border-transparent transition-all duration-200;
+  @apply w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-memoryhive-500 focus:border-transparent transition-all duration-200;
 }
 
 /* Tag styles */

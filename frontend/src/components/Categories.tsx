@@ -60,7 +60,7 @@ export default function Categories() {
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 gradient-memora text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all shadow-lg shadow-memora-500/25"
+          className="inline-flex items-center gap-2 gradient-memoryhive text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all shadow-lg shadow-memoryhive-500/25"
         >
           <Plus className="w-4 h-4" />
           New Category
@@ -120,7 +120,7 @@ export default function Categories() {
               <button type="button" onClick={resetForm} className="flex-1 btn-secondary">
                 Cancel
               </button>
-              <button type="submit" className="flex-1 btn-primary gradient-memora">
+              <button type="submit" className="flex-1 btn-primary gradient-memoryhive">
                 {editingId ? 'Update' : 'Create'} Category
               </button>
             </div>
@@ -156,7 +156,7 @@ export default function Categories() {
                 <div className="flex items-center gap-2">
                   <Link
                     to={`/links?category=${category.id}`}
-                    className="text-sm text-memora-600 hover:text-memora-700 font-medium"
+                    className="text-sm text-memoryhive-600 hover:text-memoryhive-700 font-medium"
                   >
                     View links →
                   </Link>
@@ -183,7 +183,7 @@ export default function Categories() {
             <p className="text-gray-500 mb-4">Create categories to organize your links</p>
             <button
               onClick={() => setShowForm(true)}
-              className="inline-flex items-center gap-2 text-memora-600 hover:text-memora-700 font-medium"
+              className="inline-flex items-center gap-2 text-memoryhive-600 hover:text-memoryhive-700 font-medium"
             >
               <Plus className="w-4 h-4" />
               Create your first category

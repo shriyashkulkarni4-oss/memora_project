@@ -1,4 +1,4 @@
-# Memora Web Dockerfile
+# Memoryhive Web Dockerfile
 
 # Development stage
 FROM node:20-alpine AS development

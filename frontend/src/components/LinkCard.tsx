@@ -64,7 +64,7 @@ export default function LinkCard({ link, compact = false }: LinkCardProps) {
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-gray-900 hover:text-memora-600 truncate flex items-center gap-1"
+                  className="font-medium text-gray-900 hover:text-memoryhive-600 truncate flex items-center gap-1"
                 >
                   {link.title}
                   <ExternalLink className="w-3 h-3 flex-shrink-0" />
@@ -192,7 +192,7 @@ export default function LinkCard({ link, compact = false }: LinkCardProps) {
               href={link.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-memora-600 flex items-center gap-1"
+              className="hover:text-memoryhive-600 flex items-center gap-1"
             >
               {link.title}
               <ExternalLink className="w-4 h-4" />

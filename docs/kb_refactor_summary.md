@@ -1,4 +1,4 @@
-# Memora Refactoring Summary
+# Memoryhive Refactoring Summary
 
 **Date:** 2026-01-30
 **Status:** Backend Phase Complete ✅
@@ -8,7 +8,7 @@
 
 ## 🎯 Objective
 
-Refactor cml-memora to follow the proven architectural patterns from cml-prompts-hive, creating a clean, maintainable, and scalable codebase structure.
+Refactor cml-memoryhive to follow the proven architectural patterns from cml-prompts-hive, creating a clean, maintainable, and scalable codebase structure.
 
 ---
 
@@ -127,7 +127,7 @@ Created dedicated schema files for clean separation:
 - ✅ Removed `apps/` directory
 - ✅ Final structure:
   ```
-  cml-memora/
+  cml-memoryhive/
   ├── backend/          # FastAPI backend
   ├── frontend/         # React frontend
   ├── docs/             # Documentation
@@ -140,7 +140,7 @@ Created dedicated schema files for clean separation:
 ## 📊 Current Project Structure
 
 ```
-cml-memora/
+cml-memoryhive/
 ├── backend/
 │   ├── app/
 │   │   ├── api/v1/              # Versioned API routes
@@ -192,7 +192,7 @@ cml-memora/
 │   └── package.json
 │
 ├── docs/
-│   ├── MEMORA_REQUIREMENTS.md
+│   ├── MEMORYHIVE_REQUIREMENTS.md
 │   ├── PROJECT_STATUS.md
 │   ├── ref_pattern_comparison.md        # ✨ New
 │   ├── tracker_migration.md
@@ -376,7 +376,7 @@ Before considering this phase complete, need to:
 - **`ref_pattern_comparison.md`** - Detailed comparison between old and new structure
 - **`tracker_refactor_tasks.md`** - Complete task list with status
 - **`tracker_migration.md`** - Original migration planning document
-- **`MEMORA_REQUIREMENTS.md`** - Original product requirements
+- **`MEMORYHIVE_REQUIREMENTS.md`** - Original product requirements
 - **`PROJECT_STATUS.md`** - Overall project status
 
 ---

@@ -1,5 +1,5 @@
 """
-SQLAlchemy Models for Memora
+SQLAlchemy Models for Memoryhive
 """
 
 from datetime import datetime

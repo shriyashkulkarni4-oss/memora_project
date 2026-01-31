@@ -1,4 +1,4 @@
-# Memora – Product Requirements Document (PRD)
+# Memoryhive – Product Requirements Document (PRD)
 
 Version: 1.0  
 Status: MVP Definition  
@@ -9,16 +9,16 @@ Owner: Product / Engineering
 ## 1. Product Overview
 
 ### Product Name
-Memora
+Memoryhive
 
 ### Tagline
 Never lose a useful thought again.
 
 ### Product Summary
-Memora is a mobile-first, offline-first personal capture and recall application.  
+Memoryhive is a mobile-first, offline-first personal capture and recall application.  
 It allows users to save screenshots, links, and text, and automatically converts them into organized, searchable, and retrievable knowledge.
 
-Memora focuses on **capture → understanding → recall**, without forcing users to manually organize content.
+Memoryhive focuses on **capture → understanding → recall**, without forcing users to manually organize content.
 
 ---
 
@@ -297,7 +297,7 @@ Everything else is optional.
 
 ## 15. Guiding Product Rule
 
-If a feature does not improve **capture, understanding, or recall**, it does not belong in Memora.\
+If a feature does not improve **capture, understanding, or recall**, it does not belong in Memoryhive.\
 
 
 ## UNSTRUCTURED - RAW PROMPT

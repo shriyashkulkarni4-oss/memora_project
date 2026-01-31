@@ -1,7 +1,7 @@
-# Memora - Refactoring Task List
+# Memoryhive - Refactoring Task List
 
 **Created:** 2026-01-30
-**Goal:** Refactor cml-memora to follow cml-prompts-hive pattern
+**Goal:** Refactor cml-memoryhive to follow cml-prompts-hive pattern
 **Status:** ⏳ In Progress
 
 ---
@@ -222,7 +222,7 @@
 - [ ] **Task 3.1.1** - Update service names
   - Rename: `api` → `backend`
   - Rename: `web` → `frontend`
-  - Update: Container names to `memora-backend`, `memora-frontend`
+  - Update: Container names to `memoryhive-backend`, `memoryhive-frontend`
 
 - [ ] **Task 3.1.2** - Update service paths
   - Update: `context: ./backend` (was `./apps/api`)

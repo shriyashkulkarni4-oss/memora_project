@@ -1,8 +1,8 @@
-# Memora - Project Status Report
+# Memoryhive - Project Status Report
 
 ## Executive Summary
 
-**Project Name:** Memora (formerly considered "LinkHive")
+**Project Name:** Memoryhive (formerly considered "LinkHive")
 **Project Type:** Smart Bookmark & Link Management Application
 **Start Date:** January 29, 2026
 **Current Status:** Phase 1 - Core Infrastructure Complete
@@ -64,7 +64,7 @@
 ### Phase 2: React + FastAPI Rebuild
 - Completely rebuilt frontend in React 18 + TypeScript
 - Built FastAPI backend with async SQLAlchemy
-- Name finalized: "Memora"
+- Name finalized: "Memoryhive"
 - Implemented core CRUD operations
 
 ### Phase 3: Docker Monorepo (Current)
@@ -81,7 +81,7 @@
 ### 1. Project Infrastructure ✅
 
 ```
-memora/
+memoryhive/
 ├── apps/
 │   ├── web/                    # React Frontend
 │   │   ├── src/
@@ -295,7 +295,7 @@ link_tags (link_id, tag_id)
 ```bash
 # Clone repository
 git clone <repo-url>
-cd memora
+cd memoryhive
 
 # Copy environment file
 cp .env.example .env
@@ -386,7 +386,7 @@ docker-compose exec api alembic upgrade head
 
 ```
 fb59143 feat: Restructure as Docker-based monorepo with full stack integration
-6be2305 feat: Rebuild as Memora with React + FastAPI stack
+6be2305 feat: Rebuild as Memoryhive with React + FastAPI stack
 9af91fb feat: Transform app into LinkHive - Smart Bookmark & Link Manager
 787e236 Initial commit
 ```

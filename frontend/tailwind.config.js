@@ -19,7 +19,7 @@ export default {
           800: '#86198f',
           900: '#701a75',
         },
-        memora: {
+        memoryhive: {
           50: '#f5f3ff',
           100: '#ede9fe',
           200: '#ddd6fe',

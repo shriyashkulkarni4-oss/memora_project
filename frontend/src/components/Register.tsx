@@ -41,16 +41,16 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen gradient-memora-light flex items-center justify-center p-4">
+    <div className="min-h-screen gradient-memoryhive-light flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 gradient-memora rounded-xl flex items-center justify-center">
+            <div className="w-12 h-12 gradient-memoryhive rounded-xl flex items-center justify-center">
               <Brain className="w-7 h-7 text-white" />
             </div>
             <span className="text-2xl font-bold text-gray-900">
-              Mem<span className="text-memora-600">ora</span>
+              Memory<span className="text-memoryhive-600">hive</span>
             </span>
           </Link>
           <p className="mt-2 text-gray-600">Create your account</p>
@@ -136,7 +136,7 @@ export default function Register() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full gradient-memora text-white py-3 rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
+              className="w-full gradient-memoryhive text-white py-3 rounded-lg font-medium hover:opacity-90 transition-all disabled:opacity-50"
             >
               {isLoading ? 'Creating account...' : 'Create account'}
             </button>
@@ -144,7 +144,7 @@ export default function Register() {
 
           <div className="mt-6 text-center text-sm text-gray-600">
             Already have an account?{' '}
-            <Link to="/login" className="text-memora-600 hover:text-memora-700 font-medium">
+            <Link to="/login" className="text-memoryhive-600 hover:text-memoryhive-700 font-medium">
               Sign in
             </Link>
           </div>

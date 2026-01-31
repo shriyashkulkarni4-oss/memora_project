@@ -1,5 +1,5 @@
 /**
- * Memora API Client
+ * Memoryhive API Client
  * Handles all HTTP requests to the backend API
  */
 

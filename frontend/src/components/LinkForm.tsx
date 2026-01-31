@@ -110,7 +110,7 @@ export default function LinkForm() {
             onClick={() => setMode('url')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
               mode === 'url'
-                ? 'bg-memora-100 text-memora-700'
+                ? 'bg-memoryhive-100 text-memoryhive-700'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -122,7 +122,7 @@ export default function LinkForm() {
             onClick={() => setMode('screenshot')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-all ${
               mode === 'screenshot'
-                ? 'bg-memora-100 text-memora-700'
+                ? 'bg-memoryhive-100 text-memoryhive-700'
                 : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
@@ -153,7 +153,7 @@ export default function LinkForm() {
               {!isEditing && url && (
                 <button
                   type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 px-3 py-1 bg-memora-100 text-memora-700 rounded-md text-sm font-medium hover:bg-memora-200 transition-all"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 px-3 py-1 bg-memoryhive-100 text-memoryhive-700 rounded-md text-sm font-medium hover:bg-memoryhive-200 transition-all"
                 >
                   <Sparkles className="w-3 h-3" />
                   Parse
@@ -172,7 +172,7 @@ export default function LinkForm() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Screenshot
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-memora-400 transition-all cursor-pointer">
+            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-memoryhive-400 transition-all cursor-pointer">
               <Image className="w-12 h-12 text-gray-400 mx-auto mb-3" />
               <p className="text-gray-600 mb-1">Click to upload or drag and drop</p>
               <p className="text-xs text-gray-500">PNG, JPG up to 10MB</p>
@@ -235,13 +235,13 @@ export default function LinkForm() {
             {selectedTags.map(tag => (
               <span
                 key={tag}
-                className="inline-flex items-center gap-1 px-2.5 py-1 bg-memora-100 text-memora-700 rounded-full text-sm"
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-memoryhive-100 text-memoryhive-700 rounded-full text-sm"
               >
                 #{tag}
                 <button
                   type="button"
                   onClick={() => handleRemoveTag(tag)}
-                  className="hover:text-memora-900"
+                  className="hover:text-memoryhive-900"
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -266,7 +266,7 @@ export default function LinkForm() {
               <button
                 type="button"
                 onClick={handleAddTag}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-memora-600 hover:text-memora-700"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-memoryhive-600 hover:text-memoryhive-700"
               >
                 <Plus className="w-5 h-5" />
               </button>
@@ -314,7 +314,7 @@ export default function LinkForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 btn-primary gradient-memora disabled:opacity-50"
+            className="flex-1 btn-primary gradient-memoryhive disabled:opacity-50"
           >
             {isSubmitting ? 'Saving...' : isEditing ? 'Update Link' : 'Save Link'}
           </button>

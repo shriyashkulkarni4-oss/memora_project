@@ -1,4 +1,4 @@
-# Memora - Smart Bookmark & Link Manager
+# Memoryhive - Smart Bookmark & Link Manager
 
 A modern bookmark and link management application with AI-powered organization capabilities. Save screenshots, hyperlinks from news articles, LinkedIn posts, Twitter, and more.
 
@@ -40,7 +40,7 @@ docker-compose up -d
 ## Project Structure
 
 ```
-memora/
+memoryhive/
 ├── apps/
 │   ├── web/                    # React Frontend
 │   │   ├── src/
@@ -185,9 +185,9 @@ docker-compose up -d postgres minio
 ### Docker (.env)
 ```env
 # PostgreSQL
-POSTGRES_USER=memora
-POSTGRES_PASSWORD=memora123
-POSTGRES_DB=memora
+POSTGRES_USER=memoryhive
+POSTGRES_PASSWORD=memoryhive123
+POSTGRES_DB=memoryhive
 
 # MinIO
 MINIO_ROOT_USER=minioadmin
@@ -204,12 +204,12 @@ VITE_API_URL=http://localhost:8000
 
 ### Backend (apps/api/.env)
 ```env
-DATABASE_URL=postgresql+asyncpg://memora:memora123@localhost:5432/memora
+DATABASE_URL=postgresql+asyncpg://memoryhive:memoryhive123@localhost:5432/memoryhive
 SECRET_KEY=your-secret-key
 MINIO_ENDPOINT=localhost:9000
 MINIO_ACCESS_KEY=minioadmin
 MINIO_SECRET_KEY=minioadmin
-MINIO_BUCKET=memora-uploads
+MINIO_BUCKET=memoryhive-uploads
 MINIO_SECURE=false
 ```
 

@@ -20,13 +20,13 @@ class Settings(BaseSettings):
     debug: bool = True
 
     # Database
-    database_url: str = "postgresql+asyncpg://memora:memora@localhost:5432/memora"
+    database_url: str = "postgresql+asyncpg://memoryhive:memoryhive@localhost:5432/memoryhive"
 
     # MinIO / S3 Storage
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
-    minio_bucket_name: str = "memora"
+    minio_bucket_name: str = "memoryhive"
     minio_secure: bool = False
 
     # Redis (for future caching, rate limiting)
@@ -43,7 +43,7 @@ class Settings(BaseSettings):
 
     # Email (optional - for future email verification)
     sendgrid_api_key: str | None = None
-    email_from: str = "noreply@memora.app"
+    email_from: str = "noreply@memoryhive.app"
 
     # n8n Integration (for future AI pipeline)
     n8n_webhook_url: str | None = None

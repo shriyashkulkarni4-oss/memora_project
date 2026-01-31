@@ -1,4 +1,4 @@
-# Memora - Migration & Refactoring Task Tracker
+# Memoryhive - Migration & Refactoring Task Tracker
 
 **Created:** 2026-01-30
 **Status:** Planning Phase
@@ -8,7 +8,7 @@
 
 ## Overview
 
-This document tracks the migration of cml-memora from its current state (Claude Code Web generated) to a production-ready application following the cml-prompts-hive architectural pattern.
+This document tracks the migration of cml-memoryhive from its current state (Claude Code Web generated) to a production-ready application following the cml-prompts-hive architectural pattern.
 
 **Current Completion:** ~45%
 **Target:** MVP (Mobile-first, Offline-first)
@@ -19,7 +19,7 @@ This document tracks the migration of cml-memora from its current state (Claude 
 
 ### 1.1 Analyze Reference Pattern
 - [ ] **Study cml-prompts-hive structure** - Understand folder organization, naming conventions, and architectural patterns
-- [ ] **Document key differences** - Create comparison document between current cml-memora and prompts-hive
+- [ ] **Document key differences** - Create comparison document between current cml-memoryhive and prompts-hive
 - [ ] **Identify reusable patterns** - Extract patterns for monorepo, Docker setup, API structure, etc.
 
 ### 1.2 Monorepo Restructuring

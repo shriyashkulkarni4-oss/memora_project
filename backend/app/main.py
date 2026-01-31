@@ -1,4 +1,4 @@
-"""Memora FastAPI Application Entry Point."""
+"""Memoryhive FastAPI Application Entry Point."""
 
 from contextlib import asynccontextmanager
 
@@ -15,14 +15,14 @@ settings = get_settings()
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
     # Startup
-    print("Starting Memora API...")
+    print("Starting Memoryhive API...")
     yield
     # Shutdown
-    print("Shutting down Memora API...")
+    print("Shutting down Memoryhive API...")
 
 
 app = FastAPI(
-    title="Memora API",
+    title="Memoryhive API",
     description="Mobile-first, offline-first smart bookmark & link management API",
     version="0.1.0",
     docs_url="/docs",
@@ -58,7 +58,7 @@ async def health_check():
 async def root():
     """Root endpoint."""
     return {
-        "name": "Memora API",
+        "name": "Memoryhive API",
         "version": "0.1.0",
         "docs": "/docs",
     }

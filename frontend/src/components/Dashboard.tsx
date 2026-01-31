@@ -19,7 +19,7 @@ export default function Dashboard() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Memora</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Memoryhive</h1>
         <p className="text-gray-600">Your smart bookmark & link management hub</p>
       </div>
 
@@ -44,7 +44,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Link
             to="/add"
-            className="flex items-center gap-3 p-4 rounded-lg bg-memora-50 hover:bg-memora-100 text-memora-700 transition-all"
+            className="flex items-center gap-3 p-4 rounded-lg bg-memoryhive-50 hover:bg-memoryhive-100 text-memoryhive-700 transition-all"
           >
             <Plus className="w-5 h-5" />
             <span className="font-medium">Add Link</span>
@@ -83,7 +83,7 @@ export default function Dashboard() {
             </h2>
             <Link
               to="/links"
-              className="text-sm text-memora-600 hover:text-memora-700 font-medium flex items-center gap-1"
+              className="text-sm text-memoryhive-600 hover:text-memoryhive-700 font-medium flex items-center gap-1"
             >
               View all <ArrowRight className="w-4 h-4" />
             </Link>
@@ -99,7 +99,7 @@ export default function Dashboard() {
                 <p className="text-gray-500 mb-4">No links saved yet</p>
                 <Link
                   to="/add"
-                  className="inline-flex items-center gap-2 text-memora-600 hover:text-memora-700 font-medium"
+                  className="inline-flex items-center gap-2 text-memoryhive-600 hover:text-memoryhive-700 font-medium"
                 >
                   <Plus className="w-4 h-4" />
                   Add your first link
@@ -136,7 +136,7 @@ export default function Dashboard() {
             </div>
             <Link
               to="/categories"
-              className="block mt-3 text-sm text-memora-600 hover:text-memora-700 font-medium"
+              className="block mt-3 text-sm text-memoryhive-600 hover:text-memoryhive-700 font-medium"
             >
               Manage categories →
             </Link>

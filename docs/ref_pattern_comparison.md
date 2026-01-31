@@ -1,4 +1,4 @@
-# Pattern Comparison: cml-memora vs cml-prompts-hive
+# Pattern Comparison: cml-memoryhive vs cml-prompts-hive
 
 **Date:** 2026-01-30
 **Purpose:** Document structural differences and migration requirements
@@ -7,9 +7,9 @@
 
 ## Directory Structure Comparison
 
-### Current cml-memora Structure
+### Current cml-memoryhive Structure
 ```
-cml-memora/
+cml-memoryhive/
 ├── apps/
 │   ├── api/                    # Backend
 │   │   ├── alembic/           # Migrations
@@ -37,7 +37,7 @@ cml-memora/
 
 ### Target cml-prompts-hive Structure
 ```
-cml-memora/
+cml-memoryhive/
 ├── backend/                    # NOT apps/api
 │   ├── app/
 │   │   ├── api/v1/            # Versioned routes
@@ -121,7 +121,7 @@ cml-memora/
 │       └── tasks-*.md
 │
 ├── docs/                       # Project documentation
-│   ├── MEMORA_REQUIREMENTS.md
+│   ├── MEMORYHIVE_REQUIREMENTS.md
 │   ├── PROJECT_STATUS.md
 │   ├── PATTERN_COMPARISON.md
 │   └── MIGRATION_TASK_TRACKER.md
@@ -138,7 +138,7 @@ cml-memora/
 
 ### 1. Top-Level Structure
 
-| Aspect | cml-memora (Current) | cml-prompts-hive (Target) |
+| Aspect | cml-memoryhive (Current) | cml-prompts-hive (Target) |
 |--------|---------------------|---------------------------|
 | Backend directory | `apps/api/` | `backend/` |
 | Frontend directory | `apps/web/` | `frontend/` |
@@ -201,7 +201,7 @@ cml-memora/
 |--------|---------|--------|
 | Services | PostgreSQL, MinIO, API, Web | PostgreSQL, Redis, Backend, Frontend |
 | Service naming | `api`, `web` | `backend`, `frontend` |
-| Container names | `memora-*` | `memora-*` |
+| Container names | `memoryhive-*` | `memoryhive-*` |
 | Health checks | Basic | Comprehensive |
 | Volume mounting | Basic | Hot reload optimized |
 | Redis | Not present | Present for caching |
@@ -226,9 +226,9 @@ cml-memora/
 
 ---
 
-### 6. Missing Components in cml-memora
+### 6. Missing Components in cml-memoryhive
 
-Components present in prompts-hive but missing in memora:
+Components present in prompts-hive but missing in memoryhive:
 
 #### Backend:
 - [ ] `app/config.py` - Centralized settings management

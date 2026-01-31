@@ -39,7 +39,7 @@ export default function LinkList() {
         </div>
         <Link
           to="/add"
-          className="inline-flex items-center gap-2 gradient-memora text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all shadow-lg shadow-memora-500/25"
+          className="inline-flex items-center gap-2 gradient-memoryhive text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-all shadow-lg shadow-memoryhive-500/25"
         >
           <Plus className="w-4 h-4" />
           Add Link
@@ -66,14 +66,14 @@ export default function LinkList() {
             onClick={() => setShowFilters(!showFilters)}
             className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg border transition-all ${
               showFilters || hasFilters
-                ? 'bg-memora-50 border-memora-200 text-memora-700'
+                ? 'bg-memoryhive-50 border-memoryhive-200 text-memoryhive-700'
                 : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
             }`}
           >
             <Filter className="w-4 h-4" />
             Filters
             {hasFilters && (
-              <span className="w-5 h-5 bg-memora-600 text-white text-xs rounded-full flex items-center justify-center">
+              <span className="w-5 h-5 bg-memoryhive-600 text-white text-xs rounded-full flex items-center justify-center">
                 {(categoryFilter ? 1 : 0) + (sourceFilter ? 1 : 0)}
               </span>
             )}
@@ -84,7 +84,7 @@ export default function LinkList() {
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-md transition-all ${
-                viewMode === 'grid' ? 'bg-white shadow-sm text-memora-600' : 'text-gray-500 hover:text-gray-700'
+                viewMode === 'grid' ? 'bg-white shadow-sm text-memoryhive-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <Grid className="w-4 h-4" />
@@ -92,7 +92,7 @@ export default function LinkList() {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-md transition-all ${
-                viewMode === 'list' ? 'bg-white shadow-sm text-memora-600' : 'text-gray-500 hover:text-gray-700'
+                viewMode === 'list' ? 'bg-white shadow-sm text-memoryhive-600' : 'text-gray-500 hover:text-gray-700'
               }`}
             >
               <List className="w-4 h-4" />
@@ -161,7 +161,7 @@ export default function LinkList() {
           {!search && !hasFilters && (
             <Link
               to="/add"
-              className="inline-flex items-center gap-2 text-memora-600 hover:text-memora-700 font-medium"
+              className="inline-flex items-center gap-2 text-memoryhive-600 hover:text-memoryhive-700 font-medium"
             >
               <Plus className="w-4 h-4" />
               Add your first link

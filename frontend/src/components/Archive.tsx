@@ -32,7 +32,7 @@ export default function Archive() {
           <p className="text-gray-500 mb-4">Links you archive will appear here</p>
           <Link
             to="/links"
-            className="inline-flex items-center gap-2 text-memora-600 hover:text-memora-700 font-medium"
+            className="inline-flex items-center gap-2 text-memoryhive-600 hover:text-memoryhive-700 font-medium"
           >
             Browse links →
           </Link>

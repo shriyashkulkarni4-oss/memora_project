@@ -1,5 +1,5 @@
 [project]
-name = "memora-backend"
+name = "memoryhive-backend"
 version = "0.1.0"
 description = "Memora API Backend - Mobile-first, offline-first bookmark manager"
 readme = "README.md"

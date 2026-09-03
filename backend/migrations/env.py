@@ -13,10 +13,11 @@ from app.database import Base
 
 # Import all models to ensure they're registered with Base.metadata
 from app.models import (  # noqa: F401
+    Asset,
     Category,
-    Link,
-    LinkSource,
-    LinkStatus,
+    Item,
+    ItemType,
+    ProcessingStatus,
     Tag,
     User,
 )

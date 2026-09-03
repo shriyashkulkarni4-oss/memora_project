@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr
 
 
 class UserCreate(BaseModel):
@@ -31,11 +31,10 @@ class Token(BaseModel):
 class UserResponse(BaseModel):
     """Schema for user response."""
 
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     email: str
     name: Optional[str]
     is_active: bool
     created_at: datetime
-
-    class Config:
-        from_attributes = True

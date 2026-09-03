@@ -1,153 +1,257 @@
-"""
-SQLAlchemy Models for Memoryhive
-"""
+"""Canonical SQLAlchemy domain models for Memoryhive."""
 
 import enum
-from datetime import datetime
-from typing import List, Optional
+import uuid
+from datetime import datetime, timezone
+from typing import Any
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    CheckConstraint,
     Column,
     DateTime,
-    Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     Table,
     Text,
+    UniqueConstraint,
+    func,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
 
-class LinkSource(str, enum.Enum):
-    TWITTER = "twitter"
-    LINKEDIN = "linkedin"
-    YOUTUBE = "youtube"
-    GITHUB = "github"
-    ARTICLE = "article"
-    NEWS = "news"
+def new_uuid() -> str:
+    return str(uuid.uuid4())
+
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+class ItemType(str, enum.Enum):
+    LINK = "link"
     SCREENSHOT = "screenshot"
-    MANUAL = "manual"
-    OTHER = "other"
+    TEXT = "text"
 
 
-class LinkStatus(str, enum.Enum):
+class ProcessingStatus(str, enum.Enum):
     PENDING = "pending"
     PROCESSING = "processing"
-    PROCESSED = "processed"
+    READY = "ready"
     FAILED = "failed"
+    SKIPPED = "skipped"
 
 
-# Association table for many-to-many relationship between links and tags
-link_tags = Table(
-    "link_tags",
+item_tags = Table(
+    "item_tags",
     Base.metadata,
-    Column("link_id", String, ForeignKey("links.id"), primary_key=True),
-    Column("tag_id", String, ForeignKey("tags.id"), primary_key=True),
+    Column(
+        "item_id",
+        String(36),
+        ForeignKey("items.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "tag_id",
+        String(36),
+        ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
 )
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
-    name: Mapped[Optional[str]] = mapped_column(String(255))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    name: Mapped[str | None] = mapped_column(String(255))
+    is_active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default="true"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True),
+        default=utc_now,
+        server_default=func.now(),
+        onupdate=utc_now,
     )
 
-    # Relationships
-    links: Mapped[List["Link"]] = relationship(
-        "Link", back_populates="user", cascade="all, delete-orphan"
+    items: Mapped[list["Item"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
-    categories: Mapped[List["Category"]] = relationship(
-        "Category", back_populates="user", cascade="all, delete-orphan"
+    categories: Mapped[list["Category"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+    tags: Mapped[list["Tag"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
     )
 
 
 class Category(Base):
     __tablename__ = "categories"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
-    name: Mapped[str] = mapped_column(String(100))
-    color: Mapped[str] = mapped_column(String(20), default="#3b82f6")
-    icon: Mapped[str] = mapped_column(String(50), default="FolderOpen")
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_categories_user_name"),
+        Index("ix_categories_user_id", "user_id"),
     )
 
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="categories")
-    links: Mapped[List["Link"]] = relationship("Link", back_populates="category")
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(100))
+    color: Mapped[str] = mapped_column(String(20), default="#3b82f6")
+    icon: Mapped[str] = mapped_column(String(50), default="folder")
+    description: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        server_default=func.now(),
+        onupdate=utc_now,
+    )
+
+    user: Mapped["User"] = relationship(back_populates="categories")
+    items: Mapped[list["Item"]] = relationship(back_populates="category")
 
 
 class Tag(Base):
     __tablename__ = "tags"
+    __table_args__ = (
+        UniqueConstraint("user_id", "name", name="uq_tags_user_name"),
+        Index("ix_tags_user_id", "user_id"),
+    )
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    name: Mapped[str] = mapped_column(String(50), unique=True, index=True)
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    name: Mapped[str] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(String(20), default="#6b7280")
-
-    # Relationships
-    links: Mapped[List["Link"]] = relationship(
-        "Link", secondary=link_tags, back_populates="tags"
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
-
-
-class Link(Base):
-    __tablename__ = "links"
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"))
-    url: Mapped[Optional[str]] = mapped_column(Text)
-    title: Mapped[str] = mapped_column(String(500))
-    description: Mapped[Optional[str]] = mapped_column(Text)
-    favicon: Mapped[Optional[str]] = mapped_column(Text)
-
-    source: Mapped[LinkSource] = mapped_column(
-        Enum(LinkSource), default=LinkSource.MANUAL
-    )
-    status: Mapped[LinkStatus] = mapped_column(
-        Enum(LinkStatus), default=LinkStatus.PENDING
-    )
-
-    category_id: Mapped[Optional[str]] = mapped_column(
-        String(36), ForeignKey("categories.id")
-    )
-
-    # AI Summary stored as JSON
-    ai_summary: Mapped[Optional[dict]] = mapped_column(JSON)
-
-    # Screenshot data stored as JSON
-    screenshot_data: Mapped[Optional[dict]] = mapped_column(JSON)
-
-    is_favorite: Mapped[bool] = mapped_column(Boolean, default=False)
-    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
-    read_count: Mapped[int] = mapped_column(Integer, default=0)
-    last_visited_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    notes: Mapped[Optional[str]] = mapped_column(Text)
-
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+        DateTime(timezone=True),
+        default=utc_now,
+        server_default=func.now(),
+        onupdate=utc_now,
     )
 
-    # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="links")
-    category: Mapped[Optional["Category"]] = relationship(
-        "Category", back_populates="links"
+    user: Mapped["User"] = relationship(back_populates="tags")
+    items: Mapped[list["Item"]] = relationship(
+        secondary=item_tags, back_populates="tags"
     )
-    tags: Mapped[List["Tag"]] = relationship(
-        "Tag", secondary=link_tags, back_populates="links"
+
+
+class Item(Base):
+    __tablename__ = "items"
+    __table_args__ = (
+        CheckConstraint(
+            "(type != 'link' OR url IS NOT NULL) AND "
+            "(type != 'text' OR raw_text IS NOT NULL)",
+            name="ck_items_required_content",
+        ),
+        CheckConstraint("revision > 0", name="ck_items_revision_positive"),
+        Index("ix_items_user_created", "user_id", "created_at"),
+        Index("ix_items_user_updated", "user_id", "updated_at"),
+        Index("ix_items_user_type", "user_id", "type"),
+        Index("ix_items_category_id", "category_id"),
+        Index("ix_items_deleted_at", "deleted_at"),
     )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    type: Mapped[ItemType] = mapped_column(String(20))
+    url: Mapped[str | None] = mapped_column(Text)
+    raw_text: Mapped[str | None] = mapped_column(Text)
+    title: Mapped[str | None] = mapped_column(String(500))
+    description: Mapped[str | None] = mapped_column(Text)
+    notes: Mapped[str | None] = mapped_column(Text)
+    source: Mapped[str | None] = mapped_column(String(100))
+    source_domain: Mapped[str | None] = mapped_column(String(255))
+    author: Mapped[str | None] = mapped_column(String(255))
+    published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    favicon_url: Mapped[str | None] = mapped_column(Text)
+    extracted_text: Mapped[str | None] = mapped_column(Text)
+    normalized_text: Mapped[str | None] = mapped_column(Text)
+    language: Mapped[str | None] = mapped_column(String(20))
+    summary: Mapped[str | None] = mapped_column(Text)
+    item_metadata: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSON)
+    processing_status: Mapped[ProcessingStatus] = mapped_column(
+        String(20), default=ProcessingStatus.PENDING, server_default="pending"
+    )
+    processing_error: Mapped[str | None] = mapped_column(Text)
+    category_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("categories.id", ondelete="SET NULL")
+    )
+    is_favorite: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    is_archived: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
+    read_count: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    last_visited_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    revision: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=utc_now,
+        server_default=func.now(),
+        onupdate=utc_now,
+    )
+
+    user: Mapped["User"] = relationship(back_populates="items")
+    category: Mapped["Category | None"] = relationship(back_populates="items")
+    tags: Mapped[list["Tag"]] = relationship(
+        secondary=item_tags, back_populates="items", lazy="selectin"
+    )
+    assets: Mapped[list["Asset"]] = relationship(
+        back_populates="item", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+
+class Asset(Base):
+    __tablename__ = "assets"
+    __table_args__ = (
+        CheckConstraint("size_bytes >= 0", name="ck_assets_size_nonnegative"),
+        UniqueConstraint("object_key", name="uq_assets_object_key"),
+        Index("ix_assets_item_id", "item_id"),
+        Index("ix_assets_user_id", "user_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    object_key: Mapped[str] = mapped_column(Text)
+    original_filename: Mapped[str | None] = mapped_column(String(255))
+    mime_type: Mapped[str] = mapped_column(String(100))
+    size_bytes: Mapped[int] = mapped_column(Integer)
+    sha256: Mapped[str | None] = mapped_column(String(64))
+    width: Mapped[int | None] = mapped_column(Integer)
+    height: Mapped[int | None] = mapped_column(Integer)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+    item: Mapped["Item"] = relationship(back_populates="assets")

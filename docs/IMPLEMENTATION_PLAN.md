@@ -20,7 +20,7 @@ content processing, and production release work follow on the same contracts.
 | Phase | Scope | Status | Commit |
 |---|---|---|---|
 | 0 | Restore a green development baseline | DONE | `phase-0-baseline` |
-| 1 | Canonical product model and API contract | TODO | Pending |
+| 1 | Canonical product model and API contract | DONE | `phase-1-item-contract` |
 | 2 | Core backend implementation | TODO | Pending |
 | 3 | Production web UI | TODO | Pending |
 | 4 | End-to-end UI/backend integration | TODO | Pending |
@@ -68,17 +68,17 @@ Acceptance gate:
 
 ## Phase 1: Domain Model And API Contract
 
-Status: TODO
+Status: DONE
 
-- [ ] Introduce user-owned `items`, `assets`, `tags`, and item-tag associations.
-- [ ] Support link, screenshot, and text item variants.
-- [ ] Add processing state, extracted text, source metadata, revisions, and soft
+- [x] Introduce user-owned `items`, `assets`, `tags`, and item-tag associations.
+- [x] Support link, screenshot, and text item variants.
+- [x] Add processing state, extracted text, source metadata, revisions, and soft
       deletion fields.
-- [ ] Use client-generated UUIDs and timezone-aware UTC timestamps.
-- [ ] Add migration coverage and database constraints.
-- [ ] Define stable `/api/v1` request, response, pagination, filter, and error
+- [x] Use client-generated UUIDs and timezone-aware UTC timestamps.
+- [x] Add migration coverage and database constraints.
+- [x] Define stable `/api/v1` request, response, pagination, filter, and error
       contracts.
-- [ ] Generate or validate matching frontend API types.
+- [x] Generate or validate matching frontend API types.
 
 Acceptance gate:
 
@@ -211,3 +211,5 @@ Acceptance gate:
 | 2026-09-03 | 0 | Frontend install, build, ESLint, Vitest, and npm audit | Passed |
 | 2026-09-03 | 0 | Docker Compose configuration validation | Passed |
 | 2026-09-03 | 0 | Docker runtime smoke test | Host Docker store corrupted after disk exhaustion; runtime test deferred |
+| 2026-09-03 | 1 | Alembic clean database upgrade to head and downgrade to base | Passed on SQLite |
+| 2026-09-03 | 1 | Item variant, OpenAPI, error envelope, ownership, and constraint tests | Passed |

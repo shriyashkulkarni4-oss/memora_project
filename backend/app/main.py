@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import api_router
 from app.config import get_settings
+from app.core.errors import install_error_handlers
 
 settings = get_settings()
 
@@ -30,6 +31,7 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan,
 )
+install_error_handlers(app)
 
 # Configure CORS
 app.add_middleware(

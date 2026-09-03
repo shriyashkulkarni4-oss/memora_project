@@ -1,12 +1,23 @@
-"""SQLAlchemy models package."""
+"""Public domain model exports."""
 
-from app.models.models import Category, Link, LinkSource, LinkStatus, Tag, User
+from app.models.models import (
+    Asset,
+    Category,
+    Item,
+    ItemType,
+    ProcessingStatus,
+    Tag,
+    User,
+    item_tags,
+)
 
 __all__ = [
-    "User",
+    "Asset",
     "Category",
+    "Item",
+    "ItemType",
+    "ProcessingStatus",
     "Tag",
-    "Link",
-    "LinkSource",
-    "LinkStatus",
+    "User",
+    "item_tags",
 ]

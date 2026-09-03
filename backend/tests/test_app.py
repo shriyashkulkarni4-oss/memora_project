@@ -31,7 +31,13 @@ def test_auth_me_requires_bearer_token() -> None:
         response = client.get("/api/v1/auth/me")
 
     assert response.status_code == 401
-    assert response.json() == {"detail": "Not authenticated"}
+    assert response.json() == {
+        "error": {
+            "code": "UNAUTHORIZED",
+            "message": "Not authenticated",
+            "details": None,
+        }
+    }
     assert response.headers["www-authenticate"] == "Bearer"
 
 

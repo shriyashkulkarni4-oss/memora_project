@@ -17,7 +17,9 @@ router = APIRouter()
 async def get_categories(current_user: CurrentUser, db: DbSession):
     """Get all categories for current user."""
     result = await db.execute(
-        select(Category).where(Category.user_id == current_user.id).order_by(Category.name)
+        select(Category)
+        .where(Category.user_id == current_user.id)
+        .order_by(Category.name)
     )
     categories = result.scalars().all()
 
@@ -27,7 +29,7 @@ async def get_categories(current_user: CurrentUser, db: DbSession):
         count = await db.scalar(
             select(func.count()).where(
                 Link.category_id == cat.id,
-                Link.is_archived == False,
+                Link.is_archived.is_(False),
             )
         )
         response.append(
@@ -64,7 +66,9 @@ async def get_category(category_id: str, current_user: CurrentUser, db: DbSessio
 
 
 @router.post("/", response_model=CategoryResponse, status_code=status.HTTP_201_CREATED)
-async def create_category(data: CategoryCreate, current_user: CurrentUser, db: DbSession):
+async def create_category(
+    data: CategoryCreate, current_user: CurrentUser, db: DbSession
+):
     """Create a new category."""
     category = Category(
         id=str(uuid.uuid4()),

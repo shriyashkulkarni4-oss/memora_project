@@ -110,12 +110,12 @@ async def get_link_stats(current_user: CurrentUser, db: DbSession):
     favorites = await db.scalar(
         select(func.count())
         .select_from(Link)
-        .where(Link.user_id == current_user.id, Link.is_favorite == True)
+        .where(Link.user_id == current_user.id, Link.is_favorite.is_(True))
     )
     archived = await db.scalar(
         select(func.count())
         .select_from(Link)
-        .where(Link.user_id == current_user.id, Link.is_archived == True)
+        .where(Link.user_id == current_user.id, Link.is_archived.is_(True))
     )
     pending = await db.scalar(
         select(func.count())
@@ -191,10 +191,10 @@ async def create_link(
     "/screenshot", response_model=LinkResponse, status_code=status.HTTP_201_CREATED
 )
 async def create_screenshot_link(
+    current_user: CurrentUser,
+    db: DbSession,
     file: UploadFile = File(...),
     title: str = Form(...),
-    current_user: CurrentUser = Depends(),
-    db: DbSession = Depends(),
     storage: StorageService = Depends(get_storage_service),
     description: Optional[str] = Form(None),
     category_id: Optional[str] = Form(None),

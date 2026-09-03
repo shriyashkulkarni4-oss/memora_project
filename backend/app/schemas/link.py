@@ -10,6 +10,7 @@ from app.models.models import LinkSource, LinkStatus
 
 class TagResponse(BaseModel):
     """Schema for tag response."""
+
     id: str
     name: str
     color: str
@@ -20,6 +21,7 @@ class TagResponse(BaseModel):
 
 class AISummary(BaseModel):
     """Schema for AI-generated summary."""
+
     summary: str
     keyPoints: List[str]
     topics: List[str]
@@ -30,6 +32,7 @@ class AISummary(BaseModel):
 
 class LinkCreate(BaseModel):
     """Schema for creating a link."""
+
     url: Optional[str] = None
     title: str
     description: Optional[str] = None
@@ -41,6 +44,7 @@ class LinkCreate(BaseModel):
 
 class LinkUpdate(BaseModel):
     """Schema for updating a link."""
+
     title: Optional[str] = None
     description: Optional[str] = None
     category_id: Optional[str] = None
@@ -52,6 +56,7 @@ class LinkUpdate(BaseModel):
 
 class LinkResponse(BaseModel):
     """Schema for link response."""
+
     id: str
     user_id: str
     url: Optional[str]
@@ -78,6 +83,7 @@ class LinkResponse(BaseModel):
 
 class LinkListResponse(BaseModel):
     """Schema for paginated link list response."""
+
     links: List[LinkResponse]
     total: int
     page: int
@@ -87,6 +93,7 @@ class LinkListResponse(BaseModel):
 
 class LinkStats(BaseModel):
     """Schema for link statistics."""
+
     total_links: int
     favorite_links: int
     archived_links: int

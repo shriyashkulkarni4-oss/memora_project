@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 class CategoryCreate(BaseModel):
     """Schema for creating a category."""
+
     name: str
     color: str = "#3b82f6"
     icon: str = "FolderOpen"
@@ -16,6 +17,7 @@ class CategoryCreate(BaseModel):
 
 class CategoryUpdate(BaseModel):
     """Schema for updating a category."""
+
     name: Optional[str] = None
     color: Optional[str] = None
     icon: Optional[str] = None
@@ -24,6 +26,7 @@ class CategoryUpdate(BaseModel):
 
 class CategoryResponse(BaseModel):
     """Schema for category response."""
+
     id: str
     name: str
     color: str

@@ -17,16 +17,18 @@ class Settings(BaseSettings):
 
     # Environment
     environment: Literal["development", "staging", "production"] = "development"
-    debug: bool = True
+    app_debug: bool = True
 
     # Database
-    database_url: str = "postgresql+asyncpg://memoryhive:memoryhive@localhost:5432/memoryhive"
+    database_url: str = (
+        "postgresql+asyncpg://memoryhive:memoryhive@localhost:5432/memoryhive"
+    )
 
     # MinIO / S3 Storage
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
     minio_secret_key: str = "minioadmin"
-    minio_bucket_name: str = "memoryhive"
+    minio_bucket: str = "memoryhive-uploads"
     minio_secure: bool = False
 
     # Redis (for future caching, rate limiting)
@@ -58,7 +60,12 @@ class Settings(BaseSettings):
 
     # File Upload Limits
     max_upload_size_mb: int = 10
-    allowed_image_types: list[str] = ["image/jpeg", "image/png", "image/gif", "image/webp"]
+    allowed_image_types: list[str] = [
+        "image/jpeg",
+        "image/png",
+        "image/gif",
+        "image/webp",
+    ]
 
     @property
     def is_development(self) -> bool:

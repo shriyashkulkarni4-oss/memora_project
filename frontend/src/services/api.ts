@@ -3,7 +3,7 @@
  * Handles all HTTP requests to the backend API
  */
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const API_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
 
 // Token management
 let accessToken: string | null = localStorage.getItem('accessToken');
@@ -116,18 +116,18 @@ export interface User {
 
 export const authApi = {
   login: (data: LoginRequest) =>
-    fetchApi<AuthResponse>('/api/auth/login', {
+    fetchApi<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   register: (data: RegisterRequest) =>
-    fetchApi<User>('/api/auth/register', {
+    fetchApi<User>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
-  getMe: () => fetchApi<User>('/api/auth/me'),
+  getMe: () => fetchApi<User>('/auth/me'),
 };
 
 // ============ LINKS API ============
@@ -203,40 +203,40 @@ export const linksApi = {
         params.append(key, String(value));
       }
     });
-    return fetchApi<LinkResponse[]>(`/api/links?${params}`);
+    return fetchApi<LinkResponse[]>(`/links?${params}`);
   },
 
-  getById: (id: string) => fetchApi<LinkResponse>(`/api/links/${id}`),
+  getById: (id: string) => fetchApi<LinkResponse>(`/links/${id}`),
 
-  getStats: () => fetchApi<LinkStats>('/api/links/stats'),
+  getStats: () => fetchApi<LinkStats>('/links/stats'),
 
   create: (data: CreateLinkRequest) =>
-    fetchApi<LinkResponse>('/api/links', {
+    fetchApi<LinkResponse>('/links', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: UpdateLinkRequest) =>
-    fetchApi<LinkResponse>(`/api/links/${id}`, {
+    fetchApi<LinkResponse>(`/links/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
-    fetchApi<void>(`/api/links/${id}`, { method: 'DELETE' }),
+    fetchApi<void>(`/links/${id}`, { method: 'DELETE' }),
 
   toggleFavorite: (id: string) =>
-    fetchApi<{ is_favorite: boolean }>(`/api/links/${id}/favorite`, {
+    fetchApi<{ is_favorite: boolean }>(`/links/${id}/favorite`, {
       method: 'POST',
     }),
 
   toggleArchive: (id: string) =>
-    fetchApi<{ is_archived: boolean }>(`/api/links/${id}/archive`, {
+    fetchApi<{ is_archived: boolean }>(`/links/${id}/archive`, {
       method: 'POST',
     }),
 
   uploadScreenshot: (file: File, data: { title: string; description?: string; category_id?: string }) =>
-    uploadFile('/api/links/screenshot', file, data as Record<string, string>),
+    uploadFile('/links/screenshot', file, data as Record<string, string>),
 };
 
 // ============ CATEGORIES API ============
@@ -267,24 +267,24 @@ export interface UpdateCategoryRequest {
 }
 
 export const categoriesApi = {
-  getAll: () => fetchApi<CategoryResponse[]>('/api/categories'),
+  getAll: () => fetchApi<CategoryResponse[]>('/categories'),
 
-  getById: (id: string) => fetchApi<CategoryResponse>(`/api/categories/${id}`),
+  getById: (id: string) => fetchApi<CategoryResponse>(`/categories/${id}`),
 
   create: (data: CreateCategoryRequest) =>
-    fetchApi<CategoryResponse>('/api/categories', {
+    fetchApi<CategoryResponse>('/categories', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   update: (id: string, data: UpdateCategoryRequest) =>
-    fetchApi<CategoryResponse>(`/api/categories/${id}`, {
+    fetchApi<CategoryResponse>(`/categories/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
-    fetchApi<void>(`/api/categories/${id}`, { method: 'DELETE' }),
+    fetchApi<void>(`/categories/${id}`, { method: 'DELETE' }),
 };
 
 // ============ TAGS API ============
@@ -302,14 +302,14 @@ export interface CreateTagRequest {
 }
 
 export const tagsApi = {
-  getAll: () => fetchApi<TagResponse[]>('/api/tags'),
+  getAll: () => fetchApi<TagResponse[]>('/tags'),
 
   create: (data: CreateTagRequest) =>
-    fetchApi<TagResponse>('/api/tags', {
+    fetchApi<TagResponse>('/tags', {
       method: 'POST',
       body: JSON.stringify(data),
     }),
 
   delete: (id: string) =>
-    fetchApi<void>(`/api/tags/${id}`, { method: 'DELETE' }),
+    fetchApi<void>(`/tags/${id}`, { method: 'DELETE' }),
 };

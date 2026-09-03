@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { FolderOpen, Plus, Edit, Trash2, X, Check } from 'lucide-react'
+import { FolderOpen, Plus, Edit, Trash2, X } from 'lucide-react'
 import { useLinkStore } from '../store/linkStore'
 
 const iconOptions = ['FolderOpen', 'Code', 'Brain', 'Briefcase', 'Palette', 'BookOpen', 'Rocket', 'Heart', 'Star', 'Zap']

@@ -33,8 +33,8 @@ export default function Register() {
     try {
       await register(email, password, name || undefined)
       navigate('/')
-    } catch (err: any) {
-      setError(err.message || 'Failed to register')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to register')
     } finally {
       setIsLoading(false)
     }

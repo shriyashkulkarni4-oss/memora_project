@@ -13,7 +13,8 @@ export default function Login() {
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
 
-  const from = (location.state as any)?.from?.pathname || '/'
+  const locationState = location.state as { from?: { pathname?: string } } | null
+  const from = locationState?.from?.pathname || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -23,8 +24,8 @@ export default function Login() {
     try {
       await login(email, password)
       navigate(from, { replace: true })
-    } catch (err: any) {
-      setError(err.message || 'Failed to login')
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Failed to login')
     } finally {
       setIsLoading(false)
     }

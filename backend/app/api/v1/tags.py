@@ -22,7 +22,9 @@ async def get_tags(db: DbSession):
     response = []
     for tag in tags:
         count = await db.scalar(
-            select(func.count()).select_from(link_tags).where(link_tags.c.tag_id == tag.id)
+            select(func.count())
+            .select_from(link_tags)
+            .where(link_tags.c.tag_id == tag.id)
         )
         response.append(
             TagResponse(

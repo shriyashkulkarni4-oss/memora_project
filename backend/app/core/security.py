@@ -31,14 +31,18 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(data: dict[str, Any], expires_delta: timedelta | None = None) -> str:
+def create_access_token(
+    data: dict[str, Any], expires_delta: timedelta | None = None
+) -> str:
     """Create a JWT access token."""
     to_encode = data.copy()
 
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
+        expire = datetime.utcnow() + timedelta(
+            minutes=settings.access_token_expire_minutes
+        )
 
     to_encode.update({"exp": expire, "type": "access"})
 
@@ -82,4 +86,5 @@ def hash_token(token: str) -> str:
     """Hash a token for storage (refresh tokens, verification tokens)."""
     # Use SHA-256 for token hashing (faster than bcrypt, sufficient for random tokens)
     import hashlib
+
     return hashlib.sha256(token.encode()).hexdigest()

@@ -2,11 +2,23 @@
 SQLAlchemy Models for Memoryhive
 """
 
-from datetime import datetime
-from typing import Optional, List
-from sqlalchemy import String, Text, Boolean, Integer, DateTime, ForeignKey, Enum, JSON, Table, Column
-from sqlalchemy.orm import Mapped, mapped_column, relationship
 import enum
+from datetime import datetime
+from typing import List, Optional
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Table,
+    Text,
+)
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -35,7 +47,7 @@ link_tags = Table(
     "link_tags",
     Base.metadata,
     Column("link_id", String, ForeignKey("links.id"), primary_key=True),
-    Column("tag_id", String, ForeignKey("tags.id"), primary_key=True)
+    Column("tag_id", String, ForeignKey("tags.id"), primary_key=True),
 )
 
 
@@ -48,11 +60,17 @@ class User(Base):
     name: Mapped[Optional[str]] = mapped_column(String(255))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationships
-    links: Mapped[List["Link"]] = relationship("Link", back_populates="user", cascade="all, delete-orphan")
-    categories: Mapped[List["Category"]] = relationship("Category", back_populates="user", cascade="all, delete-orphan")
+    links: Mapped[List["Link"]] = relationship(
+        "Link", back_populates="user", cascade="all, delete-orphan"
+    )
+    categories: Mapped[List["Category"]] = relationship(
+        "Category", back_populates="user", cascade="all, delete-orphan"
+    )
 
 
 class Category(Base):
@@ -65,7 +83,9 @@ class Category(Base):
     icon: Mapped[str] = mapped_column(String(50), default="FolderOpen")
     description: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="categories")
@@ -80,7 +100,9 @@ class Tag(Base):
     color: Mapped[str] = mapped_column(String(20), default="#6b7280")
 
     # Relationships
-    links: Mapped[List["Link"]] = relationship("Link", secondary=link_tags, back_populates="tags")
+    links: Mapped[List["Link"]] = relationship(
+        "Link", secondary=link_tags, back_populates="tags"
+    )
 
 
 class Link(Base):
@@ -93,10 +115,16 @@ class Link(Base):
     description: Mapped[Optional[str]] = mapped_column(Text)
     favicon: Mapped[Optional[str]] = mapped_column(Text)
 
-    source: Mapped[LinkSource] = mapped_column(Enum(LinkSource), default=LinkSource.MANUAL)
-    status: Mapped[LinkStatus] = mapped_column(Enum(LinkStatus), default=LinkStatus.PENDING)
+    source: Mapped[LinkSource] = mapped_column(
+        Enum(LinkSource), default=LinkSource.MANUAL
+    )
+    status: Mapped[LinkStatus] = mapped_column(
+        Enum(LinkStatus), default=LinkStatus.PENDING
+    )
 
-    category_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("categories.id"))
+    category_id: Mapped[Optional[str]] = mapped_column(
+        String(36), ForeignKey("categories.id")
+    )
 
     # AI Summary stored as JSON
     ai_summary: Mapped[Optional[dict]] = mapped_column(JSON)
@@ -111,9 +139,15 @@ class Link(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text)
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="links")
-    category: Mapped[Optional["Category"]] = relationship("Category", back_populates="links")
-    tags: Mapped[List["Tag"]] = relationship("Tag", secondary=link_tags, back_populates="links")
+    category: Mapped[Optional["Category"]] = relationship(
+        "Category", back_populates="links"
+    )
+    tags: Mapped[List["Tag"]] = relationship(
+        "Tag", secondary=link_tags, back_populates="links"
+    )

@@ -2,9 +2,8 @@
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import CurrentUser, DbSession
 from app.core.security import create_access_token, hash_password, verify_password
@@ -14,7 +13,9 @@ from app.schemas.auth import Token, UserCreate, UserLogin, UserResponse
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
+)
 async def register(user_data: UserCreate, db: DbSession):
     """Register a new user."""
     # Check if email exists

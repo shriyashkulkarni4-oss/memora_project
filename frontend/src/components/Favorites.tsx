@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Star, Plus } from 'lucide-react'
+import { Star } from 'lucide-react'
 import { useLinkStore } from '../store/linkStore'
 import LinkCard from './LinkCard'
 

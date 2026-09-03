@@ -198,10 +198,29 @@ export const useLinkStore = create<LinkStore>((set, get) => ({
   },
 
   updateLink: (id, dto) => {
+    const { tags: existingTags } = get();
+    const { tags: tagNames, ...updates } = dto;
+    const newTags: Tag[] = [];
+    const linkTags = tagNames?.map(tagName => {
+      const existing = [...existingTags, ...newTags]
+        .find(tag => tag.name.toLowerCase() === tagName.toLowerCase());
+      if (existing) return existing;
+
+      const newTag: Tag = {
+        id: generateId('tag'),
+        name: tagName.toLowerCase(),
+        color: getRandomColor(),
+        usageCount: 1
+      };
+      newTags.push(newTag);
+      return newTag;
+    });
+
     set(state => ({
+      tags: newTags.length > 0 ? [...state.tags, ...newTags] : state.tags,
       links: state.links.map(link =>
         link.id === id
-          ? { ...link, ...dto, updatedAt: new Date() }
+          ? { ...link, ...updates, ...(linkTags ? { tags: linkTags } : {}), updatedAt: new Date() }
           : link
       )
     }));

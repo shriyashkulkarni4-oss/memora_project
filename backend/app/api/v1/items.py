@@ -1,20 +1,44 @@
 """Canonical Item capture and retrieval endpoints."""
 
 import base64
+import hashlib
 import uuid
 from datetime import datetime, timezone
+from io import BytesIO
+from typing import Annotated
 from urllib.parse import urlparse
 
-from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import and_, or_, select
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
+from PIL import Image, UnidentifiedImageError
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.orm import selectinload
 
+from app.config import get_settings
 from app.core.deps import CurrentUser, DbSession
-from app.models import Category, Item, ItemType, ProcessingStatus, Tag
+from app.models import Asset, Category, Item, ItemType, ProcessingStatus, Tag
 from app.schemas.common import ErrorResponse
-from app.schemas.item import ItemCreate, ItemListResponse, ItemResponse, ItemUpdate
+from app.schemas.item import (
+    ItemCreate,
+    ItemListResponse,
+    ItemResponse,
+    ItemStats,
+    ItemUpdate,
+    ProcessingStateResponse,
+)
+from app.services.storage import StorageService, get_storage_service
 
 router = APIRouter()
+settings = get_settings()
+Storage = Annotated[StorageService, Depends(get_storage_service)]
 
 ERROR_RESPONSES = {
     400: {"model": ErrorResponse, "description": "Invalid request"},
@@ -38,6 +62,45 @@ def _decode_cursor(cursor: str) -> tuple[datetime, str]:
         return datetime.fromisoformat(created_at), item_id
     except (UnicodeDecodeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="Invalid cursor") from exc
+
+
+def _detected_image_type(content: bytes) -> str | None:
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "image/png"
+    if content.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if content.startswith((b"GIF87a", b"GIF89a")):
+        return "image/gif"
+    if len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _inspect_image(content: bytes) -> tuple[str, int, int]:
+    detected_type = _detected_image_type(content)
+    if detected_type is None:
+        raise HTTPException(status_code=415, detail="Unsupported screenshot format")
+    try:
+        with Image.open(BytesIO(content)) as image:
+            image.verify()
+        with Image.open(BytesIO(content)) as image:
+            width, height = image.size
+            image_format = image.format
+    except (Image.DecompressionBombError, UnidentifiedImageError, OSError) as exc:
+        raise HTTPException(
+            status_code=415, detail="Screenshot image is invalid"
+        ) from exc
+    format_types = {
+        "PNG": "image/png",
+        "JPEG": "image/jpeg",
+        "GIF": "image/gif",
+        "WEBP": "image/webp",
+    }
+    if format_types.get(image_format) != detected_type:
+        raise HTTPException(
+            status_code=415, detail="Screenshot image format is invalid"
+        )
+    return detected_type, width, height
 
 
 def _response(item: Item) -> ItemResponse:
@@ -102,7 +165,12 @@ async def _resolve_category(
 
 async def _resolve_tags(db: DbSession, user_id: str, names: list[str]) -> list[Tag]:
     tags: list[Tag] = []
-    for name in names:
+    normalized_names = {
+        " ".join(name.lower().split()) for name in names if name.strip()
+    }
+    for name in sorted(normalized_names):
+        if len(name) > 50:
+            raise HTTPException(status_code=422, detail="Tag name is too long")
         tag = await db.scalar(
             select(Tag).where(Tag.user_id == user_id, Tag.name == name)
         )
@@ -126,6 +194,8 @@ async def list_items(
     is_archived: bool = False,
     created_from: datetime | None = None,
     created_to: datetime | None = None,
+    processing_status: ProcessingStatus | None = None,
+    tag: list[str] | None = Query(default=None),
 ) -> ItemListResponse:
     query = (
         select(Item)
@@ -156,6 +226,15 @@ async def list_items(
         query = query.where(Item.created_at >= created_from)
     if created_to:
         query = query.where(Item.created_at <= created_to)
+    if processing_status:
+        query = query.where(Item.processing_status == processing_status)
+    for tag_name in tag or []:
+        normalized_tag = " ".join(tag_name.lower().split())
+        query = query.where(
+            Item.tags.any(
+                and_(Tag.user_id == current_user.id, Tag.name == normalized_tag)
+            )
+        )
 
     result = await db.execute(
         query.order_by(Item.created_at.desc(), Item.id.desc()).limit(limit + 1)
@@ -216,11 +295,144 @@ async def create_item(
     return _response(await _load_item(db, current_user.id, item.id))
 
 
+@router.get("/stats", response_model=ItemStats, responses=ERROR_RESPONSES)
+async def get_item_stats(current_user: CurrentUser, db: DbSession) -> ItemStats:
+    owned = [Item.user_id == current_user.id, Item.deleted_at.is_(None)]
+
+    async def count(*conditions: object) -> int:
+        value = await db.scalar(
+            select(func.count()).select_from(Item).where(*owned, *conditions)
+        )
+        return value or 0
+
+    by_type = {item_type: await count(Item.type == item_type) for item_type in ItemType}
+    return ItemStats(
+        total_items=await count(),
+        active_items=await count(Item.is_archived.is_(False)),
+        favorite_items=await count(Item.is_favorite.is_(True)),
+        archived_items=await count(Item.is_archived.is_(True)),
+        pending_processing=await count(
+            Item.processing_status.in_(
+                [ProcessingStatus.PENDING, ProcessingStatus.PROCESSING]
+            )
+        ),
+        failed_processing=await count(
+            Item.processing_status == ProcessingStatus.FAILED
+        ),
+        by_type=by_type,
+    )
+
+
+@router.post(
+    "/screenshot",
+    response_model=ItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=ERROR_RESPONSES,
+)
+async def create_screenshot_item(
+    current_user: CurrentUser,
+    db: DbSession,
+    storage: Storage,
+    file: UploadFile = File(...),
+    id: str | None = Form(default=None),
+    title: str | None = Form(default=None),
+    description: str | None = Form(default=None),
+    notes: str | None = Form(default=None),
+    source: str | None = Form(default="screenshot"),
+    category_id: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
+) -> ItemResponse:
+    try:
+        item_id = str(uuid.UUID(id)) if id else str(uuid.uuid4())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid item UUID") from exc
+    if await db.scalar(select(Item.id).where(Item.id == item_id)):
+        raise HTTPException(status_code=409, detail="Item identifier already exists")
+
+    max_size = settings.max_upload_size_mb * 1024 * 1024
+    content = await file.read(max_size + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="Screenshot file is empty")
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="Screenshot exceeds upload limit")
+    detected_type, width, height = _inspect_image(content)
+    if file.content_type and file.content_type not in {
+        detected_type,
+        "image/jpg" if detected_type == "image/jpeg" else detected_type,
+    }:
+        raise HTTPException(
+            status_code=415, detail="Screenshot content type does not match file"
+        )
+
+    owned_category = await _resolve_category(db, current_user.id, category_id)
+    tag_names = [
+        part.strip().lower() for part in (tags or "").split(",") if part.strip()
+    ]
+    uploaded = storage.upload_bytes(
+        content,
+        content_type=detected_type,
+        original_filename=file.filename,
+        user_id=current_user.id,
+    )
+    now = datetime.now(timezone.utc)
+    item = Item(
+        id=item_id,
+        user_id=current_user.id,
+        type=ItemType.SCREENSHOT,
+        title=title.strip() if title and title.strip() else None,
+        description=description,
+        notes=notes,
+        source=source,
+        category_id=owned_category,
+        processing_status=ProcessingStatus.PENDING,
+        created_at=now,
+        updated_at=now,
+    )
+    item.tags = await _resolve_tags(db, current_user.id, tag_names)
+    item.assets.append(
+        Asset(
+            id=str(uuid.uuid4()),
+            user_id=current_user.id,
+            object_key=uploaded["file_key"],
+            original_filename=file.filename,
+            mime_type=detected_type,
+            size_bytes=len(content),
+            sha256=hashlib.sha256(content).hexdigest(),
+            width=width,
+            height=height,
+        )
+    )
+    db.add(item)
+    try:
+        await db.commit()
+    except Exception:
+        storage.delete_file(uploaded["file_key"])
+        raise
+    return _response(await _load_item(db, current_user.id, item.id))
+
+
 @router.get("/{item_id}", response_model=ItemResponse, responses=ERROR_RESPONSES)
 async def get_item(
     item_id: str, current_user: CurrentUser, db: DbSession
 ) -> ItemResponse:
     return _response(await _load_item(db, current_user.id, item_id))
+
+
+@router.get(
+    "/{item_id}/processing",
+    response_model=ProcessingStateResponse,
+    responses=ERROR_RESPONSES,
+)
+async def get_processing_state(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ProcessingStateResponse:
+    item = await _load_item(db, current_user.id, item_id)
+    return ProcessingStateResponse(
+        item_id=item.id,
+        status=item.processing_status,
+        error=item.processing_error,
+        updated_at=item.updated_at,
+    )
 
 
 @router.patch("/{item_id}", response_model=ItemResponse, responses=ERROR_RESPONSES)
@@ -254,6 +466,57 @@ async def update_item(
     item.updated_at = datetime.now(timezone.utc)
     await db.commit()
     return _response(await _load_item(db, current_user.id, item.id))
+
+
+async def _set_flag(
+    item_id: str,
+    field: str,
+    value: bool,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> ItemResponse:
+    item = await _load_item(db, current_user.id, item_id)
+    setattr(item, field, value)
+    item.revision += 1
+    item.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    return _response(await _load_item(db, current_user.id, item.id))
+
+
+@router.put(
+    "/{item_id}/favorite", response_model=ItemResponse, responses=ERROR_RESPONSES
+)
+async def favorite_item(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ItemResponse:
+    return await _set_flag(item_id, "is_favorite", True, current_user, db)
+
+
+@router.delete(
+    "/{item_id}/favorite", response_model=ItemResponse, responses=ERROR_RESPONSES
+)
+async def unfavorite_item(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ItemResponse:
+    return await _set_flag(item_id, "is_favorite", False, current_user, db)
+
+
+@router.put(
+    "/{item_id}/archive", response_model=ItemResponse, responses=ERROR_RESPONSES
+)
+async def archive_item(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ItemResponse:
+    return await _set_flag(item_id, "is_archived", True, current_user, db)
+
+
+@router.delete(
+    "/{item_id}/archive", response_model=ItemResponse, responses=ERROR_RESPONSES
+)
+async def restore_item(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ItemResponse:
+    return await _set_flag(item_id, "is_archived", False, current_user, db)
 
 
 @router.delete("/{item_id}", status_code=204, responses=ERROR_RESPONSES)

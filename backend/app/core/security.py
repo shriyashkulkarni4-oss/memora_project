@@ -1,7 +1,8 @@
 """Security utilities for password hashing and JWT tokens."""
 
 import secrets
-from datetime import datetime, timedelta
+import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import bcrypt
@@ -14,8 +15,9 @@ settings = get_settings()
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    # bcrypt has a 72 byte limit, truncate if needed
-    password_bytes = password.encode("utf-8")[:72]
+    password_bytes = password.encode("utf-8")
+    if len(password_bytes) > 72:
+        raise ValueError("password must be at most 72 UTF-8 bytes")
     salt = bcrypt.gensalt(rounds=12)
     hashed = bcrypt.hashpw(password_bytes, salt)
     return hashed.decode("utf-8")
@@ -24,7 +26,9 @@ def hash_password(password: str) -> str:
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """Verify a password against its hash."""
     try:
-        password_bytes = plain_password.encode("utf-8")[:72]
+        password_bytes = plain_password.encode("utf-8")
+        if len(password_bytes) > 72:
+            return False
         hashed_bytes = hashed_password.encode("utf-8")
         return bcrypt.checkpw(password_bytes, hashed_bytes)
     except Exception:
@@ -38,13 +42,20 @@ def create_access_token(
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.utcnow() + expires_delta
+        expire = datetime.now(timezone.utc) + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(
+        expire = datetime.now(timezone.utc) + timedelta(
             minutes=settings.access_token_expire_minutes
         )
 
-    to_encode.update({"exp": expire, "type": "access"})
+    to_encode.update(
+        {
+            "exp": expire,
+            "iat": datetime.now(timezone.utc),
+            "jti": str(uuid.uuid4()),
+            "type": "access",
+        }
+    )
 
     encoded_jwt = jwt.encode(
         to_encode,

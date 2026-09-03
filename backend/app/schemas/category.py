@@ -1,40 +1,37 @@
-"""Category schemas."""
+"""Category contracts."""
 
 from datetime import datetime
-from typing import Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class CategoryCreate(BaseModel):
-    """Schema for creating a category."""
+    name: str = Field(min_length=1, max_length=100)
+    color: str = Field(default="#3b82f6", pattern=r"^#[0-9a-fA-F]{6}$")
+    icon: str = Field(default="folder", max_length=50)
+    description: str | None = Field(default=None, max_length=2_000)
 
-    name: str
-    color: str = "#3b82f6"
-    icon: str = "FolderOpen"
-    description: Optional[str] = None
+    @field_validator("name")
+    @classmethod
+    def normalize_name(cls, name: str) -> str:
+        return " ".join(name.split())
 
 
 class CategoryUpdate(BaseModel):
-    """Schema for updating a category."""
-
-    name: Optional[str] = None
-    color: Optional[str] = None
-    icon: Optional[str] = None
-    description: Optional[str] = None
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    color: str | None = Field(default=None, pattern=r"^#[0-9a-fA-F]{6}$")
+    icon: str | None = Field(default=None, max_length=50)
+    description: str | None = Field(default=None, max_length=2_000)
 
 
 class CategoryResponse(BaseModel):
-    """Schema for category response."""
+    model_config = ConfigDict(from_attributes=True)
 
     id: str
     name: str
     color: str
     icon: str
-    description: Optional[str]
-    link_count: int = 0
+    description: str | None
+    item_count: int = 0
     created_at: datetime
     updated_at: datetime
-
-    class Config:
-        from_attributes = True

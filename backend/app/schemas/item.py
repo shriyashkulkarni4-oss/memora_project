@@ -91,6 +91,16 @@ class ItemUpdate(BaseModel):
     is_favorite: bool | None = None
     is_archived: bool | None = None
 
+    @field_validator("tags")
+    @classmethod
+    def normalize_tags(cls, tags: list[str] | None) -> list[str] | None:
+        if tags is None:
+            return None
+        normalized = {tag.strip().lower() for tag in tags if tag.strip()}
+        if any(len(tag) > 50 for tag in normalized):
+            raise ValueError("tag names must be 50 characters or fewer")
+        return sorted(normalized)
+
 
 class ItemResponse(BaseModel):
     id: str
@@ -135,4 +145,21 @@ class ItemListResponse(BaseModel):
 class ItemMutationResponse(BaseModel):
     id: str
     revision: int
+    updated_at: datetime
+
+
+class ItemStats(BaseModel):
+    total_items: int
+    active_items: int
+    favorite_items: int
+    archived_items: int
+    pending_processing: int
+    failed_processing: int
+    by_type: dict[ItemType, int]
+
+
+class ProcessingStateResponse(BaseModel):
+    item_id: str
+    status: ProcessingStatus
+    error: str | None
     updated_at: datetime

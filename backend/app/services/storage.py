@@ -65,39 +65,53 @@ class StorageService:
         Upload a file to MinIO
         Returns: dict with file_url, file_key, file_size
         """
-        # Generate unique filename
-        file_ext = os.path.splitext(file.filename)[1] if file.filename else ".png"
-        unique_id = str(uuid.uuid4())
-        file_key = f"{folder}/{user_id or 'unknown'}/{unique_id}{file_ext}"
-
-        # Read file content
         content = await file.read()
-        file_size = len(content)
+        return self.upload_bytes(
+            content,
+            content_type=file.content_type or "application/octet-stream",
+            original_filename=file.filename,
+            folder=folder,
+            user_id=user_id,
+        )
 
-        # Upload to MinIO
+    def upload_bytes(
+        self,
+        content: bytes,
+        *,
+        content_type: str,
+        original_filename: str | None = None,
+        folder: str = "screenshots",
+        user_id: str | None = None,
+    ) -> dict[str, Any]:
+        """Upload validated bytes under a generated, user-scoped object key."""
+        extension_by_type = {
+            "image/png": ".png",
+            "image/jpeg": ".jpg",
+            "image/gif": ".gif",
+            "image/webp": ".webp",
+        }
+        file_ext = extension_by_type.get(content_type)
+        if file_ext is None:
+            file_ext = os.path.splitext(original_filename or "")[1].lower() or ".bin"
+        file_key = f"{folder}/{user_id or 'unknown'}/{uuid.uuid4()}{file_ext}"
+
         try:
             self._ensure_bucket_exists()
             self.s3_client.put_object(
                 Bucket=self.bucket,
                 Key=file_key,
                 Body=content,
-                ContentType=file.content_type or "application/octet-stream",
+                ContentType=content_type,
                 Metadata={
-                    "original-filename": file.filename or "unknown",
+                    "original-filename": original_filename or "unknown",
                     "user-id": user_id or "unknown",
                 },
             )
-
-            # Generate URL
-            file_url = self.get_file_url(file_key)
-
             return {
-                "file_url": file_url,
                 "file_key": file_key,
-                "file_size": file_size,
-                "content_type": file.content_type,
+                "file_size": len(content),
+                "content_type": content_type,
             }
-
         except ClientError as exc:
             logger.exception("Failed to upload file")
             raise RuntimeError("Failed to upload file") from exc
@@ -139,6 +153,11 @@ class StorageService:
             }
         except ClientError:
             return None
+
+    def get_file_bytes(self, file_key: str) -> bytes:
+        """Read a private object for server-side processing."""
+        response = self.s3_client.get_object(Bucket=self.bucket, Key=file_key)
+        return response["Body"].read()
 
 
 @lru_cache

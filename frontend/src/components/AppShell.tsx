@@ -1,5 +1,6 @@
 import {
   Archive,
+  AlertCircle,
   Cloud,
   FolderTree,
   Library,
@@ -9,7 +10,9 @@ import {
   Settings,
   Star,
   UserRound,
+  X,
 } from 'lucide-react';
+import { useEffect } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLibraryStore } from '../store/libraryStore';
@@ -27,6 +30,19 @@ export default function AppShell() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const setCaptureOpen = useLibraryStore((state) => state.setCaptureOpen);
+  const initialize = useLibraryStore((state) => state.initialize);
+  const clear = useLibraryStore((state) => state.clear);
+  const error = useLibraryStore((state) => state.error);
+  const notice = useLibraryStore((state) => state.notice);
+  const dismissMessage = useLibraryStore((state) => state.dismissMessage);
+
+  useEffect(() => { void initialize(); }, [initialize]);
+
+  const signOut = async () => {
+    await logout();
+    clear();
+    navigate('/login');
+  };
 
   return (
     <div className="app-shell">
@@ -62,7 +78,7 @@ export default function AppShell() {
             <span>Synced</span>
             <span className="sync-dot" aria-hidden="true" />
           </div>
-          <button className="account-button" type="button" onClick={() => void logout()}>
+          <button className="account-button" type="button" onClick={() => void signOut()}>
             <span className="avatar" aria-hidden="true">
               <UserRound size={16} />
             </span>
@@ -84,6 +100,13 @@ export default function AppShell() {
       </header>
 
       <main className="workspace" id="main-content">
+        {(error || notice) && (
+          <div className={`app-message ${error ? 'error' : 'success'}`} role={error ? 'alert' : 'status'}>
+            {error && <AlertCircle size={17} />}
+            <span>{error || notice}</span>
+            <button type="button" onClick={dismissMessage} aria-label="Dismiss message"><X size={16} /></button>
+          </div>
+        )}
         <Outlet />
       </main>
 

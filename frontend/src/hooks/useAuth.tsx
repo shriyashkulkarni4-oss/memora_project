@@ -1,85 +1,70 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { authApi, setAccessToken, getAccessToken, User } from '../services/api'
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
+import { authApi, hasSession } from '../services/api';
+import type { User } from '../types/api';
 
 interface AuthContextType {
-  user: User | null
-  isLoading: boolean
-  isAuthenticated: boolean
-  login: (email: string, password: string) => Promise<void>
-  register: (email: string, password: string, name?: string) => Promise<void>
-  logout: () => void
+  user: User | null;
+  isLoading: boolean;
+  isAuthenticated: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, name?: string) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (import.meta.env.VITE_DEMO_MODE === 'true') {
+    const expire = () => setUser(null);
+    window.addEventListener('memoryhive:session-expired', expire);
+    if (demoMode) {
       setUser({
         id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
         email: 'mahesh@example.com',
         name: 'Mahesh',
         is_active: true,
         created_at: '2026-08-01T00:00:00Z',
-      })
-      setIsLoading(false)
-      return
-    }
-    // Check if user is already logged in
-    const token = getAccessToken()
-    if (token) {
-      authApi.getMe()
-        .then(setUser)
-        .catch(() => {
-          setAccessToken(null)
-        })
-        .finally(() => setIsLoading(false))
+        updated_at: '2026-08-01T00:00:00Z',
+      });
+      setIsLoading(false);
+    } else if (hasSession()) {
+      authApi.restore().then(setUser).catch(() => setUser(null)).finally(() => setIsLoading(false));
     } else {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [])
+    return () => window.removeEventListener('memoryhive:session-expired', expire);
+  }, []);
 
   const login = async (email: string, password: string) => {
-    const response = await authApi.login({ email, password })
-    setAccessToken(response.access_token)
-    const userData = await authApi.getMe()
-    setUser(userData)
-  }
+    await authApi.login({ email, password });
+    setUser(await authApi.me());
+  };
 
   const register = async (email: string, password: string, name?: string) => {
-    await authApi.register({ email, password, name })
-    // Auto-login after registration
-    await login(email, password)
-  }
+    await authApi.register({ email, password, name });
+    await login(email, password);
+  };
 
-  const logout = () => {
-    setAccessToken(null)
-    setUser(null)
-  }
+  const logout = async () => {
+    if (!demoMode) await authApi.logout();
+    setUser(null);
+  };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        register,
-        logout
-      }}
-    >
+    <AuthContext.Provider value={{
+      user, isLoading, isAuthenticated: Boolean(user), login, register, logout,
+    }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
+  const context = useContext(AuthContext);
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
+  return context;
 }

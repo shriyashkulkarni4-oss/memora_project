@@ -23,7 +23,7 @@ content processing, and production release work follow on the same contracts.
 | 1 | Canonical product model and API contract | DONE | `phase-1-item-contract` |
 | 2 | Core backend implementation | DONE | `phase-2-core-backend` |
 | 3 | Production web UI | DONE | `phase-3-web-ui` |
-| 4 | End-to-end UI/backend integration | TODO | Pending |
+| 4 | End-to-end UI/backend integration | DONE | `phase-4-web-integration` |
 | 5 | Retrieval, privacy, and data lifecycle | TODO | Pending |
 | 6 | Offline sync and mobile applications | TODO | Pending |
 | 7 | OCR and content-processing pipeline | TODO | Pending |
@@ -123,13 +123,13 @@ Acceptance gate:
 
 ## Phase 4: End-To-End Integration
 
-Status: TODO
+Status: DONE
 
-- [ ] Replace all sample data with typed API-backed state.
-- [ ] Integrate authentication/session recovery and route protection.
-- [ ] Integrate capture, upload progress, search, filters, and item mutations.
-- [ ] Add optimistic actions with rollback and user-visible failures.
-- [ ] Add browser-level tests for primary workflows.
+- [x] Replace all sample data with typed API-backed state.
+- [x] Integrate authentication/session recovery and route protection.
+- [x] Integrate capture, upload progress, search, filters, and item mutations.
+- [x] Add optimistic actions with rollback and user-visible failures.
+- [x] Add browser-level tests for primary workflows.
 
 Acceptance gate:
 
@@ -220,3 +220,7 @@ Acceptance gate:
 | 2026-09-04 | 3 | Vitest interaction tests and axe accessibility scan (3 tests) | Passed |
 | 2026-09-04 | 3 | TypeScript production build and ESLint | Passed |
 | 2026-09-04 | 3 | Playwright capture workflow at 1440x900 and iPhone 13 viewports | Passed |
+| 2026-09-04 | 4 | Live PostgreSQL/MinIO browser workflow from registration through deletion | Passed |
+| 2026-09-04 | 4 | Forced access-token refresh and session recovery on page reload | Passed |
+| 2026-09-04 | 4 | Synthetic API failure with optimistic favorite rollback | Passed |
+| 2026-09-04 | 4 | Backend tests, Ruff, Black; frontend build, lint, Vitest, and Playwright | Passed |

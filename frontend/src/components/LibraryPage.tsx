@@ -59,6 +59,10 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
   const pending = activeItems.filter((item) => ['pending', 'processing'].includes(item.processing_status)).length;
   const favorites = activeItems.filter((item) => item.is_favorite).length;
 
+  if (store.isLoading && !store.initialized) {
+    return <div className="page"><section className="empty-state" aria-label="Loading library"><span className="brand-loader" /></section></div>;
+  }
+
   return (
     <div className="page library-page">
       <header className="page-header">

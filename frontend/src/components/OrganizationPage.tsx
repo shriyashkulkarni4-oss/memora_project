@@ -9,11 +9,15 @@ export default function OrganizationPage() {
   const [name, setName] = useState('');
   const [color, setColor] = useState(colors[0]);
 
-  const create = (event: FormEvent) => {
+  const create = async (event: FormEvent) => {
     event.preventDefault();
     if (!name.trim()) return;
-    store.createCategory(name, color);
-    setName('');
+    try {
+      await store.createCategory(name, color);
+      setName('');
+    } catch {
+      // The store exposes the API error through the application message.
+    }
   };
 
   return (
@@ -53,7 +57,7 @@ export default function OrganizationPage() {
               <i className="category-swatch" style={{ background: category.color }} />
               <div><strong>{category.name}</strong><span>{category.description || 'No description'}</span></div>
               <span className="usage-count">{store.items.filter((item) => item.category_id === category.id).length} items</span>
-              <button className="icon-button" type="button" title="Delete category" onClick={() => store.deleteCategory(category.id)}>
+              <button className="icon-button" type="button" title="Delete category" onClick={() => void store.deleteCategory(category.id)}>
                 <Trash2 size={17} /><span className="sr-only">Delete {category.name}</span>
               </button>
             </div>
@@ -72,7 +76,7 @@ export default function OrganizationPage() {
               <i style={{ background: tag.color }} />
               <strong>#{tag.name}</strong>
               <span>{store.items.filter((item) => item.tags.some((value) => value.id === tag.id)).length}</span>
-              <button type="button" title="Delete tag" onClick={() => store.deleteTag(tag.id)}>
+              <button type="button" title="Delete tag" onClick={() => void store.deleteTag(tag.id)}>
                 <Trash2 size={15} /><span className="sr-only">Delete {tag.name}</span>
               </button>
             </div>

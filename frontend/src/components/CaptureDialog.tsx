@@ -1,4 +1,5 @@
 import {
+  AlertCircle,
   ChevronDown,
   FileText,
   Image as ImageIcon,
@@ -22,6 +23,7 @@ export default function CaptureDialog() {
   const close = useLibraryStore((state) => state.setCaptureOpen);
   const createItem = useLibraryStore((state) => state.createItem);
   const categories = useLibraryStore((state) => state.categories);
+  const uploadProgress = useLibraryStore((state) => state.uploadProgress);
   const navigate = useNavigate();
   const firstField = useRef<HTMLElement | null>(null);
   const [type, setType] = useState<ItemType>('link');
@@ -33,6 +35,8 @@ export default function CaptureDialog() {
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
@@ -62,10 +66,12 @@ export default function CaptureDialog() {
     setDetailsOpen(false);
   };
 
-  const submit = (event: FormEvent) => {
+  const submit = async (event: FormEvent) => {
     event.preventDefault();
-    const item = createItem(
-      {
+    setBusy(true);
+    setError('');
+    try {
+      const item = await createItem({
         type,
         url: type === 'link' ? url : undefined,
         raw_text: type === 'text' ? text : undefined,
@@ -76,11 +82,14 @@ export default function CaptureDialog() {
           .split(',')
           .map((tag) => tag.trim())
           .filter(Boolean),
-      },
-      file ? URL.createObjectURL(file) : undefined,
-    );
-    reset();
-    navigate(`/items/${item.id}`);
+      }, file ?? undefined);
+      reset();
+      navigate(`/items/${item.id}`);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to save item');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -120,6 +129,13 @@ export default function CaptureDialog() {
         </div>
 
         <form className="capture-form" onSubmit={submit}>
+          {error && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
+          {uploadProgress !== null && (
+            <div className="upload-progress" role="progressbar" aria-label="Screenshot upload" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}>
+              <span style={{ width: `${uploadProgress}%` }} />
+              <small>{uploadProgress}% uploaded</small>
+            </div>
+          )}
           {type === 'link' && (
             <label className="field">
               <span>URL</span>
@@ -210,8 +226,8 @@ export default function CaptureDialog() {
           )}
 
           <footer className="dialog-actions">
-            <button className="button secondary" type="button" onClick={() => close(false)}>Cancel</button>
-            <button className="button primary" type="submit">Save item</button>
+            <button className="button secondary" type="button" disabled={busy} onClick={() => close(false)}>Cancel</button>
+            <button className="button primary" type="submit" disabled={busy}>{busy ? 'Saving' : 'Save item'}</button>
           </footer>
         </form>
       </section>

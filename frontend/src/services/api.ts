@@ -1,315 +1,200 @@
-/**
- * Memoryhive API Client
- * Handles all HTTP requests to the backend API
- */
+import type {
+  Category, CreateItemRequest, Item, ItemPage, ItemStats, ItemType,
+  ManagedTag, ProcessingStatus, UpdateItemRequest, User,
+} from '../types/api';
 
 const API_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
+const ACCESS_KEY = 'memoryhive.accessToken';
+const REFRESH_KEY = 'memoryhive.refreshToken';
+let accessToken = localStorage.getItem(ACCESS_KEY);
+let refreshPromise: Promise<void> | null = null;
 
-// Token management
-let accessToken: string | null = localStorage.getItem('accessToken');
-
-export const setAccessToken = (token: string | null) => {
-  accessToken = token;
-  if (token) {
-    localStorage.setItem('accessToken', token);
-  } else {
-    localStorage.removeItem('accessToken');
-  }
-};
-
-export const getAccessToken = () => accessToken;
-
-// Base fetch wrapper
-async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const headers: HeadersInit = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
-
-  if (accessToken) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      setAccessToken(null);
-      window.location.href = '/login';
-    }
-    const error = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(error.detail || 'Request failed');
-  }
-
-  if (response.status === 204) {
-    return {} as T;
-  }
-
-  return response.json();
-}
-
-// File upload wrapper
-async function uploadFile(
-  endpoint: string,
-  file: File,
-  additionalData?: Record<string, string>
-): Promise<{ url: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-
-  if (additionalData) {
-    Object.entries(additionalData).forEach(([key, value]) => {
-      formData.append(key, value);
-    });
-  }
-
-  const headers: HeadersInit = {};
-  if (accessToken) {
-    headers['Authorization'] = `Bearer ${accessToken}`;
-  }
-
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    method: 'POST',
-    headers,
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ detail: 'Upload failed' }));
-    throw new Error(error.detail || 'Upload failed');
-  }
-
-  return response.json();
-}
-
-// ============ AUTH API ============
-
-export interface LoginRequest {
-  email: string;
-  password: string;
-}
-
-export interface RegisterRequest {
-  email: string;
-  password: string;
-  name?: string;
-}
-
-export interface AuthResponse {
+export interface TokenPair {
   access_token: string;
+  refresh_token: string;
   token_type: string;
+  expires_in: number;
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  is_active: boolean;
-  created_at: string;
+export class ApiClientError extends Error {
+  constructor(message: string, public readonly status: number, public readonly code = 'request_failed') {
+    super(message);
+  }
+}
+
+function saveTokens(tokens: TokenPair | null) {
+  accessToken = tokens?.access_token ?? null;
+  if (tokens) {
+    localStorage.setItem(ACCESS_KEY, tokens.access_token);
+    localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
+  } else {
+    localStorage.removeItem(ACCESS_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+  }
+}
+
+export const hasSession = () => Boolean(accessToken || localStorage.getItem(REFRESH_KEY));
+
+async function parseError(response: Response): Promise<ApiClientError> {
+  const body = await response.json().catch(() => null) as {
+    detail?: string;
+    error?: { code?: string; message?: string };
+  } | null;
+  return new ApiClientError(
+    body?.error?.message || body?.detail || `Request failed (${response.status})`,
+    response.status,
+    body?.error?.code,
+  );
+}
+
+async function refreshSession() {
+  if (refreshPromise) return refreshPromise;
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) throw new ApiClientError('Your session has expired', 401, 'session_expired');
+  refreshPromise = (async () => {
+    const response = await fetch(`${API_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!response.ok) {
+      saveTokens(null);
+      window.dispatchEvent(new Event('memoryhive:session-expired'));
+      throw await parseError(response);
+    }
+    saveTokens(await response.json() as TokenPair);
+  })().finally(() => { refreshPromise = null; });
+  return refreshPromise;
+}
+
+async function request<T>(endpoint: string, options: RequestInit = {}, retry = true): Promise<T> {
+  const headers = new Headers(options.headers);
+  if (!(options.body instanceof FormData) && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`);
+  const response = await fetch(`${API_URL}${endpoint}`, { ...options, headers });
+  if (response.status === 401 && retry && localStorage.getItem(REFRESH_KEY)) {
+    await refreshSession();
+    return request<T>(endpoint, options, false);
+  }
+  if (!response.ok) throw await parseError(response);
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
 }
 
 export const authApi = {
-  login: (data: LoginRequest) =>
-    fetchApi<AuthResponse>('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  register: (data: RegisterRequest) =>
-    fetchApi<User>('/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  getMe: () => fetchApi<User>('/auth/me'),
-};
-
-// ============ LINKS API ============
-
-export interface LinkResponse {
-  id: string;
-  user_id: string;
-  url: string | null;
-  title: string;
-  description: string | null;
-  favicon: string | null;
-  source: string;
-  status: string;
-  category_id: string | null;
-  tags: { id: string; name: string; color: string }[];
-  ai_summary: {
-    summary: string;
-    keyPoints: string[];
-    topics: string[];
-  } | null;
-  screenshot_url: string | null;
-  is_favorite: boolean;
-  is_archived: boolean;
-  read_count: number;
-  last_visited_at: string | null;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateLinkRequest {
-  url?: string;
-  title: string;
-  description?: string;
-  source?: string;
-  category_id?: string;
-  tags?: string[];
-  notes?: string;
-}
-
-export interface UpdateLinkRequest {
-  title?: string;
-  description?: string;
-  category_id?: string;
-  tags?: string[];
-  notes?: string;
-  is_favorite?: boolean;
-  is_archived?: boolean;
-}
-
-export interface LinkFilters {
-  search?: string;
-  category_id?: string;
-  source?: string;
-  is_favorite?: boolean;
-  is_archived?: boolean;
-  skip?: number;
-  limit?: number;
-}
-
-export interface LinkStats {
-  total_links: number;
-  favorite_links: number;
-  archived_links: number;
-  pending_processing: number;
-}
-
-export const linksApi = {
-  getAll: (filters: LinkFilters = {}) => {
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null && value !== '') {
-        params.append(key, String(value));
-      }
-    });
-    return fetchApi<LinkResponse[]>(`/links?${params}`);
+  register: (data: { email: string; password: string; name?: string }) =>
+    request<User>('/auth/register', { method: 'POST', body: JSON.stringify(data) }, false),
+  login: async (data: { email: string; password: string }) => {
+    const tokens = await request<TokenPair>('/auth/login', { method: 'POST', body: JSON.stringify(data) }, false);
+    saveTokens(tokens);
+    return tokens;
   },
-
-  getById: (id: string) => fetchApi<LinkResponse>(`/links/${id}`),
-
-  getStats: () => fetchApi<LinkStats>('/links/stats'),
-
-  create: (data: CreateLinkRequest) =>
-    fetchApi<LinkResponse>('/links', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  update: (id: string, data: UpdateLinkRequest) =>
-    fetchApi<LinkResponse>(`/links/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
-  delete: (id: string) =>
-    fetchApi<void>(`/links/${id}`, { method: 'DELETE' }),
-
-  toggleFavorite: (id: string) =>
-    fetchApi<{ is_favorite: boolean }>(`/links/${id}/favorite`, {
-      method: 'POST',
-    }),
-
-  toggleArchive: (id: string) =>
-    fetchApi<{ is_archived: boolean }>(`/links/${id}/archive`, {
-      method: 'POST',
-    }),
-
-  uploadScreenshot: (file: File, data: { title: string; description?: string; category_id?: string }) =>
-    uploadFile('/links/screenshot', file, data as Record<string, string>),
+  restore: async () => {
+    if (!accessToken) await refreshSession();
+    try { return await request<User>('/auth/me'); }
+    catch (error) { saveTokens(null); throw error; }
+  },
+  me: () => request<User>('/auth/me'),
+  logout: async () => {
+    const refreshToken = localStorage.getItem(REFRESH_KEY);
+    try {
+      if (refreshToken) await request<void>('/auth/logout', {
+        method: 'POST', body: JSON.stringify({ refresh_token: refreshToken }),
+      }, false);
+    } finally { saveTokens(null); }
+  },
 };
 
-// ============ CATEGORIES API ============
-
-export interface CategoryResponse {
-  id: string;
-  name: string;
-  color: string;
-  icon: string;
-  description: string | null;
-  link_count: number;
-  created_at: string;
-  updated_at: string;
+export interface ItemFilters {
+  cursor?: string;
+  limit?: number;
+  type?: ItemType;
+  source?: string;
+  category_id?: string;
+  is_favorite?: boolean;
+  is_archived?: boolean;
+  processing_status?: ProcessingStatus;
+  tag?: string[];
 }
 
-export interface CreateCategoryRequest {
-  name: string;
-  color?: string;
-  icon?: string;
-  description?: string;
+function queryString(filters: Record<string, unknown>) {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) value.forEach((entry) => params.append(key, String(entry)));
+    else params.set(key, String(value));
+  });
+  return params.size ? `?${params}` : '';
 }
 
-export interface UpdateCategoryRequest {
-  name?: string;
-  color?: string;
-  icon?: string;
-  description?: string;
+function upload<T>(endpoint: string, form: FormData, onProgress?: (percent: number) => void, retry = true): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}${endpoint}`);
+    if (accessToken) xhr.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.onerror = () => reject(new ApiClientError('Upload failed', 0));
+    xhr.onload = async () => {
+      if (xhr.status === 401 && retry && localStorage.getItem(REFRESH_KEY)) {
+        try { await refreshSession(); resolve(await upload<T>(endpoint, form, onProgress, false)); }
+        catch (error) { reject(error); }
+        return;
+      }
+      type UploadBody = T & { detail?: string; error?: { message?: string; code?: string } };
+      let body: UploadBody | null = null;
+      try {
+        body = xhr.responseText ? JSON.parse(xhr.responseText) as UploadBody : null;
+      } catch {
+        reject(new ApiClientError('Upload returned an invalid response', xhr.status));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && body) resolve(body);
+      else reject(new ApiClientError(body?.error?.message || body?.detail || 'Upload failed', xhr.status, body?.error?.code));
+    };
+    xhr.send(form);
+  });
 }
+
+export const itemsApi = {
+  list: (filters: ItemFilters = {}) => request<ItemPage>(`/items${queryString(filters as Record<string, unknown>)}`),
+  get: (id: string) => request<Item>(`/items/${id}`),
+  stats: () => request<ItemStats>('/items/stats'),
+  create: (data: CreateItemRequest) => request<Item>('/items', { method: 'POST', body: JSON.stringify(data) }),
+  createScreenshot: (data: CreateItemRequest, file: File, onProgress?: (percent: number) => void) => {
+    const form = new FormData();
+    form.set('file', file);
+    if (data.id) form.set('id', data.id);
+    if (data.title) form.set('title', data.title);
+    if (data.description) form.set('description', data.description);
+    if (data.notes) form.set('notes', data.notes);
+    if (data.source) form.set('source', data.source);
+    if (data.category_id) form.set('category_id', data.category_id);
+    if (data.tags?.length) form.set('tags', data.tags.join(','));
+    return upload<Item>('/items/screenshot', form, onProgress);
+  },
+  update: (id: string, data: UpdateItemRequest) => request<Item>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  remove: (id: string) => request<void>(`/items/${id}`, { method: 'DELETE' }),
+  favorite: (id: string, value: boolean) => request<Item>(`/items/${id}/favorite`, { method: value ? 'PUT' : 'DELETE' }),
+  archive: (id: string, value: boolean) => request<Item>(`/items/${id}/archive`, { method: value ? 'PUT' : 'DELETE' }),
+  assetBlob: async (assetId: string) => {
+    const response = await fetch(`${API_URL}/assets/${assetId}/download`, {
+      headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    });
+    if (!response.ok) throw await parseError(response);
+    return response.blob();
+  },
+};
 
 export const categoriesApi = {
-  getAll: () => fetchApi<CategoryResponse[]>('/categories'),
-
-  getById: (id: string) => fetchApi<CategoryResponse>(`/categories/${id}`),
-
-  create: (data: CreateCategoryRequest) =>
-    fetchApi<CategoryResponse>('/categories', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  update: (id: string, data: UpdateCategoryRequest) =>
-    fetchApi<CategoryResponse>(`/categories/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-
-  delete: (id: string) =>
-    fetchApi<void>(`/categories/${id}`, { method: 'DELETE' }),
+  list: () => request<Category[]>('/categories'),
+  create: (data: { name: string; color: string; icon?: string }) => request<Category>('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  remove: (id: string) => request<void>(`/categories/${id}`, { method: 'DELETE' }),
 };
 
-// ============ TAGS API ============
-
-export interface TagResponse {
-  id: string;
-  name: string;
-  color: string;
-  usage_count: number;
-}
-
-export interface CreateTagRequest {
-  name: string;
-  color?: string;
-}
-
 export const tagsApi = {
-  getAll: () => fetchApi<TagResponse[]>('/tags'),
-
-  create: (data: CreateTagRequest) =>
-    fetchApi<TagResponse>('/tags', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    }),
-
-  delete: (id: string) =>
-    fetchApi<void>(`/tags/${id}`, { method: 'DELETE' }),
+  list: () => request<ManagedTag[]>('/tags'),
+  create: (data: { name: string; color?: string }) => request<ManagedTag>('/tags', { method: 'POST', body: JSON.stringify(data) }),
+  remove: (id: string) => request<void>(`/tags/${id}`, { method: 'DELETE' }),
 };

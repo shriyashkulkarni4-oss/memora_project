@@ -1,15 +1,11 @@
 import { create } from 'zustand';
+import { categoriesApi, itemsApi, tagsApi } from '../services/api';
 import { fixtureCategories, fixtureItems, fixtureTags } from '../data/fixtures';
-import type {
-  Category,
-  CreateItemRequest,
-  Item,
-  ItemType,
-  ManagedTag,
-  UpdateItemRequest,
-} from '../types/api';
+import type { Category, CreateItemRequest, Item, ItemType, ManagedTag, UpdateItemRequest } from '../types/api';
 
 export type ViewMode = 'grid' | 'list';
+const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+const message = (error: unknown) => error instanceof Error ? error.message : 'Something went wrong';
 
 interface LibraryState {
   items: Item[];
@@ -19,184 +15,181 @@ interface LibraryState {
   typeFilter: ItemType | 'all';
   viewMode: ViewMode;
   captureOpen: boolean;
+  isLoading: boolean;
+  initialized: boolean;
+  error: string | null;
+  notice: string | null;
+  uploadProgress: number | null;
+  initialize: (force?: boolean) => Promise<void>;
+  clear: () => void;
+  dismissMessage: () => void;
   setQuery: (query: string) => void;
   setTypeFilter: (type: ItemType | 'all') => void;
   setViewMode: (mode: ViewMode) => void;
   setCaptureOpen: (open: boolean) => void;
-  createItem: (data: CreateItemRequest, previewUrl?: string) => Item;
-  updateItem: (id: string, data: UpdateItemRequest) => void;
-  toggleFavorite: (id: string) => void;
-  toggleArchive: (id: string) => void;
-  deleteItem: (id: string) => void;
-  createCategory: (name: string, color: string) => void;
-  deleteCategory: (id: string) => void;
-  deleteTag: (id: string) => void;
+  createItem: (data: CreateItemRequest, file?: File) => Promise<Item>;
+  updateItem: (id: string, data: UpdateItemRequest) => Promise<Item>;
+  toggleFavorite: (id: string) => Promise<void>;
+  toggleArchive: (id: string) => Promise<void>;
+  deleteItem: (id: string) => Promise<void>;
+  createCategory: (name: string, color: string) => Promise<void>;
+  deleteCategory: (id: string) => Promise<void>;
+  deleteTag: (id: string) => Promise<void>;
 }
 
-const now = () => new Date().toISOString();
+async function withPreviews(items: Item[]) {
+  if (demoMode) return items;
+  return Promise.all(items.map(async (item) => {
+    const asset = item.assets[0];
+    if (!asset) return item;
+    try {
+      const blob = await itemsApi.assetBlob(asset.id);
+      return { ...item, metadata: { ...item.metadata, preview_url: URL.createObjectURL(blob) } };
+    } catch {
+      return item;
+    }
+  }));
+}
+
+function keepPreview(updated: Item, current: Item) {
+  const preview = current.metadata?.preview_url;
+  return preview ? { ...updated, metadata: { ...updated.metadata, preview_url: preview } } : updated;
+}
+
+function demoItem(data: CreateItemRequest, file?: File): Item {
+  const createdAt = data.created_at ?? new Date().toISOString();
+  const tags = (data.tags ?? []).map((name) => ({ id: crypto.randomUUID(), name: name.trim().toLowerCase(), color: '#64748b' }));
+  return {
+    id: data.id ?? crypto.randomUUID(), user_id: 'demo-user', type: data.type,
+    url: data.url ?? null, raw_text: data.raw_text ?? null, title: data.title ?? null,
+    description: data.description ?? null, notes: data.notes ?? null,
+    source: data.source ?? (data.type === 'screenshot' ? 'screenshot' : 'manual'),
+    source_domain: data.url ? new URL(data.url).hostname : null, author: null,
+    published_at: null, favicon_url: null, extracted_text: null,
+    language: data.type === 'text' ? 'en' : null, summary: null,
+    metadata: file ? { ...data.metadata, preview_url: URL.createObjectURL(file) } : (data.metadata ?? null),
+    processing_status: data.type === 'text' ? 'ready' : 'pending', processing_error: null,
+    category_id: data.category_id ?? null, tags, assets: [], is_favorite: false,
+    is_archived: false, read_count: 0, last_visited_at: null, revision: 1,
+    deleted_at: null, created_at: createdAt, updated_at: createdAt,
+  };
+}
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
-  items: fixtureItems,
-  categories: fixtureCategories,
-  tags: fixtureTags,
-  query: '',
-  typeFilter: 'all',
-  viewMode: 'grid',
-  captureOpen: false,
+  items: demoMode ? fixtureItems : [],
+  categories: demoMode ? fixtureCategories : [],
+  tags: demoMode ? fixtureTags : [],
+  query: '', typeFilter: 'all', viewMode: 'grid', captureOpen: false,
+  isLoading: false, initialized: demoMode, error: null, notice: null, uploadProgress: null,
+  initialize: async (force = false) => {
+    if (demoMode || (get().initialized && !force)) return;
+    set({ isLoading: true, error: null });
+    try {
+      const [active, archived, categories, tags] = await Promise.all([
+        itemsApi.list({ limit: 100 }), itemsApi.list({ limit: 100, is_archived: true }),
+        categoriesApi.list(), tagsApi.list(),
+      ]);
+      set({
+        items: await withPreviews([...active.items, ...archived.items]),
+        categories, tags, initialized: true, isLoading: false,
+      });
+    } catch (error) {
+      set({ error: message(error), isLoading: false });
+    }
+  },
+  clear: () => set({ items: [], categories: [], tags: [], initialized: false, error: null, notice: null }),
+  dismissMessage: () => set({ error: null, notice: null }),
   setQuery: (query) => set({ query }),
   setTypeFilter: (typeFilter) => set({ typeFilter }),
   setViewMode: (viewMode) => set({ viewMode }),
   setCaptureOpen: (captureOpen) => set({ captureOpen }),
-  createItem: (data, previewUrl) => {
-    const createdAt = data.created_at ?? now();
-    const existingTags = get().tags;
-    const itemTags = (data.tags ?? []).map((name) => {
-      const normalized = name.trim().toLowerCase();
-      const existing = existingTags.find((tag) => tag.name === normalized);
-      if (existing) return existing;
-      return {
-        id: crypto.randomUUID(),
-        name: normalized,
-        color: '#64748b',
-        usage_count: 1,
-      };
-    });
-    const newTags = itemTags.filter(
-      (tag) => !existingTags.some((existing) => existing.id === tag.id),
-    );
-    const url = data.url ?? null;
-    const item: Item = {
-      id: data.id ?? crypto.randomUUID(),
-      user_id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
-      type: data.type,
-      url,
-      raw_text: data.raw_text ?? null,
-      title: data.title ?? null,
-      description: data.description ?? null,
-      notes: data.notes ?? null,
-      source: data.source ?? (data.type === 'screenshot' ? 'screenshot' : 'manual'),
-      source_domain: url ? new URL(url).hostname : null,
-      author: null,
-      published_at: null,
-      favicon_url: null,
-      extracted_text: null,
-      language: data.type === 'text' ? 'en' : null,
-      summary: null,
-      metadata: previewUrl ? { ...data.metadata, preview_url: previewUrl } : (data.metadata ?? null),
-      processing_status: data.type === 'text' ? 'ready' : 'pending',
-      processing_error: null,
-      category_id: data.category_id ?? null,
-      tags: itemTags,
-      assets: [],
-      is_favorite: false,
-      is_archived: false,
-      read_count: 0,
-      last_visited_at: null,
-      revision: 1,
-      deleted_at: null,
-      created_at: createdAt,
-      updated_at: createdAt,
-    };
-    set((state) => ({
-      items: [item, ...state.items],
-      tags: [...state.tags, ...newTags],
-      captureOpen: false,
-    }));
-    return item;
+  createItem: async (data, file) => {
+    try {
+      if (file) set({ uploadProgress: 0 });
+      let item = demoMode ? demoItem(data, file) : data.type === 'screenshot' && file
+        ? await itemsApi.createScreenshot(data, file, (uploadProgress) => set({ uploadProgress })) : await itemsApi.create(data);
+      [item] = await withPreviews([item]);
+      set((state) => ({ items: [item, ...state.items], captureOpen: false, notice: 'Item saved', error: null, uploadProgress: null }));
+      if (!demoMode) {
+        const [tags, categories] = await Promise.all([tagsApi.list(), categoriesApi.list()]);
+        set({ tags, categories });
+      }
+      return item;
+    } catch (error) {
+      set({ error: message(error), uploadProgress: null });
+      throw error;
+    }
   },
-  updateItem: (id, data) => {
-    const tagNames = data.tags;
-    set((state) => ({
-      items: state.items.map((item) => {
-        if (item.id !== id) return item;
-        const resolvedTags = tagNames?.map((name) => {
-          const normalized = name.trim().toLowerCase();
-          return (
-            state.tags.find((tag) => tag.name === normalized) ?? {
-              id: crypto.randomUUID(),
-              name: normalized,
-              color: '#64748b',
-            }
-          );
-        });
-        return {
-          ...item,
-          tags: resolvedTags ?? item.tags,
-          url: data.url === undefined ? item.url : data.url,
-          raw_text: data.raw_text === undefined ? item.raw_text : data.raw_text,
-          title: data.title === undefined ? item.title : data.title,
-          description:
-            data.description === undefined ? item.description : data.description,
-          notes: data.notes === undefined ? item.notes : data.notes,
-          category_id:
-            data.category_id === undefined ? item.category_id : data.category_id,
-          source: data.source === undefined ? item.source : data.source,
-          is_favorite:
-            data.is_favorite === undefined ? item.is_favorite : data.is_favorite,
-          is_archived:
-            data.is_archived === undefined ? item.is_archived : data.is_archived,
-          revision: item.revision + 1,
-          updated_at: now(),
-        };
-      }),
-    }));
+  updateItem: async (id, data) => {
+    try {
+      const current = get().items.find((item) => item.id === id);
+      if (!current) throw new Error('Item not found');
+      let updated = demoMode ? {
+        ...current, ...data, revision: current.revision + 1, updated_at: new Date().toISOString(),
+        tags: data.tags ? data.tags.map((name) => ({ id: crypto.randomUUID(), name, color: '#64748b' })) : current.tags,
+      } as Item : await itemsApi.update(id, data);
+      updated = keepPreview(updated, current);
+      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: 'Changes saved', error: null }));
+      return updated;
+    } catch (error) {
+      set({ error: message(error) });
+      throw error;
+    }
   },
-  toggleFavorite: (id) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              is_favorite: !item.is_favorite,
-              revision: item.revision + 1,
-              updated_at: now(),
-            }
-          : item,
-      ),
-    })),
-  toggleArchive: (id) =>
-    set((state) => ({
-      items: state.items.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              is_archived: !item.is_archived,
-              revision: item.revision + 1,
-              updated_at: now(),
-            }
-          : item,
-      ),
-    })),
-  deleteItem: (id) => set((state) => ({ items: state.items.filter((item) => item.id !== id) })),
-  createCategory: (name, color) =>
-    set((state) => ({
-      categories: [
-        ...state.categories,
-        {
-          id: crypto.randomUUID(),
-          name: name.trim(),
-          color,
-          icon: 'folder',
-          description: null,
-          item_count: 0,
-          created_at: now(),
-          updated_at: now(),
-        },
-      ],
-    })),
-  deleteCategory: (id) =>
-    set((state) => ({
-      categories: state.categories.filter((category) => category.id !== id),
-      items: state.items.map((item) =>
-        item.category_id === id ? { ...item, category_id: null } : item,
-      ),
-    })),
-  deleteTag: (id) =>
-    set((state) => ({
-      tags: state.tags.filter((tag) => tag.id !== id),
-      items: state.items.map((item) => ({
-        ...item,
-        tags: item.tags.filter((tag) => tag.id !== id),
-      })),
-    })),
+  toggleFavorite: async (id) => {
+    const before = get().items;
+    const current = before.find((item) => item.id === id);
+    if (!current) return;
+    const value = !current.is_favorite;
+    set({ items: before.map((item) => item.id === id ? { ...item, is_favorite: value } : item), error: null });
+    if (demoMode) return;
+    try {
+      const updated = keepPreview(await itemsApi.favorite(id, value), current);
+      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item) }));
+    } catch (error) { set({ items: before, error: message(error) }); }
+  },
+  toggleArchive: async (id) => {
+    const before = get().items;
+    const current = before.find((item) => item.id === id);
+    if (!current) return;
+    const value = !current.is_archived;
+    set({ items: before.map((item) => item.id === id ? { ...item, is_archived: value } : item), error: null });
+    if (demoMode) return;
+    try {
+      const updated = keepPreview(await itemsApi.archive(id, value), current);
+      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: value ? 'Item archived' : 'Item restored' }));
+    } catch (error) { set({ items: before, error: message(error) }); }
+  },
+  deleteItem: async (id) => {
+    const before = get().items;
+    set({ items: before.filter((item) => item.id !== id), error: null });
+    if (demoMode) return;
+    try { await itemsApi.remove(id); set({ notice: 'Item deleted' }); }
+    catch (error) { set({ items: before, error: message(error) }); throw error; }
+  },
+  createCategory: async (name, color) => {
+    try {
+      const category = demoMode ? {
+        id: crypto.randomUUID(), name: name.trim(), color, icon: 'folder', description: null,
+        item_count: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      } : await categoriesApi.create({ name: name.trim(), color, icon: 'folder' });
+      set((state) => ({ categories: [...state.categories, category], notice: 'Category created', error: null }));
+    } catch (error) { set({ error: message(error) }); throw error; }
+  },
+  deleteCategory: async (id) => {
+    const before = get().categories;
+    const beforeItems = get().items;
+    set((state) => ({ categories: before.filter((item) => item.id !== id), items: state.items.map((item) => item.category_id === id ? { ...item, category_id: null } : item) }));
+    if (demoMode) return;
+    try { await categoriesApi.remove(id); set({ notice: 'Category deleted' }); }
+    catch (error) { set({ categories: before, items: beforeItems, error: message(error) }); }
+  },
+  deleteTag: async (id) => {
+    const before = get().tags;
+    const beforeItems = get().items;
+    set((state) => ({ tags: before.filter((tag) => tag.id !== id), items: state.items.map((item) => ({ ...item, tags: item.tags.filter((tag) => tag.id !== id) })) }));
+    if (demoMode) return;
+    try { await tagsApi.remove(id); set({ notice: 'Tag deleted' }); }
+    catch (error) { set({ tags: before, items: beforeItems, error: message(error) }); }
+  },
 }));

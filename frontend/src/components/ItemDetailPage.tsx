@@ -29,6 +29,11 @@ export default function ItemDetailPage() {
   const [title, setTitle] = useState(item?.title ?? '');
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [categoryId, setCategoryId] = useState(item?.category_id ?? '');
+  const [busy, setBusy] = useState(false);
+
+  if (store.isLoading && !store.initialized) {
+    return <div className="page"><section className="empty-state" aria-label="Loading item"><span className="brand-loader" /></section></div>;
+  }
 
   if (!item) {
     return (
@@ -43,15 +48,20 @@ export default function ItemDetailPage() {
   const category = store.categories.find((record) => record.id === item.category_id);
   const previewUrl = item.metadata?.preview_url as string | undefined;
 
-  const save = (event: FormEvent) => {
+  const save = async (event: FormEvent) => {
     event.preventDefault();
-    store.updateItem(item.id, {
-      expected_revision: item.revision,
-      title: title || null,
-      notes: notes || null,
-      category_id: categoryId || null,
-    });
-    setEditing(false);
+    setBusy(true);
+    try {
+      await store.updateItem(item.id, {
+        expected_revision: item.revision,
+        title: title || null,
+        notes: notes || null,
+        category_id: categoryId || null,
+      });
+      setEditing(false);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -150,10 +160,14 @@ export default function ItemDetailPage() {
             <button
               type="button"
               className="danger"
-              onClick={() => {
+              onClick={async () => {
                 if (window.confirm('Delete this item?')) {
-                  store.deleteItem(item.id);
-                  navigate('/');
+                  try {
+                    await store.deleteItem(item.id);
+                    navigate('/');
+                  } catch {
+                    // The global message keeps the failure visible and the item is restored.
+                  }
                 }
               }}
             >
@@ -183,8 +197,8 @@ export default function ItemDetailPage() {
               <label className="field"><span>Category</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">None</option>{store.categories.map((record) => <option key={record.id} value={record.id}>{record.name}</option>)}</select></label>
               <label className="field"><span>Notes</span><textarea rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
               <footer className="dialog-actions">
-                <button className="button secondary" type="button" onClick={() => setEditing(false)}>Cancel</button>
-                <button className="button primary" type="submit"><Check size={17} /> Save</button>
+                <button className="button secondary" type="button" disabled={busy} onClick={() => setEditing(false)}>Cancel</button>
+                <button className="button primary" type="submit" disabled={busy}><Check size={17} /> {busy ? 'Saving' : 'Save'}</button>
               </footer>
             </form>
           </section>

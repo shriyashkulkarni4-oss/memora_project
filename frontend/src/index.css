@@ -372,9 +372,16 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
 .auth-switch { margin: 4px 0 0; color: var(--muted); font-size: 12px; text-align: center; }
 .auth-switch a { color: var(--teal); font-weight: 700; }
 .form-error { display: flex; align-items: center; gap: 8px; padding: 10px; border: 1px solid #f0c7c3; border-radius: 6px; color: var(--danger); background: #fff8f7; font-size: 12px; }
+.upload-progress { position: relative; height: 28px; overflow: hidden; border: 1px solid #b9d9d3; border-radius: 5px; background: #edf6f4; }
+.upload-progress > span { display: block; height: 100%; background: #b9e2dc; transition: width .15s ease; }
+.upload-progress small { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #145b50; font-size: 10px; font-weight: 700; }
 .loading-screen { display: flex; min-height: 100vh; align-items: center; justify-content: center; }
 .brand-loader { width: 30px; height: 30px; border: 3px solid #a9d6d0; border-top-color: var(--teal); border-radius: 50%; animation: spin .8s linear infinite; }
 .mobile-header, .mobile-nav { display: none; }
+.app-message { position: fixed; z-index: 80; top: 18px; right: 20px; display: flex; max-width: min(420px, calc(100vw - 40px)); min-height: 42px; align-items: center; gap: 9px; padding: 9px 10px 9px 13px; border: 1px solid #9bcfc4; border-radius: 7px; color: #145b50; background: #f0fbf8; box-shadow: 0 8px 24px rgba(23, 48, 43, .12); font-size: 12px; }
+.app-message.error { color: #a72b20; border-color: #e2aaa4; background: #fff6f5; }
+.app-message span { flex: 1; }
+.app-message button { display: inline-flex; width: 26px; height: 26px; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 4px; color: inherit; background: transparent; }
 
 @media (max-width: 1100px) {
   .items-layout.grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

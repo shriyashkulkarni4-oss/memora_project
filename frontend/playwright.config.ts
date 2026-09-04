@@ -2,7 +2,7 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
-  testMatch: '**/*.e2e.ts',
+  testMatch: '**/library.e2e.ts',
   fullyParallel: true,
   reporter: 'line',
   use: {

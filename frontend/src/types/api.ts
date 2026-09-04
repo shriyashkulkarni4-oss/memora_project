@@ -102,3 +102,37 @@ export interface ItemPage {
   has_more: boolean;
   limit: number;
 }
+
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  description: string | null;
+  item_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagedTag extends ItemTag {
+  usage_count: number;
+}
+
+export interface ItemStats {
+  total_items: number;
+  active_items: number;
+  favorite_items: number;
+  archived_items: number;
+  pending_processing: number;
+  failed_processing: number;
+  by_type: Record<ItemType, number>;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}

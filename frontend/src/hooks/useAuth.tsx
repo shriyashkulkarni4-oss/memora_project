@@ -17,6 +17,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    if (import.meta.env.VITE_DEMO_MODE === 'true') {
+      setUser({
+        id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
+        email: 'mahesh@example.com',
+        name: 'Mahesh',
+        is_active: true,
+        created_at: '2026-08-01T00:00:00Z',
+      })
+      setIsLoading(false)
+      return
+    }
     // Check if user is already logged in
     const token = getAccessToken()
     if (token) {

@@ -22,7 +22,7 @@ content processing, and production release work follow on the same contracts.
 | 0 | Restore a green development baseline | DONE | `phase-0-baseline` |
 | 1 | Canonical product model and API contract | DONE | `phase-1-item-contract` |
 | 2 | Core backend implementation | DONE | `phase-2-core-backend` |
-| 3 | Production web UI | TODO | Pending |
+| 3 | Production web UI | DONE | `phase-3-web-ui` |
 | 4 | End-to-end UI/backend integration | TODO | Pending |
 | 5 | Retrieval, privacy, and data lifecycle | TODO | Pending |
 | 6 | Offline sync and mobile applications | TODO | Pending |
@@ -106,14 +106,14 @@ Acceptance gate:
 
 ## Phase 3: Production Web UI
 
-Status: TODO
+Status: DONE
 
-- [ ] Establish the responsive app shell and accessible design primitives.
-- [ ] Build authentication, library, capture, search, detail, favorites, archive,
+- [x] Establish the responsive app shell and accessible design primitives.
+- [x] Build authentication, library, capture, search, detail, favorites, archive,
       categories/tags, and settings views.
-- [ ] Build URL, screenshot, and text capture modes with optional metadata.
-- [ ] Add complete loading, empty, validation, error, and processing states.
-- [ ] Verify mobile and desktop layouts visually.
+- [x] Build URL, screenshot, and text capture modes with optional metadata.
+- [x] Add complete loading, empty, validation, error, and processing states.
+- [x] Verify mobile and desktop layouts visually.
 
 Acceptance gate:
 
@@ -217,3 +217,6 @@ Acceptance gate:
 | 2026-09-04 | 2 | PostgreSQL migrations and text capture smoke test | Passed |
 | 2026-09-04 | 2 | MinIO screenshot upload and private download smoke test | Passed |
 | 2026-09-04 | 2 | Full Compose image build | Docker Hub metadata request timed out; dependency services verified locally |
+| 2026-09-04 | 3 | Vitest interaction tests and axe accessibility scan (3 tests) | Passed |
+| 2026-09-04 | 3 | TypeScript production build and ESLint | Passed |
+| 2026-09-04 | 3 | Playwright capture workflow at 1440x900 and iPhone 13 viewports | Passed |

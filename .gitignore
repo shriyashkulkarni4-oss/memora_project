@@ -10,6 +10,8 @@ bazel-out/
 node_modules/
 npm-debug.log
 yarn-error.log
+playwright-report/
+test-results/
 
 # Python
 __pycache__/

@@ -396,8 +396,11 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
   .page-header { align-items: center; margin-bottom: 20px; }
   .page-header h1, .detail-header h1 { font-size: 24px; }
   .page-header .button { display: none; }
-  .library-summary { overflow-x: auto; }
-  .library-summary > span { flex: 0 0 auto; padding-inline: 14px; }
+  .library-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .library-summary > span { min-width: 0; padding: 10px 8px; border-bottom: 1px solid var(--line); border-right: 1px solid var(--line); white-space: nowrap; }
+  .library-summary > span:first-child { padding-left: 8px; }
+  .library-summary > span:nth-child(2n) { border-right: 0; }
+  .library-summary > span:nth-last-child(-n + 2) { border-bottom: 0; }
   .control-row { align-items: stretch; flex-direction: column; gap: 10px; }
   .segmented { width: 100%; }
   .segmented button { min-width: 0; flex: 1; padding-inline: 5px; }

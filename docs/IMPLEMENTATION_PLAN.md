@@ -21,7 +21,7 @@ content processing, and production release work follow on the same contracts.
 |---|---|---|---|
 | 0 | Restore a green development baseline | DONE | `phase-0-baseline` |
 | 1 | Canonical product model and API contract | DONE | `phase-1-item-contract` |
-| 2 | Core backend implementation | TODO | Pending |
+| 2 | Core backend implementation | DONE | `phase-2-core-backend` |
 | 3 | Production web UI | TODO | Pending |
 | 4 | End-to-end UI/backend integration | TODO | Pending |
 | 5 | Retrieval, privacy, and data lifecycle | TODO | Pending |
@@ -88,15 +88,15 @@ Acceptance gate:
 
 ## Phase 2: Core Backend
 
-Status: TODO
+Status: DONE
 
-- [ ] Harden registration, login, refresh, logout, and current-user flows.
-- [ ] Implement item CRUD, details, favorites, archive, and soft deletion.
-- [ ] Implement secure screenshot upload and private asset retrieval.
-- [ ] Implement user-owned category and tag CRUD.
-- [ ] Add cursor pagination and type/source/date/tag filters.
-- [ ] Add stats and processing-status endpoints.
-- [ ] Enforce ownership on every read and mutation.
+- [x] Harden registration, login, refresh, logout, and current-user flows.
+- [x] Implement item CRUD, details, favorites, archive, and soft deletion.
+- [x] Implement secure screenshot upload and private asset retrieval.
+- [x] Implement user-owned category and tag CRUD.
+- [x] Add cursor pagination and type/source/date/tag filters.
+- [x] Add stats and processing-status endpoints.
+- [x] Enforce ownership on every read and mutation.
 
 Acceptance gate:
 
@@ -213,3 +213,7 @@ Acceptance gate:
 | 2026-09-03 | 0 | Docker runtime smoke test | Host Docker store corrupted after disk exhaustion; runtime test deferred |
 | 2026-09-03 | 1 | Alembic clean database upgrade to head and downgrade to base | Passed on SQLite |
 | 2026-09-03 | 1 | Item variant, OpenAPI, error envelope, ownership, and constraint tests | Passed |
+| 2026-09-04 | 2 | Core API integration suite (11 total backend tests) | Passed |
+| 2026-09-04 | 2 | PostgreSQL migrations and text capture smoke test | Passed |
+| 2026-09-04 | 2 | MinIO screenshot upload and private download smoke test | Passed |
+| 2026-09-04 | 2 | Full Compose image build | Docker Hub metadata request timed out; dependency services verified locally |

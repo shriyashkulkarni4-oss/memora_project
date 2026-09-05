@@ -1,0 +1,104 @@
+export type ItemType = "link" | "screenshot" | "text";
+export type ProcessingStatus = "pending" | "processing" | "ready" | "failed" | "skipped";
+
+export interface TagReference {
+  id: string;
+  name: string;
+  color: string;
+}
+
+export interface Asset {
+  id: string;
+  mime_type: string;
+  size_bytes: number;
+  original_filename: string | null;
+  width: number | null;
+  height: number | null;
+  created_at: string;
+}
+
+export interface Item {
+  id: string;
+  user_id: string;
+  type: ItemType;
+  url: string | null;
+  raw_text: string | null;
+  title: string | null;
+  description: string | null;
+  notes: string | null;
+  source: string | null;
+  source_domain: string | null;
+  author: string | null;
+  published_at: string | null;
+  favicon_url: string | null;
+  extracted_text: string | null;
+  language: string | null;
+  summary: string | null;
+  metadata: Record<string, unknown> | null;
+  processing_status: ProcessingStatus;
+  processing_error: string | null;
+  category_id: string | null;
+  tags: TagReference[];
+  assets: Asset[];
+  is_favorite: boolean;
+  is_archived: boolean;
+  read_count: number;
+  last_visited_at: string | null;
+  revision: number;
+  deleted_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ItemCreate {
+  id: string;
+  type: ItemType;
+  url?: string;
+  raw_text?: string;
+  title?: string;
+  notes?: string;
+  tags?: string[];
+  metadata?: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface ItemUpdate {
+  expected_revision?: number;
+  url?: string;
+  raw_text?: string;
+  title?: string;
+  notes?: string;
+  tags?: string[];
+  is_favorite?: boolean;
+  is_archived?: boolean;
+}
+
+export type MutationOperation = "create" | "update" | "delete" | "screenshot";
+
+export interface PendingMutation {
+  sequence: number;
+  itemId: string;
+  operation: MutationOperation;
+  payload: ItemCreate | ItemUpdate;
+  localUri?: string;
+  attempts: number;
+}
+
+export interface ChangePage {
+  items: Item[];
+  next_cursor: string | null;
+  has_more: boolean;
+  server_time: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string | null;
+}
+
+export interface Tokens {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+}

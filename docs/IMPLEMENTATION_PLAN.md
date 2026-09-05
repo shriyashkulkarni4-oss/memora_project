@@ -1,6 +1,6 @@
 # Memoryhive Implementation Plan
 
-Last updated: 2026-09-03
+Last updated: 2026-09-05
 
 ## Objective
 
@@ -25,7 +25,7 @@ content processing, and production release work follow on the same contracts.
 | 3 | Production web UI | DONE | `phase-3-web-ui` |
 | 4 | End-to-end UI/backend integration | DONE | `phase-4-web-integration` |
 | 5 | Retrieval, privacy, and data lifecycle | DONE | `phase-5-retrieval-privacy` |
-| 6 | Offline sync and mobile applications | TODO | Pending |
+| 6 | Offline sync and mobile applications | DONE | `phase-6-offline-mobile` |
 | 7 | OCR and content-processing pipeline | TODO | Pending |
 | 8 | Production release readiness | TODO | Pending |
 
@@ -155,14 +155,14 @@ Acceptance gate:
 
 ## Phase 6: Offline Sync And Mobile
 
-Status: TODO
+Status: DONE
 
-- [ ] Implement a local item database and offline search.
-- [ ] Implement queued mutations, tombstones, revisions, and deterministic
+- [x] Implement a local item database and offline search.
+- [x] Implement queued mutations, tombstones, revisions, and deterministic
       conflict handling.
-- [ ] Build the Expo iOS/Android client against shared contracts.
-- [ ] Add native share-sheet capture for links, text, and screenshots.
-- [ ] Verify reconnect and multi-device sync behavior.
+- [x] Build the Expo iOS/Android client against shared contracts.
+- [x] Add native share-sheet capture for links, text, and screenshots.
+- [x] Verify reconnect and multi-device sync behavior.
 
 Acceptance gate:
 
@@ -228,3 +228,8 @@ Acceptance gate:
 | 2026-09-04 | 5 | Search, URL deduplication, export, and deletion suite (13 backend tests total) | Passed |
 | 2026-09-04 | 5 | Browser ZIP export, server search, and password-confirmed account deletion | Passed |
 | 2026-09-04 | 5 | Lifecycle audit completed with no pending MinIO deletion jobs | Passed |
+| 2026-09-05 | 6 | Backend change-feed/tombstone suite (14 backend tests total) | Passed |
+| 2026-09-05 | 6 | Mobile TypeScript, ESLint, Vitest offline-sync suite, and Expo Doctor | Passed |
+| 2026-09-05 | 6 | Expo static bundle and native share-intent configuration validation | Passed |
+| 2026-09-05 | 6 | Live offline capture/search followed by reconnect sync to PostgreSQL | Passed |
+| 2026-09-05 | 6 | Mobile UI at 1440x900 and 390x844 browser viewports | Passed |

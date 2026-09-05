@@ -142,6 +142,13 @@ class ItemListResponse(BaseModel):
     limit: int
 
 
+class ItemChangesResponse(BaseModel):
+    items: list[ItemResponse]
+    next_cursor: str | None = None
+    has_more: bool
+    server_time: datetime
+
+
 class ItemMutationResponse(BaseModel):
     id: str
     revision: int

@@ -112,3 +112,38 @@ async def test_portable_export_and_account_deletion(
         json={"email": "privacy@example.com", "password": PASSWORD},
     )
     assert login.status_code == 401
+
+
+async def test_change_feed_includes_tombstones_and_stable_pages(
+    api_client: tuple[AsyncClient, FakeStorage],
+) -> None:
+    client, _storage = api_client
+    _user, headers = await register_and_login(client, "sync@example.com")
+    _other, other_headers = await register_and_login(client, "sync-other@example.com")
+    records = []
+    for title in ("First offline item", "Second offline item"):
+        response = await client.post(
+            "/api/v1/items",
+            json={"type": "text", "title": title, "raw_text": title},
+            headers=headers,
+        )
+        records.append(response.json())
+    await client.delete(f"/api/v1/items/{records[0]['id']}", headers=headers)
+
+    first = await client.get(
+        "/api/v1/items/changes", params={"limit": 1}, headers=headers
+    )
+    assert first.status_code == 200
+    assert first.json()["has_more"] is True
+    second = await client.get(
+        "/api/v1/items/changes",
+        params={"limit": 1, "cursor": first.json()["next_cursor"]},
+        headers=headers,
+    )
+    changes = first.json()["items"] + second.json()["items"]
+    assert {item["id"] for item in changes} == {item["id"] for item in records}
+    tombstone = next(item for item in changes if item["id"] == records[0]["id"])
+    assert tombstone["deleted_at"] is not None
+    assert (await client.get("/api/v1/items/changes", headers=other_headers)).json()[
+        "items"
+    ] == []

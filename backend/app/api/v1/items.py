@@ -27,6 +27,7 @@ from app.core.deps import CurrentUser, DbSession
 from app.models import Asset, Category, Item, ItemType, ProcessingStatus, Tag
 from app.schemas.common import ErrorResponse
 from app.schemas.item import (
+    ItemChangesResponse,
     ItemCreate,
     ItemListResponse,
     ItemResponse,
@@ -63,6 +64,11 @@ def _decode_cursor(cursor: str) -> tuple[datetime, str]:
         return datetime.fromisoformat(created_at), item_id
     except (UnicodeDecodeError, ValueError) as exc:
         raise HTTPException(status_code=400, detail="Invalid cursor") from exc
+
+
+def _encode_change_cursor(item: Item) -> str:
+    value = f"{item.updated_at.isoformat()}|{item.id}"
+    return base64.urlsafe_b64encode(value.encode()).decode().rstrip("=")
 
 
 def _detected_image_type(content: bytes) -> str | None:
@@ -358,6 +364,45 @@ async def get_item_stats(current_user: CurrentUser, db: DbSession) -> ItemStats:
             Item.processing_status == ProcessingStatus.FAILED
         ),
         by_type=by_type,
+    )
+
+
+@router.get("/changes", response_model=ItemChangesResponse, responses=ERROR_RESPONSES)
+async def list_item_changes(
+    current_user: CurrentUser,
+    db: DbSession,
+    since: datetime | None = None,
+    cursor: str | None = None,
+    limit: int = Query(default=100, ge=1, le=500),
+) -> ItemChangesResponse:
+    """Return active records and tombstones in stable update order."""
+    server_time = datetime.now(timezone.utc)
+    query = (
+        select(Item)
+        .options(selectinload(Item.tags), selectinload(Item.assets))
+        .where(Item.user_id == current_user.id, Item.updated_at <= server_time)
+    )
+    if cursor:
+        cursor_time, cursor_id = _decode_cursor(cursor)
+        query = query.where(
+            or_(
+                Item.updated_at > cursor_time,
+                and_(Item.updated_at == cursor_time, Item.id > cursor_id),
+            )
+        )
+    elif since:
+        query = query.where(Item.updated_at > since)
+    result = await db.execute(
+        query.order_by(Item.updated_at.asc(), Item.id.asc()).limit(limit + 1)
+    )
+    records = list(result.scalars().unique())
+    has_more = len(records) > limit
+    items = records[:limit]
+    return ItemChangesResponse(
+        items=[_response(item) for item in items],
+        next_cursor=_encode_change_cursor(items[-1]) if has_more else None,
+        has_more=has_more,
+        server_time=server_time,
     )
 
 

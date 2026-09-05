@@ -6,6 +6,12 @@ from typing import Literal
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+DEVELOPMENT_CORS_ORIGIN_REGEX = (
+    r"^https?://(?:localhost|127\.0\.0\.1|10(?:\.\d{1,3}){3}|"
+    r"192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])"
+    r"(?:\.\d{1,3}){2})(?::\d{1,5})?$"
+)
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
@@ -65,7 +71,8 @@ class Settings(BaseSettings):
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
-    allowed_hosts: list[str] = ["localhost", "127.0.0.1", "testserver", "test"]
+    cors_origin_regex: str | None = None
+    allowed_hosts: list[str] = ["*"]
 
     # File Upload Limits
     max_upload_size_mb: int = 10
@@ -90,6 +97,8 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_production_security(self) -> "Settings":
+        if self.is_development and self.cors_origin_regex is None:
+            self.cors_origin_regex = DEVELOPMENT_CORS_ORIGIN_REGEX
         if not self.is_production:
             return self
         errors: list[str] = []
@@ -116,6 +125,8 @@ class Settings(BaseSettings):
             "localhost" in value for value in self.cors_origins
         ):
             errors.append("CORS_ORIGINS must contain production origins")
+        if self.cors_origin_regex:
+            errors.append("CORS_ORIGIN_REGEX must be disabled in production")
         if not self.allowed_hosts or any(
             value in {"*", "localhost"} for value in self.allowed_hosts
         ):

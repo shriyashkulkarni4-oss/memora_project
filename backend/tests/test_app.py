@@ -32,6 +32,39 @@ def test_metrics_endpoint_exposes_request_metrics() -> None:
     assert "memoryhive_http_requests_total" in response.text
 
 
+def test_development_cors_allows_expo_and_private_network_origins() -> None:
+    with TestClient(app) as client:
+        expo = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": "http://localhost:8083",
+                "Access-Control-Request-Method": "POST",
+                "Access-Control-Request-Headers": "content-type",
+            },
+        )
+        lan = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Host": "192.168.1.24:8000",
+                "Origin": "http://192.168.1.24:8083",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+        public = client.options(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": "https://malicious.example.com",
+                "Access-Control-Request-Method": "POST",
+            },
+        )
+
+    assert expo.status_code == 200
+    assert expo.headers["access-control-allow-origin"] == "http://localhost:8083"
+    assert lan.status_code == 200
+    assert lan.headers["access-control-allow-origin"] == "http://192.168.1.24:8083"
+    assert public.status_code == 400
+
+
 def test_production_settings_reject_development_secrets() -> None:
     with pytest.raises(ValidationError, match="APP_DEBUG must be false"):
         Settings(environment="production")

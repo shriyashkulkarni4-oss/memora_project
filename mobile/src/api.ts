@@ -1,5 +1,7 @@
 import Constants from "expo-constants";
+import { Platform } from "react-native";
 
+import { resolveApiUrl } from "./api-url";
 import { ApiError, type SyncApi } from "./sync";
 import {
   clearSession,
@@ -9,11 +11,18 @@ import {
 } from "./session";
 import type { ChangePage, Item, Tokens, User } from "./types";
 
-const configuredUrl =
+export const API_URL = resolveApiUrl(
   process.env.EXPO_PUBLIC_API_URL ??
-  (Constants.expoConfig?.extra?.apiUrl as string | undefined) ??
-  "http://localhost:8000/api/v1";
-export const API_URL = configuredUrl.replace(/\/$/, "");
+    (Constants.expoConfig?.extra?.apiUrl as string | undefined),
+  {
+    platform: Platform.OS,
+    webHostname:
+      Platform.OS === "web" && typeof window !== "undefined"
+        ? window.location.hostname
+        : undefined,
+    expoHostUri: Constants.expoConfig?.hostUri,
+  },
+);
 let refreshPromise: Promise<void> | undefined;
 
 async function responseError(response: Response) {
@@ -51,7 +60,13 @@ async function request<T>(path: string, options: RequestInit = {}, retry = true)
   if (!(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
   const token = currentAccessToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { ...options, headers });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Network request failed";
+    throw new ApiError(`Cannot reach Memoryhive API at ${API_URL}. ${message}`, 0);
+  }
   if (response.status === 401 && retry && (await currentRefreshToken())) {
     await refresh();
     return request(path, options, false);

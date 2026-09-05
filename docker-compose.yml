@@ -130,7 +130,8 @@ services:
       dockerfile: Dockerfile
       target: development
     environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000/api/v1}
+      VITE_API_URL: ${VITE_API_URL:-/api/v1}
+      VITE_PROXY_TARGET: http://backend:8000
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
     depends_on:

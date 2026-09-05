@@ -213,10 +213,11 @@ async def test_complete_item_workflow_and_ownership(
     download = await client.get(
         f"/api/v1/assets/{asset_id}/download",
         headers=owner_headers,
-        follow_redirects=False,
     )
-    assert download.status_code == 307
-    assert download.headers["location"].startswith("https://assets.example.test/")
+    assert download.status_code == 200
+    assert download.headers["content-type"] == "image/png"
+    assert download.headers["cache-control"] == "private, max-age=300"
+    assert download.content == PNG_1X1
     denied_download = await client.get(
         f"/api/v1/assets/{asset_id}/download", headers=other_headers
     )

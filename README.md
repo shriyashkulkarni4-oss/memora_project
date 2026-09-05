@@ -91,7 +91,7 @@ Run the frontend in another terminal:
 ```bash
 cd frontend
 npm ci
-VITE_API_URL=http://localhost:8000/api/v1 npm run dev -- --host 0.0.0.0 --port 3000
+npm run dev -- --host 0.0.0.0 --port 3000
 ```
 
 ## Production images
@@ -135,9 +135,10 @@ npm test
 npx expo start
 ```
 
-Set `EXPO_PUBLIC_API_URL` to a device-reachable `/api/v1` URL. Native release
-profiles are defined in `mobile/eas.json`; store preparation and physical-device
-checks are tracked in [the release checklist](docs/RELEASE_CHECKLIST.md).
+The development client derives the API host from the web or Expo host and uses
+port `8000`. Set `EXPO_PUBLIC_API_URL` only to override that default. Native
+release profiles are defined in `mobile/eas.json`; store preparation and
+physical-device checks are tracked in the release checklist.
 
 ## Configuration
 
@@ -155,7 +156,8 @@ checks are tracked in [the release checklist](docs/RELEASE_CHECKLIST.md).
 | `REFRESH_TOKEN_EXPIRE_DAYS` | Backend | Refresh-token lifetime |
 | `ENCRYPTION_KEY` | Backend | Application encryption key |
 | `CORS_ORIGINS` | Backend | JSON array of allowed browser origins |
-| `VITE_API_URL` | Frontend | Browser-reachable API v1 base URL |
+| `VITE_API_URL` | Frontend | API v1 base URL; defaults to same-origin `/api/v1` in development |
+| `VITE_PROXY_TARGET` | Frontend dev server | Backend target used by Vite's same-origin API proxy |
 | `REDIS_URL` | Backend | Shared production rate-limit store |
 | `ALLOWED_HOSTS` | Backend | JSON array of accepted HTTP hostnames |
 | `EXPO_PUBLIC_API_URL` | Mobile | Device-reachable API v1 base URL |

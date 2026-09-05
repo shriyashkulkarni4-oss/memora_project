@@ -1,0 +1,24 @@
+{
+	email {$ACME_EMAIL}
+	admin off
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	reverse_proxy frontend:80 {
+		health_uri /
+		health_interval 30s
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 65s
+		}
+	}
+	log {
+		output stdout
+		format json
+	}
+}

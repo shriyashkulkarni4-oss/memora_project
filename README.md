@@ -1,6 +1,8 @@
 # Memoryhive
 
-Memoryhive is a mobile-first personal library for capturing links, screenshots, and text. This repository contains the React web client and FastAPI API, backed by PostgreSQL and MinIO.
+Memoryhive is an offline-first personal library for capturing, processing, and
+finding links, screenshots, and text. The repository contains a React web app,
+an Expo iOS/Android app, a FastAPI API and worker, PostgreSQL, MinIO, and Redis.
 
 ## Service contract
 
@@ -14,6 +16,7 @@ Memoryhive is a mobile-first personal library for capturing links, screenshots, 
 | MinIO API | http://localhost:9000 | S3-compatible object storage |
 | MinIO console | http://localhost:9001 | Object storage administration |
 | PostgreSQL | localhost:5432 | Application database |
+| Mobile web preview | http://localhost:8083 | Expo development preview |
 
 Host ports can be changed in `.env`. Internal container ports and service names remain stable.
 
@@ -46,11 +49,11 @@ Compose builds the `development` Docker stages. The backend uses Uvicorn reload,
 
 ## Local development
 
-Start PostgreSQL and MinIO in Docker:
+Start PostgreSQL, MinIO, and Redis-backed application services in Docker:
 
 ```bash
 cp .env.example .env
-docker compose up --detach db minio
+docker compose up --detach db minio redis
 ```
 
 Run the backend:
@@ -89,7 +92,39 @@ docker build --target production --build-arg VITE_API_URL=/api/v1 --tag memoryhi
 
 The frontend production image serves static files on container port `80`. Its Nginx configuration proxies `/api/v1/*` to the Compose/Docker network service named `backend` on port `8000`. Deployments that run the services on different networks must update that upstream or provide an equivalent ingress route.
 
-Production deployments must provide unique PostgreSQL, MinIO, JWT, and encryption secrets. The values in `.env.example` are for local development only.
+Production deployments must provide unique PostgreSQL, MinIO, JWT, and
+encryption secrets. Production configuration fails closed when development
+credentials, localhost origins, or missing Redis are detected.
+
+## Production deployment
+
+```bash
+cp .env.production.example .env.production
+chmod 600 .env.production
+# Set real secrets, domain, ACME email, and immutable image tags.
+docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
+docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+BASE_URL=https://memoryhive.example.com ops/smoke.sh
+```
+
+Caddy provides TLS and secure edge headers. The API adds request IDs,
+structured JSON logs, Prometheus metrics, distributed rate limiting, readiness,
+and security headers. See [the operations runbook](docs/OPERATIONS_RUNBOOK.md)
+for monitoring, backup, restore, and rollback procedures.
+
+## Mobile development and release
+
+```bash
+cd mobile
+npm ci
+npm run typecheck
+npm test
+npx expo start
+```
+
+Set `EXPO_PUBLIC_API_URL` to a device-reachable `/api/v1` URL. Native release
+profiles are defined in `mobile/eas.json`; store preparation and physical-device
+checks are tracked in [the release checklist](docs/RELEASE_CHECKLIST.md).
 
 ## Configuration
 
@@ -108,6 +143,9 @@ Production deployments must provide unique PostgreSQL, MinIO, JWT, and encryptio
 | `ENCRYPTION_KEY` | Backend | Application encryption key |
 | `CORS_ORIGINS` | Backend | JSON array of allowed browser origins |
 | `VITE_API_URL` | Frontend | Browser-reachable API v1 base URL |
+| `REDIS_URL` | Backend | Shared production rate-limit store |
+| `ALLOWED_HOSTS` | Backend | JSON array of accepted HTTP hostnames |
+| `EXPO_PUBLIC_API_URL` | Mobile | Device-reachable API v1 base URL |
 
 The canonical environment names are `JWT_SECRET_KEY` and `MINIO_BUCKET`. Legacy `SECRET_KEY` and `MINIO_BUCKET_NAME` names are not used by the Docker stack.
 
@@ -117,13 +155,16 @@ The canonical environment names are `JWT_SECRET_KEY` and `MINIO_BUCKET`. Legacy 
 memoryhive/
 |-- backend/             FastAPI application, Alembic migrations, and tests
 |-- frontend/            React, TypeScript, Vite, and Nginx configuration
+|-- mobile/              Expo iOS, Android, and offline synchronization client
 |-- docs/                Product requirements and project status
+|-- ops/                 Monitoring, smoke, backup, restore, and load tooling
 |-- docker-compose.yml   Local development stack
+|-- docker-compose.prod.yml Production stack with Caddy and Redis
 |-- .env.example         Local environment template
 \\-- README.md
 ```
 
-## Planned product surface
+## Product surface
 
 - Capture links, screenshots, and text
 - Search saved content and extracted text
@@ -131,4 +172,6 @@ memoryhive/
 - Offline-capable Expo mobile client with queued synchronization
 - Durable link metadata and screenshot OCR processing worker
 
-See `docs/MEMORYHIVE_REQUIREMENTS.md` for product requirements and `docs/PROJECT_STATUS.md` for delivery status.
+See `docs/MEMORYHIVE_REQUIREMENTS.md` for the product requirements,
+`docs/REQUIREMENTS_TRACEABILITY.md` for implementation mapping, and
+`docs/PROJECT_STATUS.md` for delivery status.

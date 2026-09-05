@@ -27,7 +27,7 @@ content processing, and production release work follow on the same contracts.
 | 5 | Retrieval, privacy, and data lifecycle | DONE | `phase-5-retrieval-privacy` |
 | 6 | Offline sync and mobile applications | DONE | `phase-6-offline-mobile` |
 | 7 | OCR and content-processing pipeline | DONE | `phase-7-content-processing` |
-| 8 | Production release readiness | TODO | Pending |
+| 8 | Production release readiness | DONE | `phase-8-production-release` |
 
 ## Product Decisions
 
@@ -187,14 +187,14 @@ Acceptance gate:
 
 ## Phase 8: Production Release
 
-Status: TODO
+Status: DONE
 
-- [ ] Add CI/CD quality gates and production container builds.
-- [ ] Add TLS, secret management, rate limiting, and secure headers.
-- [ ] Add structured logging, metrics, health/readiness checks, and alerts.
-- [ ] Add PostgreSQL and MinIO backup/restore procedures.
-- [ ] Publish privacy policy, data-retention behavior, and operational runbooks.
-- [ ] Prepare web deployment and mobile store releases.
+- [x] Add CI/CD quality gates and production container builds.
+- [x] Add TLS, secret management, rate limiting, and secure headers.
+- [x] Add structured logging, metrics, health/readiness checks, and alerts.
+- [x] Add PostgreSQL and MinIO backup/restore procedures.
+- [x] Publish privacy policy, data-retention behavior, and operational runbooks.
+- [x] Prepare web deployment and mobile store releases.
 
 Acceptance gate:
 
@@ -238,3 +238,8 @@ Acceptance gate:
 | 2026-09-05 | 7 | Containerized Tesseract extraction followed by PostgreSQL search | Passed |
 | 2026-09-05 | 7 | Live public-link metadata and readable-content extraction | Passed |
 | 2026-09-05 | 7 | Web/mobile processing status, polling, errors, and retry controls | Passed |
+| 2026-09-05 | 8 | Backend 26 tests, Ruff, Black; web/mobile full quality gates | Passed |
+| 2026-09-05 | 8 | Clean production images, migrations, Caddy ingress, and service health | Passed |
+| 2026-09-05 | 8 | Authenticated production capture/search/deletion smoke and security checks | Passed |
+| 2026-09-05 | 8 | PostgreSQL/MinIO backup checksums, verification, and full isolated restore | Passed |
+| 2026-09-05 | 8 | Prometheus target/rules and k6 10-user load test (p95 15 ms) | Passed |

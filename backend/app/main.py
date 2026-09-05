@@ -1,25 +1,38 @@
 """Memoryhive FastAPI Application Entry Point."""
 
+import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.router import api_router
 from app.config import get_settings
 from app.core.errors import install_error_handlers
+from app.database import get_db
+from app.middleware.runtime import (
+    RateLimitMiddleware,
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+    configure_logging,
+)
 
 settings = get_settings()
+configure_logging()
+logger = logging.getLogger("memoryhive.lifecycle")
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan events."""
-    # Startup
-    print("Starting Memoryhive API...")
+    logger.info("application starting")
     yield
-    # Shutdown
-    print("Shutting down Memoryhive API...")
+    logger.info("application stopped")
 
 
 app = FastAPI(
@@ -32,6 +45,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 install_error_handlers(app)
+
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
+app.add_middleware(SecurityHeadersMiddleware, settings=settings)
+app.add_middleware(RateLimitMiddleware, settings=settings)
+app.add_middleware(RequestContextMiddleware)
 
 # Configure CORS
 app.add_middleware(
@@ -55,6 +73,24 @@ async def health_check():
         "version": "0.1.0",
         "environment": settings.environment,
     }
+
+
+@app.get("/health/live", include_in_schema=False)
+async def liveness_check() -> dict[str, str]:
+    return {"status": "alive"}
+
+
+@app.get("/health/ready", include_in_schema=False)
+async def readiness_check(
+    session: AsyncSession = Depends(get_db),
+) -> dict[str, str]:
+    await session.execute(text("SELECT 1"))
+    return {"status": "ready", "database": "connected"}
+
+
+@app.get("/metrics", include_in_schema=False)
+async def metrics() -> Response:
+    return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/")

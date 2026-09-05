@@ -13,7 +13,7 @@ COPY . .
 EXPOSE 3000
 
 HEALTHCHECK --interval=10s --timeout=5s --start-period=15s --retries=3 \
-    CMD wget --quiet --output-document=/dev/null http://localhost:3000/ || exit 1
+    CMD wget --quiet --output-document=/dev/null http://127.0.0.1:3000/ || exit 1
 
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 
@@ -35,6 +35,6 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-    CMD wget --quiet --output-document=/dev/null http://localhost/ || exit 1
+    CMD wget --quiet --output-document=/dev/null http://127.0.0.1/ || exit 1
 
 CMD ["nginx", "-g", "daemon off;"]

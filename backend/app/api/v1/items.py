@@ -35,6 +35,8 @@ from app.schemas.item import (
     ItemUpdate,
     ProcessingStateResponse,
 )
+from app.services.processing import enqueue_processing_job
+from app.services.processing_worker import retry_failed_item
 from app.services.storage import StorageService, get_storage_service
 from app.services.urls import normalize_url
 
@@ -335,6 +337,8 @@ async def create_item(
     )
     item.tags = await _resolve_tags(db, current_user.id, data.tags)
     db.add(item)
+    if data.type != ItemType.TEXT:
+        db.add(enqueue_processing_job(item))
     await db.commit()
     return _response(await _load_item(db, current_user.id, item.id))
 
@@ -486,6 +490,7 @@ async def create_screenshot_item(
         )
     )
     db.add(item)
+    db.add(enqueue_processing_job(item))
     try:
         await db.commit()
     except Exception:
@@ -510,6 +515,30 @@ async def get_processing_state(
     item_id: str, current_user: CurrentUser, db: DbSession
 ) -> ProcessingStateResponse:
     item = await _load_item(db, current_user.id, item_id)
+    return ProcessingStateResponse(
+        item_id=item.id,
+        status=item.processing_status,
+        error=item.processing_error,
+        updated_at=item.updated_at,
+    )
+
+
+@router.post(
+    "/{item_id}/processing/retry",
+    response_model=ProcessingStateResponse,
+    responses=ERROR_RESPONSES,
+)
+async def retry_item_processing(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ProcessingStateResponse:
+    item = await _load_item(db, current_user.id, item_id)
+    if item.type == ItemType.TEXT:
+        raise HTTPException(status_code=400, detail="Text items do not need processing")
+    try:
+        await retry_failed_item(db, item)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    await db.commit()
     return ProcessingStateResponse(
         item_id=item.id,
         status=item.processing_status,

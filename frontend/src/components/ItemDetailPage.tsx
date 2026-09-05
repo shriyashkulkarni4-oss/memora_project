@@ -9,12 +9,13 @@ import {
   Image as ImageIcon,
   Link2,
   Pencil,
+  RefreshCw,
   RotateCcw,
   Star,
   Trash2,
   X,
 } from 'lucide-react';
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
 
@@ -30,6 +31,14 @@ export default function ItemDetailPage() {
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [categoryId, setCategoryId] = useState(item?.category_id ?? '');
   const [busy, setBusy] = useState(false);
+  const initialize = store.initialize;
+  const processingActive = Boolean(item && ['pending', 'processing'].includes(item.processing_status));
+
+  useEffect(() => {
+    if (!processingActive) return;
+    const timer = window.setInterval(() => void initialize(true), 3000);
+    return () => window.clearInterval(timer);
+  }, [initialize, processingActive]);
 
   if (store.isLoading && !store.initialized) {
     return <div className="page"><section className="empty-state" aria-label="Loading item"><span className="brand-loader" /></section></div>;
@@ -151,6 +160,12 @@ export default function ItemDetailPage() {
               <i />
               <span>{item.processing_status}</span>
             </div>
+            {item.processing_error && <p className="processing-error">{item.processing_error}</p>}
+            {item.processing_status === 'failed' && (
+              <button className="retry-processing" type="button" onClick={() => void store.retryProcessing(item.id)}>
+                <RefreshCw size={15} /> Retry processing
+              </button>
+            )}
           </section>
           <section className="aside-actions">
             <button type="button" onClick={() => store.toggleArchive(item.id)}>

@@ -74,6 +74,39 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    command: ["python", "-m", "app.worker"]
+    environment:
+      ENVIRONMENT: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoryhive}:${POSTGRES_PASSWORD:-memoryhive123}@db:5432/${POSTGRES_DB:-memoryhive}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-memoryhive-uploads}
+      MINIO_SECURE: "false"
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    healthcheck:
+      test: ["CMD", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   frontend:
     build:
       context: ./frontend

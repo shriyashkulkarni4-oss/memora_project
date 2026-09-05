@@ -277,6 +277,8 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
 .status-row.ready i { background: #159464; }
 .status-row.pending i, .status-row.processing i { background: #d19a27; }
 .status-row.failed i { background: var(--danger); }
+.processing-error { margin: 8px 0 0; color: var(--danger); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.retry-processing { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; margin-top: 10px; padding: 6px 10px; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--ink); font-size: 12px; font-weight: 700; }
 .aside-actions { display: grid; gap: 5px; border-bottom: 0 !important; }
 .aside-actions button { display: flex; align-items: center; gap: 8px; padding: 8px 0; border: 0; color: #4f5d59; background: transparent; font-size: 12px; text-align: left; }
 .aside-actions button.danger { color: var(--danger); }

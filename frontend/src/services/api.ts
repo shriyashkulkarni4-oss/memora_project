@@ -191,6 +191,7 @@ export const itemsApi = {
     return upload<Item>('/items/screenshot', form, onProgress);
   },
   update: (id: string, data: UpdateItemRequest) => request<Item>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  retryProcessing: (id: string) => request(`/items/${id}/processing/retry`, { method: 'POST' }),
   remove: (id: string) => request<void>(`/items/${id}`, { method: 'DELETE' }),
   favorite: (id: string, value: boolean) => request<Item>(`/items/${id}/favorite`, { method: value ? 'PUT' : 'DELETE' }),
   archive: (id: string, value: boolean) => request<Item>(`/items/${id}/archive`, { method: value ? 'PUT' : 'DELETE' }),

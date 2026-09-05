@@ -34,6 +34,7 @@ interface LibraryState {
   toggleFavorite: (id: string) => Promise<void>;
   toggleArchive: (id: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
+  retryProcessing: (id: string) => Promise<void>;
   createCategory: (name: string, color: string) => Promise<void>;
   deleteCategory: (id: string) => Promise<void>;
   deleteTag: (id: string) => Promise<void>;
@@ -187,6 +188,16 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (demoMode) return;
     try { await itemsApi.remove(id); set({ notice: 'Item deleted' }); }
     catch (error) { set({ items: before, error: message(error) }); throw error; }
+  },
+  retryProcessing: async (id) => {
+    try {
+      await itemsApi.retryProcessing(id);
+      set({ notice: 'Processing queued', error: null });
+      await get().initialize(true);
+    } catch (error) {
+      set({ error: message(error) });
+      throw error;
+    }
   },
   createCategory: async (name, color) => {
     try {

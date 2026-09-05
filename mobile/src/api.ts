@@ -122,3 +122,7 @@ export const syncApi: SyncApi = {
 export async function assetUrl(assetId: string) {
   return `${API_URL}/assets/${assetId}/download`;
 }
+
+export function retryItemProcessing(itemId: string) {
+  return request(`/items/${itemId}/processing/retry`, { method: "POST" });
+}

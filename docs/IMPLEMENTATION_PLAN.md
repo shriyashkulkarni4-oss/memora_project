@@ -26,7 +26,7 @@ content processing, and production release work follow on the same contracts.
 | 4 | End-to-end UI/backend integration | DONE | `phase-4-web-integration` |
 | 5 | Retrieval, privacy, and data lifecycle | DONE | `phase-5-retrieval-privacy` |
 | 6 | Offline sync and mobile applications | DONE | `phase-6-offline-mobile` |
-| 7 | OCR and content-processing pipeline | TODO | Pending |
+| 7 | OCR and content-processing pipeline | DONE | `phase-7-content-processing` |
 | 8 | Production release readiness | TODO | Pending |
 
 ## Product Decisions
@@ -171,14 +171,14 @@ Acceptance gate:
 
 ## Phase 7: OCR And Content Processing
 
-Status: TODO
+Status: DONE
 
-- [ ] Add durable asynchronous processing jobs and retries.
-- [ ] Extract and normalize link metadata safely.
-- [ ] Run screenshot OCR and language detection.
-- [ ] Index extracted content for search.
-- [ ] Add optional n8n/Ollama summaries, classifications, and tag suggestions.
-- [ ] Surface processing progress and failures without blocking capture.
+- [x] Add durable asynchronous processing jobs and retries.
+- [x] Extract and normalize link metadata safely.
+- [x] Run screenshot OCR and language detection.
+- [x] Index extracted content for search.
+- [x] Add optional n8n/Ollama summaries, classifications, and tag suggestions.
+- [x] Surface processing progress and failures without blocking capture.
 
 Acceptance gate:
 
@@ -233,3 +233,8 @@ Acceptance gate:
 | 2026-09-05 | 6 | Expo static bundle and native share-intent configuration validation | Passed |
 | 2026-09-05 | 6 | Live offline capture/search followed by reconnect sync to PostgreSQL | Passed |
 | 2026-09-05 | 6 | Mobile UI at 1440x900 and 390x844 browser viewports | Passed |
+| 2026-09-05 | 7 | Processing, SSRF, OCR normalization, and retry suite (21 backend tests total) | Passed |
+| 2026-09-05 | 7 | PostgreSQL migration 005 and healthy API/worker containers | Passed |
+| 2026-09-05 | 7 | Containerized Tesseract extraction followed by PostgreSQL search | Passed |
+| 2026-09-05 | 7 | Live public-link metadata and readable-content extraction | Passed |
+| 2026-09-05 | 7 | Web/mobile processing status, polling, errors, and retry controls | Passed |

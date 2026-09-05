@@ -53,7 +53,12 @@ class Settings(BaseSettings):
 
     # AI Processing (for future)
     ollama_base_url: str | None = None
+    ollama_model: str = "qwen2.5:3b"
     tesseract_cmd: str | None = None
+    processing_poll_seconds: float = 2.0
+    processing_max_attempts: int = 3
+    processing_fetch_max_bytes: int = 5 * 1024 * 1024
+    processing_fetch_timeout_seconds: float = 12.0
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

@@ -229,6 +229,9 @@ class Item(Base):
     assets: Mapped[list["Asset"]] = relationship(
         back_populates="item", cascade="all, delete-orphan", lazy="selectin"
     )
+    processing_jobs: Mapped[list["ProcessingJob"]] = relationship(
+        back_populates="item", cascade="all, delete-orphan"
+    )
 
 
 class Asset(Base):
@@ -313,3 +316,36 @@ class StorageDeletionJob(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
+
+
+class ProcessingJob(Base):
+    __tablename__ = "processing_jobs"
+    __table_args__ = (
+        CheckConstraint("attempts >= 0", name="ck_processing_jobs_attempts"),
+        CheckConstraint("max_attempts > 0", name="ck_processing_jobs_max_attempts"),
+        Index("ix_processing_jobs_claim", "status", "next_attempt_at", "created_at"),
+        Index("ix_processing_jobs_item_id", "item_id"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    kind: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
+    next_attempt_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    locked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+    item: Mapped["Item"] = relationship(back_populates="processing_jobs")

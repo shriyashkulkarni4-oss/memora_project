@@ -128,6 +128,7 @@ memoryhive/
 - Capture links, screenshots, and text
 - Search saved content and extracted text
 - Organize content with tags, favorites, and archive state
-- Offline-capable mobile clients and background processing
+- Offline-capable Expo mobile client with queued synchronization
+- Durable link metadata and screenshot OCR processing worker
 
 See `docs/MEMORYHIVE_REQUIREMENTS.md` for product requirements and `docs/PROJECT_STATUS.md` for delivery status.

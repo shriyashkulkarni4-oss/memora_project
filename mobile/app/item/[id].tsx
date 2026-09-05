@@ -3,6 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
+import { retryItemProcessing } from "@/src/api";
 import { useAppState } from "@/src/app-state";
 import { EmptyState, PrimaryButton } from "@/src/components";
 import { colors } from "@/src/theme";
@@ -10,9 +11,17 @@ import type { Item } from "@/src/types";
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { get, remove, update } = useAppState();
+  const { get, remove, sync, update } = useAppState();
   const [item, setItem] = useState<Item>();
   useEffect(() => { void get(id).then(setItem); }, [get, id]);
+  const processingActive = Boolean(item && ["pending", "processing"].includes(item.processing_status));
+  useEffect(() => {
+    if (!processingActive) return;
+    const timer = setInterval(() => {
+      void sync().then(() => get(id)).then(setItem);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [get, id, processingActive, sync]);
   if (!item) return <EmptyState body="It may have been removed on another device." icon="alert-circle-outline" title="Item unavailable" />;
 
   async function toggleFavorite() {
@@ -38,6 +47,8 @@ export default function ItemDetail() {
       {item.notes ? <View style={styles.block}><Text style={styles.blockLabel}>Notes</Text><Text selectable style={styles.body}>{item.notes}</Text></View> : null}
       {item.summary ? <View style={styles.block}><Text style={styles.blockLabel}>Summary</Text><Text selectable style={styles.body}>{item.summary}</Text></View> : null}
       {item.tags.length ? <View style={styles.tags}>{item.tags.map((tag) => <Text key={tag.id} style={styles.tag}>#{tag.name}</Text>)}</View> : null}
+      {item.processing_error ? <View style={styles.failure}><Ionicons color={colors.danger} name="alert-circle-outline" size={20} /><Text style={styles.failureText}>{item.processing_error}</Text></View> : null}
+      {item.processing_status === "failed" ? <PrimaryButton icon="refresh-outline" label="Retry processing" onPress={() => void retryItemProcessing(item.id).then(async () => { setItem({ ...item, processing_status: "pending", processing_error: null }); await sync(); })} /> : null}
       <View style={styles.meta}><Text style={styles.metaText}>Revision {item.revision}</Text><Text style={styles.metaText}>{item.user_id === "local" ? "Pending sync" : item.processing_status}</Text><Text style={styles.metaText}>{new Date(item.created_at).toLocaleDateString()}</Text></View>
       <PrimaryButton danger icon="trash-outline" label="Delete item" onPress={confirmDelete} />
     </ScrollView>
@@ -61,4 +72,6 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: "#E2F2EE", borderRadius: 5, color: colors.primaryDark, fontSize: 13, fontWeight: "600", paddingHorizontal: 9, paddingVertical: 6 },
   meta: { borderBottomColor: colors.border, borderBottomWidth: 1, borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", flexWrap: "wrap", gap: 15, paddingVertical: 13 },
   metaText: { color: colors.textMuted, fontSize: 12, textTransform: "capitalize" },
+  failure: { alignItems: "flex-start", backgroundColor: "#FEF3F2", borderColor: "#FECDCA", borderRadius: 7, borderWidth: 1, flexDirection: "row", gap: 9, padding: 12 },
+  failureText: { color: colors.danger, flex: 1, fontSize: 13, lineHeight: 19 },
 });

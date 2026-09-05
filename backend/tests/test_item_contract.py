@@ -82,9 +82,16 @@ def test_migrations_upgrade_and_downgrade_clean_database(tmp_path) -> None:
         text=True,
     )
     engine = create_engine(f"sqlite:///{database_path}")
-    assert {"users", "categories", "items", "assets", "tags", "item_tags"} <= set(
-        inspect(engine).get_table_names()
-    )
+    assert {
+        "users",
+        "categories",
+        "items",
+        "assets",
+        "tags",
+        "item_tags",
+        "lifecycle_audits",
+        "storage_deletion_jobs",
+    } <= set(inspect(engine).get_table_names())
     engine.dispose()
 
     subprocess.run(

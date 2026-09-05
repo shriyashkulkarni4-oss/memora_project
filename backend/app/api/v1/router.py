@@ -2,7 +2,7 @@
 
 from fastapi import APIRouter
 
-from app.api.v1 import assets, auth, categories, items, tags
+from app.api.v1 import account, assets, auth, categories, items, tags
 
 api_router = APIRouter()
 
@@ -12,3 +12,4 @@ api_router.include_router(items.router, prefix="/items", tags=["Items"])
 api_router.include_router(categories.router, prefix="/categories", tags=["Categories"])
 api_router.include_router(tags.router, prefix="/tags", tags=["Tags"])
 api_router.include_router(assets.router, prefix="/assets", tags=["Assets"])
+api_router.include_router(account.router, prefix="/account", tags=["Account"])

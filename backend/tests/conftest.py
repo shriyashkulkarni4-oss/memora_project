@@ -40,6 +40,9 @@ class FakeStorage:
             return ""
         return f"https://assets.example.test/{file_key}?expires={expires_in}"
 
+    def get_file_bytes(self, file_key: str) -> bytes:
+        return self.objects[file_key]
+
     def delete_file(self, file_key: str) -> bool:
         self.objects.pop(file_key, None)
         self.deleted.append(file_key)

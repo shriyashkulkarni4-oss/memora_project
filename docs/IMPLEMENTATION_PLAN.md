@@ -24,7 +24,7 @@ content processing, and production release work follow on the same contracts.
 | 2 | Core backend implementation | DONE | `phase-2-core-backend` |
 | 3 | Production web UI | DONE | `phase-3-web-ui` |
 | 4 | End-to-end UI/backend integration | DONE | `phase-4-web-integration` |
-| 5 | Retrieval, privacy, and data lifecycle | TODO | Pending |
+| 5 | Retrieval, privacy, and data lifecycle | DONE | `phase-5-retrieval-privacy` |
 | 6 | Offline sync and mobile applications | TODO | Pending |
 | 7 | OCR and content-processing pipeline | TODO | Pending |
 | 8 | Production release readiness | TODO | Pending |
@@ -139,14 +139,14 @@ Acceptance gate:
 
 ## Phase 5: Retrieval, Privacy, And Data Lifecycle
 
-Status: TODO
+Status: DONE
 
-- [ ] Add PostgreSQL full-text search and supporting indexes.
-- [ ] Search title, URL, raw text, extracted text, summaries, and tags.
-- [ ] Add duplicate-link detection and normalized source metadata.
-- [ ] Add user data export and account deletion.
-- [ ] Ensure asset cleanup is transactional and auditable.
-- [ ] Add performance and security regression tests.
+- [x] Add PostgreSQL full-text search and supporting indexes.
+- [x] Search title, URL, raw text, extracted text, summaries, and tags.
+- [x] Add duplicate-link detection and normalized source metadata.
+- [x] Add user data export and account deletion.
+- [x] Ensure asset cleanup is transactional and auditable.
+- [x] Add performance and security regression tests.
 
 Acceptance gate:
 
@@ -224,3 +224,7 @@ Acceptance gate:
 | 2026-09-04 | 4 | Forced access-token refresh and session recovery on page reload | Passed |
 | 2026-09-04 | 4 | Synthetic API failure with optimistic favorite rollback | Passed |
 | 2026-09-04 | 4 | Backend tests, Ruff, Black; frontend build, lint, Vitest, and Playwright | Passed |
+| 2026-09-04 | 5 | Migration 004 and PostgreSQL GIN search smoke test | Passed |
+| 2026-09-04 | 5 | Search, URL deduplication, export, and deletion suite (13 backend tests total) | Passed |
+| 2026-09-04 | 5 | Browser ZIP export, server search, and password-confirmed account deletion | Passed |
+| 2026-09-04 | 5 | Lifecycle audit completed with no pending MinIO deletion jobs | Passed |

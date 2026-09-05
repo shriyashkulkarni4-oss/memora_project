@@ -66,7 +66,11 @@ test('server-backed capture and lifecycle workflow', async ({ page }) => {
   await expect(page.locator('.item-preview img')).toHaveCount(1);
   await expect(page.locator('.item-preview img')).toHaveJSProperty('naturalWidth', 972);
 
+  const searchResponse = page.waitForResponse((response) =>
+    response.url().includes('/api/v1/items?') && response.url().includes('q=Persistent+text'),
+  );
   await page.getByRole('searchbox', { name: /Search library/ }).fill('Persistent text');
+  await searchResponse;
   await page.getByRole('link', { name: 'Persistent text note' }).click();
   await page.getByRole('button', { name: 'Edit' }).click();
   await page.getByRole('textbox', { name: 'Title' }).fill('Edited persistent note');
@@ -78,4 +82,16 @@ test('server-backed capture and lifecycle workflow', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
   await page.getByRole('button', { name: 'Clear search' }).click();
   await expect(page.getByText('2 items')).toBeVisible();
+
+  await page.getByRole('link', { name: 'Settings' }).click();
+  const downloadPromise = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export data' }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toMatch(/^memoryhive-export-.*\.zip$/);
+
+  await page.getByRole('button', { name: 'Delete account' }).click();
+  await page.getByLabel('Password').fill('correct-horse-battery');
+  await page.getByRole('textbox', { name: 'Type DELETE to confirm' }).fill('DELETE');
+  await page.getByRole('button', { name: 'Delete permanently' }).click();
+  await expect(page.getByRole('heading', { name: 'Welcome back' })).toBeVisible();
 });

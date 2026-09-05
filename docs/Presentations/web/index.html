@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Memora Pitch Presentation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="deck-shell">
+    <header class="topbar">
+      <div class="brand">Memora</div>
+      <div class="deck-tabs" aria-label="Presentation audience">
+        <button class="tab active" data-target="intern">Interns</button>
+        <button class="tab" data-target="investor">Investors</button>
+      </div>
+    </header>
+
+    <section class="slides" id="slides">
+      <article class="slide active hero" data-deck="intern">
+        <img src="../assets/memora-engineering-hero.png" alt="Engineering workspace visual">
+        <div class="scrim"></div>
+        <div class="hero-copy">
+          <p class="eyebrow">New Graduate Engineering Pitch</p>
+          <h1>Build the mobile memory layer</h1>
+          <p>Memora helps people capture useful links, screenshots, and notes, then recall them when they matter.</p>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="intern">
+        <div class="content two-col">
+          <div>
+            <p class="eyebrow blue">Problem</p>
+            <h2>People save knowledge faster than they can organize it</h2>
+            <p class="lead">Screenshots, article links, social posts, and short notes sit across mobile apps. The useful material disappears because current tools preserve the object, not the later recall moment.</p>
+          </div>
+          <div class="stack">
+            <div class="metric blue"><strong>2 sec</strong><span>Target capture time</span></div>
+            <div class="metric green"><strong>500 ms</strong><span>Target save action</span></div>
+            <div class="metric amber"><strong>Offline</strong><span>Core capture and search</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="intern">
+        <div class="content">
+          <p class="eyebrow blue">Product</p>
+          <h2>Capture, understanding, recall</h2>
+          <div class="flow">
+            <div><h3>Capture</h3><p>Screenshots, URLs, text, and photos saved from mobile flows.</p></div>
+            <div><h3>Understand</h3><p>OCR, readable link extraction, summaries, and tags run in the background.</p></div>
+            <div><h3>Recall</h3><p>Full-text search across items, source, time, and extracted text.</p></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="intern">
+        <div class="content">
+          <p class="eyebrow blue">Build Tracks</p>
+          <h2>Interns own demoable product increments</h2>
+          <div class="table-grid">
+            <div><strong>Capture track</strong><span>Share sheet, camera/gallery intake, text note capture</span></div>
+            <div><strong>Recall track</strong><span>OCR ingestion, local index, filters, result grouping</span></div>
+            <div><strong>Sync track</strong><span>Push/pull, retry queue, merge rules, network states</span></div>
+            <div><strong>AI track</strong><span>Readable link extraction, summaries, keywords, auto tags</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="intern">
+        <div class="content">
+          <p class="eyebrow blue">Learning</p>
+          <h2>A narrow product with full-stack depth</h2>
+          <div class="tile-row">
+            <div><strong>Mobile UX</strong><span>React Native, Expo, permissions, navigation</span></div>
+            <div><strong>Offline systems</strong><span>MMKV, sync queues, retries, conflict handling</span></div>
+            <div><strong>Search quality</strong><span>OCR, indexing, ranking, empty states</span></div>
+            <div><strong>Privacy engineering</strong><span>Export, delete, storage choices, trust UX</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide hero" data-deck="investor">
+        <img src="../assets/memora-product-hero.png" alt="Memora product visual">
+        <div class="scrim"></div>
+        <div class="hero-copy">
+          <p class="eyebrow">Investor Pitch</p>
+          <h1>Capture and recall for mobile knowledge workers</h1>
+          <p>Memora starts with a focused wedge: the gap between saving useful information and finding it later.</p>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="investor">
+        <div class="content two-col">
+          <div>
+            <p class="eyebrow green">Customer</p>
+            <h2>Start with heavy mobile savers</h2>
+            <p class="lead">The first users are knowledge workers, founders, researchers, and curious professionals who already save valuable mobile information every week.</p>
+          </div>
+          <div class="stack">
+            <div class="metric blue"><strong>Links</strong><span>Articles, posts, videos, references</span></div>
+            <div class="metric green"><strong>Screenshots</strong><span>Charts, snippets, ideas, receipts</span></div>
+            <div class="metric amber"><strong>Text</strong><span>Notes from browsing and conversations</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="investor">
+        <div class="content">
+          <p class="eyebrow green">Positioning</p>
+          <h2>A focused layer between bookmarks, notes, and read-later tools</h2>
+          <div class="table-grid three">
+            <div><strong>Bookmarks</strong><span>URLs without the reason the user saved them</span></div>
+            <div><strong>Notes apps</strong><span>Useful only when users manually organize</span></div>
+            <div><strong>Memora</strong><span>Mixed capture with OCR, local-first storage, and recall</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="investor">
+        <div class="content">
+          <p class="eyebrow green">Roadmap</p>
+          <h2>Scale in layers while protecting v1 focus</h2>
+          <div class="timeline">
+            <div><span>Phase 1</span><strong>MVP base</strong><p>Auth, capture, local storage, dashboard, search, settings</p></div>
+            <div><span>Phase 2</span><strong>Sync and polish</strong><p>Background sync, conflict UI, retry logic</p></div>
+            <div><span>Phase 3</span><strong>AI integration</strong><p>OCR, summaries, keywords, auto tags</p></div>
+            <div><span>Phase 4</span><strong>Distribution</strong><p>Share sheet, export, deep links, widget support</p></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="slide" data-deck="investor">
+        <div class="content two-col">
+          <div>
+            <p class="eyebrow green">Ask</p>
+            <h2>Move from focused MVP to measurable beta</h2>
+            <p class="lead">Capital should fund product polish, sync and security, AI processing quality, and beta growth with clear evidence around activation and repeat use.</p>
+          </div>
+          <div class="callout">
+            <strong>Before investor circulation</strong>
+            <span>Add round amount, valuation, runway, beta metrics, and live demo link.</span>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <footer class="controls">
+      <button id="prev" aria-label="Previous slide">&larr;</button>
+      <span id="counter">1 / 5</span>
+      <button id="next" aria-label="Next slide">&rarr;</button>
+    </footer>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>

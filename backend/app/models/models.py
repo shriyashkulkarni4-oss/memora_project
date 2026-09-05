@@ -179,6 +179,7 @@ class Item(Base):
     )
     type: Mapped[ItemType] = mapped_column(String(20))
     url: Mapped[str | None] = mapped_column(Text)
+    normalized_url: Mapped[str | None] = mapped_column(Text)
     raw_text: Mapped[str | None] = mapped_column(Text)
     title: Mapped[str | None] = mapped_column(String(500))
     description: Mapped[str | None] = mapped_column(Text)
@@ -280,3 +281,35 @@ class RefreshToken(Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="refresh_tokens")
+
+
+class LifecycleAudit(Base):
+    __tablename__ = "lifecycle_audits"
+    __table_args__ = (Index("ix_lifecycle_audits_user_id", "user_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(String(36))
+    event: Mapped[str] = mapped_column(String(50))
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    object_count: Mapped[int] = mapped_column(Integer, default=0)
+    error_count: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class StorageDeletionJob(Base):
+    __tablename__ = "storage_deletion_jobs"
+    __table_args__ = (Index("ix_storage_deletion_jobs_audit_id", "audit_id"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    audit_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("lifecycle_audits.id", ondelete="CASCADE")
+    )
+    object_key: Mapped[str] = mapped_column(Text)
+    attempts: Mapped[int] = mapped_column(Integer, default=0)
+    last_error: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )

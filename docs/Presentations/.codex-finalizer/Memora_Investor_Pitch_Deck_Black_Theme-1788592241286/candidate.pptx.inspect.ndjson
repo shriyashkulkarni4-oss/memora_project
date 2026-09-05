@@ -1,0 +1,258 @@
+{"kind":"deck","id":"pr/ssgzpd","name":"Deck"}
+{"kind":"layout","layoutId":"7aae5b61-0f1a-4d10-9484-1298d0d3f0e8","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"0c3f3eae-2a0c-4559-926a-0c89351b475d","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/25p064","slide":1,"title":"Investor Pitch","textShapes":5}
+{"kind":"shape","id":"sh/onadsv29","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/po3ul0ju","slide":1,"text":"Investor Pitch","textPreview":"Investor Pitch","textChars":14,"textLines":1,"bbox":[72,74,520,28]}
+{"kind":"textbox","id":"sh/exsbmlk7","slide":1,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[72,143,650,144]}
+{"kind":"textbox","id":"sh/fy1cfqls","slide":1,"text":"A mobile-first app for capturing and recalling the useful information people save across their day","textPreview":"A mobile-first app for capturing and recalling the useful information people save across their day","textChars":98,"textLines":1,"bbox":[74,315,610,86]}
+{"kind":"shape","id":"sh/gzatov2d","slide":1,"bbox":[74,430,240,1]}
+{"kind":"textbox","id":"sh/10juh0ji","slide":1,"text":"Prepared for Coding Monkey Labs","textPreview":"Prepared for Coding Monkey Labs","textChars":31,"textLines":1,"bbox":[74,458,360,26]}
+{"kind":"textbox","id":"sh/ytcvy5kb","slide":1,"text":"September 2026","textPreview":"September 2026","textChars":14,"textLines":1,"bbox":[74,486,220,24]}
+{"kind":"image","id":"im/e5cz69wj","slide":1,"name":"","alt":"Memora visual","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/25p064","slide":1,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nGenerated cover visual created for this pitch package. No external market claims used on this slide."}
+{"kind":"slide","id":"sl/8k0pda","slide":2,"title":"Digital Recall Problem","textShapes":9}
+{"kind":"textbox","id":"sh/4ral0zmt","slide":2,"text":"Digital Recall Problem","textPreview":"Digital Recall Problem","textChars":22,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/jq14re5o","slide":2,"text":"The internet gives people more useful information than their current tools can recover later.","textPreview":"The internet gives people more useful information than their current tools can recover later.","textChars":93,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/ips3y943","slide":2,"bbox":[82,170,520,245]}
+{"kind":"shape","id":"sh/hoj2p4ni","slide":2,"bbox":[674,170,520,245]}
+{"kind":"textbox","id":"sh/wnalwzmx","slide":2,"text":"Users already save the signal.","textPreview":"Users already save the signal.","textChars":30,"textLines":1,"bbox":[114,198,430,64]}
+{"kind":"textbox","id":"sh/vmhknu5c","slide":2,"text":"Screenshots of posts, charts, receipts, ideas, and references\nArticle links, social posts, videos, and research sources\nShort notes copied from conversations and browsing sessions","textPreview":"Screenshots of posts, charts, receipts, ideas, and references | Article links, social posts, videos, and research sources | Short notes c...","textChars":179,"textLines":3,"bbox":[124,278,420,132]}
+{"kind":"textbox","id":"sh/ul83up4r","slide":2,"text":"The saved material does not become useful memory.","textPreview":"The saved material does not become useful memory.","textChars":49,"textLines":1,"bbox":[706,198,430,70]}
+{"kind":"textbox","id":"sh/9kz2lkn6","slide":2,"text":"Screenshots remain invisible to normal search\nBookmarks lack context and decay into long lists\nNotes require effort exactly when the user wants speed","textPreview":"Screenshots remain invisible to normal search | Bookmarks lack context and decay into long lists | Notes require effort exactly when the ...","textChars":149,"textLines":3,"bbox":[718,288,420,132]}
+{"kind":"shape","id":"sh/8jqlsfm1","slide":2,"bbox":[152,484,976,76]}
+{"kind":"textbox","id":"sh/alojqlwn","slide":2,"text":"Memora's wedge is the gap between capture and recall.","textPreview":"Memora's wedge is the gap between capture and recall.","textChars":53,"textLines":1,"bbox":[180,501,920,38]}
+{"kind":"shape","id":"sh/bmx0zqd8","slide":2,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/wn61svet","slide":2,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/xofi1gve","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/8k0pda","slide":2,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nProblem statement from MEMORYHIVE_REQUIREMENTS.md section 2."}
+{"kind":"slide","id":"sl/7jaz11","slide":3,"title":"Target Customer","textShapes":13}
+{"kind":"textbox","id":"sh/yl8jeh0j","slide":3,"text":"Target Customer","textPreview":"Target Customer","textChars":15,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/loz29wja","slide":3,"text":"Start with heavy mobile savers who feel the pain weekly.","textPreview":"Start with heavy mobile savers who feel the pain weekly.","textChars":56,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/knq1grip","slide":3,"bbox":[84,174,534,116]}
+{"kind":"textbox","id":"sh/7q1kbm10","slide":3,"text":"Knowledge workers","textPreview":"Knowledge workers","textChars":17,"textLines":1,"bbox":[108,194,320,30]}
+{"kind":"textbox","id":"sh/mpsjih0f","slide":3,"text":"Save screenshots and links during work, then need them in meetings or analysis.","textPreview":"Save screenshots and links during work, then need them in meetings or analysis.","textChars":79,"textLines":1,"bbox":[108,232,470,36]}
+{"kind":"shape","id":"sh/tsj2dwj6","slide":3,"bbox":[662,174,534,116]}
+{"kind":"textbox","id":"sh/8ra1kril","slide":3,"text":"Founders and builders","textPreview":"Founders and builders","textChars":21,"textLines":1,"bbox":[686,194,320,30]}
+{"kind":"textbox","id":"sh/vu1kf61c","slide":3,"text":"Collect product references, competitor examples, and customer signals.","textPreview":"Collect product references, competitor examples, and customer signals.","textChars":70,"textLines":1,"bbox":[686,232,470,36]}
+{"kind":"shape","id":"sh/utsjm10r","slide":3,"bbox":[84,332,534,116]}
+{"kind":"textbox","id":"sh/0nmx8nmd","slide":3,"text":"Researchers","textPreview":"Researchers","textChars":11,"textLines":1,"bbox":[108,352,320,30]}
+{"kind":"textbox","id":"sh/1ovy1s3i","slide":3,"text":"Capture articles, papers, charts, and sources across mobile workflows.","textPreview":"Capture articles, papers, charts, and sources across mobile workflows.","textChars":70,"textLines":1,"bbox":[108,390,470,36]}
+{"kind":"shape","id":"sh/elkf6x47","slide":3,"bbox":[662,332,534,116]}
+{"kind":"textbox","id":"sh/zmdgz2ls","slide":3,"text":"Curious professionals","textPreview":"Curious professionals","textChars":21,"textLines":1,"bbox":[686,352,320,30]}
+{"kind":"textbox","id":"sh/ormxc7m9","slide":3,"text":"Build a personal library of ideas without wanting a complex note system.","textPreview":"Build a personal library of ideas without wanting a complex note system.","textChars":72,"textLines":1,"bbox":[686,390,470,36]}
+{"kind":"textbox","id":"sh/9svy5c3u","slide":3,"text":"Non-target users clarify focus: Memora should avoid project management, social collaboration, reminders, and folder-heavy workflows in v1.","textPreview":"Non-target users clarify focus: Memora should avoid project management, social collaboration, reminders, and folder-heavy workflows in v1.","textChars":138,"textLines":1,"bbox":[132,542,1016,58]}
+{"kind":"shape","id":"sh/mp4fax43","slide":3,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/nqdg32lo","slide":3,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/wf6hg7m5","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/7jaz11","slide":3,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nTarget and non-target users from MEMORYHIVE_REQUIREMENTS.md section 4."}
+{"kind":"slide","id":"sl/rv783u","slide":4,"title":"Product Wedge","textShapes":12}
+{"kind":"textbox","id":"sh/7q50bit0","slide":4,"text":"Product Wedge","textPreview":"Product Wedge","textChars":13,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/8re14nul","slide":4,"text":"One-tap capture creates the habit. Searchable recall creates retention.","textPreview":"One-tap capture creates the habit. Searchable recall creates retention.","textChars":71,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/9snidsb6","slide":4,"bbox":[108,228,280,150]}
+{"kind":"textbox","id":"sh/ylczytcj","slide":4,"text":"Capture once","textPreview":"Capture once","textChars":12,"textLines":1,"bbox":[128,246,240,30]}
+{"kind":"textbox","id":"sh/zml07yt4","slide":4,"text":"Share sheet, camera, gallery, URL, and text intake","textPreview":"Share sheet, camera, gallery, URL, and text intake","textChars":50,"textLines":1,"bbox":[128,284,240,78]}
+{"kind":"shape","id":"sh/knu103u9","slide":4,"bbox":[500,228,280,150]}
+{"kind":"textbox","id":"sh/lo3i98bu","slide":4,"text":"Enrich later","textPreview":"Enrich later","textChars":12,"textLines":1,"bbox":[520,246,240,30]}
+{"kind":"textbox","id":"sh/axszutc7","slide":4,"text":"OCR, readable content, summary, tags, and source metadata","textPreview":"OCR, readable content, summary, tags, and source metadata","textChars":57,"textLines":1,"bbox":[520,284,240,78]}
+{"kind":"shape","id":"sh/by103yts","slide":4,"bbox":[892,228,280,150]}
+{"kind":"textbox","id":"sh/va1s3uxc","slide":4,"text":"Recall fast","textPreview":"Recall fast","textChars":11,"textLines":1,"bbox":[912,246,240,30]}
+{"kind":"textbox","id":"sh/u9srupwr","slide":4,"text":"Search across text, screenshots, source, and time","textPreview":"Search across text, screenshots, source, and time","textChars":49,"textLines":1,"bbox":[912,284,240,78]}
+{"kind":"shape","id":"sh/hc3a54fi","slide":4,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/wba9wzex","slide":4,"bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/jels7ex8","slide":4,"text":"Product promise","textPreview":"Product promise","textChars":15,"textLines":1,"bbox":[126,470,220,30]}
+{"kind":"textbox","id":"sh/idcry9w3","slide":4,"text":"Save the useful thing now. Find it later without remembering where it came from.","textPreview":"Save the useful thing now. Find it later without remembering where it came from.","textChars":80,"textLines":1,"bbox":[126,508,815,54]}
+{"kind":"shape","id":"sh/5g3a9ofe","slide":4,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/4fu90jet","slide":4,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/zih8vax4","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/rv783u","slide":4,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nProduct concept from MEMORYHIVE_REQUIREMENTS.md product summary and core use cases."}
+{"kind":"slide","id":"sl/m97e7o","slide":5,"title":"MVP Scope","textShapes":9}
+{"kind":"textbox","id":"sh/qp4vu98z","slide":5,"text":"MVP Scope","textPreview":"MVP Scope","textChars":9,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/dsfupo7q","slide":5,"text":"A focused v1 improves credibility by keeping non-core features out.","textPreview":"A focused v1 improves credibility by keeping non-core features out.","textChars":67,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/sr6dwjq5","slide":5,"bbox":[98,166,498,270]}
+{"kind":"shape","id":"sh/3mdcjep8","slide":5,"bbox":[682,166,498,270]}
+{"kind":"textbox","id":"sh/il4bq983","slide":5,"text":"Included in MVP","textPreview":"Included in MVP","textChars":15,"textLines":1,"bbox":[126,196,360,32]}
+{"kind":"textbox","id":"sh/5ovulo7e","slide":5,"text":"Capture screenshots, links, and text\nLocal storage and local search\nOCR and text extraction\nSimple list and item detail view\nDelete and export paths for user trust","textPreview":"Capture screenshots, links, and text | Local storage and local search | OCR and text extraction | Simple list and item detail view | Dele...","textChars":163,"textLines":5,"bbox":[138,252,410,160]}
+{"kind":"textbox","id":"sh/4nmtsjqt","slide":5,"text":"Excluded from MVP","textPreview":"Excluded from MVP","textChars":17,"textLines":1,"bbox":[710,196,360,32]}
+{"kind":"textbox","id":"sh/vitcfupc","slide":5,"text":"Task management and reminder systems\nPublic collections or social feeds\nCollaboration-heavy workflows\nFull markdown editor\nChat with notes in v1","textPreview":"Task management and reminder systems | Public collections or social feeds | Collaboration-heavy workflows | Full markdown editor | Chat w...","textChars":144,"textLines":5,"bbox":[722,252,410,160]}
+{"kind":"shape","id":"sh/uxkbmp8r","slide":5,"bbox":[152,500,976,58]}
+{"kind":"textbox","id":"sh/8zitoru1","slide":5,"text":"The guiding rule: if a feature does not improve capture, understanding, or recall, it waits.","textPreview":"The guiding rule: if a feature does not improve capture, understanding, or recall, it waits.","textChars":92,"textLines":1,"bbox":[184,514,912,28]}
+{"kind":"shape","id":"sh/t0baxwbm","slide":5,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/6d0bmhcv","slide":5,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/7e9svmtg","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/m97e7o","slide":5,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nMVP and non-goals from MEMORYHIVE_REQUIREMENTS.md sections 9 and 14."}
+{"kind":"slide","id":"sl/pl1d0m","slide":6,"title":"Positioning","textShapes":19}
+{"kind":"textbox","id":"sh/8nu14vm5","slide":6,"text":"Positioning","textPreview":"Positioning","textChars":11,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/7m10vq50","slide":6,"text":"Memora has a narrow position between bookmarks, notes, and read-later tools.","textPreview":"Memora has a narrow position between bookmarks, notes, and read-later tools.","textChars":76,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"textbox","id":"sh/6lsj2l4f","slide":6,"text":"Category","textPreview":"Category","textChars":8,"textLines":1,"bbox":[92,154,180,24]}
+{"kind":"textbox","id":"sh/lkjitgnu","slide":6,"text":"Common limitation","textPreview":"Common limitation","textChars":17,"textLines":1,"bbox":[346,154,290,24]}
+{"kind":"textbox","id":"sh/kja10b69","slide":6,"text":"Memora advantage","textPreview":"Memora advantage","textChars":16,"textLines":1,"bbox":[752,154,290,24]}
+{"kind":"shape","id":"sh/ji10r65o","slide":6,"bbox":[82,194,1116,72]}
+{"kind":"textbox","id":"sh/yhsjylo3","slide":6,"text":"Bookmarks","textPreview":"Bookmarks","textChars":9,"textLines":1,"bbox":[106,214,170,24]}
+{"kind":"textbox","id":"sh/xgjipgni","slide":6,"text":"Store URLs but lose intent, screenshot text, and later context.","textPreview":"Store URLs but lose intent, screenshot text, and later context.","textChars":63,"textLines":1,"bbox":[346,211,332,34]}
+{"kind":"textbox","id":"sh/wvq1wb6d","slide":6,"text":"Memora stores the object, context, and searchable extracted text.","textPreview":"Memora stores the object, context, and searchable extracted text.","textChars":65,"textLines":1,"bbox":[752,211,364,34]}
+{"kind":"shape","id":"sh/ypgjip0j","slide":6,"bbox":[82,288,1116,72]}
+{"kind":"textbox","id":"sh/jq9kru14","slide":6,"text":"Notes apps","textPreview":"Notes apps","textChars":10,"textLines":1,"bbox":[106,308,170,24]}
+{"kind":"textbox","id":"sh/kri1kzip","slide":6,"text":"Require manual writing, folders, and maintenance.","textPreview":"Require manual writing, folders, and maintenance.","textChars":49,"textLines":1,"bbox":[346,305,332,34]}
+{"kind":"textbox","id":"sh/lsr2t4ju","slide":6,"text":"Memora captures first and organizes in the background.","textPreview":"Memora captures first and organizes in the background.","textChars":54,"textLines":1,"bbox":[752,305,364,34]}
+{"kind":"shape","id":"sh/a1gjep07","slide":6,"bbox":[82,382,1116,72]}
+{"kind":"textbox","id":"sh/b2pknu1s","slide":6,"text":"Read-later tools","textPreview":"Read-later tools","textChars":16,"textLines":1,"bbox":[106,402,170,24]}
+{"kind":"textbox","id":"sh/w3y1gzid","slide":6,"text":"Work best for articles, not mixed mobile captures.","textPreview":"Work best for articles, not mixed mobile captures.","textChars":50,"textLines":1,"bbox":[346,399,332,34]}
+{"kind":"textbox","id":"sh/xo72pkjy","slide":6,"text":"Memora supports screenshots, links, text notes, and photos.","textPreview":"Memora supports screenshots, links, text notes, and photos.","textChars":59,"textLines":1,"bbox":[752,399,364,34]}
+{"kind":"shape","id":"sh/mxwja50b","slide":6,"bbox":[82,476,1116,72]}
+{"kind":"textbox","id":"sh/nypkja1w","slide":6,"text":"Cloud knowledge bases","textPreview":"Cloud knowledge bases","textChars":21,"textLines":1,"bbox":[106,496,170,24]}
+{"kind":"textbox","id":"sh/r2lgb6ho","slide":6,"text":"Assume team workflows and cloud-first storage.","textPreview":"Assume team workflows and cloud-first storage.","textChars":46,"textLines":1,"bbox":[346,493,332,34]}
+{"kind":"textbox","id":"sh/q1czi1g3","slide":6,"text":"Memora starts as a private, local-first personal memory app.","textPreview":"Memora starts as a private, local-first personal memory app.","textChars":60,"textLines":1,"bbox":[752,493,364,34]}
+{"kind":"shape","id":"sh/d43ydgzu","slide":6,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/s3uhkby9","slide":6,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/f650fqhk","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/pl1d0m","slide":6,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nPositioning is inferred from the PRD problem statement, principles, and non-goals. Competitive claims are category-level hypotheses to validate."}
+{"kind":"slide","id":"sl/ok4s7t","slide":7,"title":"TECHNICAL DEFENSIBILITY","textShapes":15}
+{"kind":"textbox","id":"sh/qtg36hcn","slide":7,"text":"TECHNICAL DEFENSIBILITY","textPreview":"TECHNICAL DEFENSIBILITY","textChars":23,"textLines":1,"bbox":[64,32,380,26]}
+{"kind":"textbox","id":"sh/dw72hwve","slide":7,"text":"Architecture and Data Layer","textPreview":"Architecture and Data Layer","textChars":27,"textLines":1,"bbox":[64,64,740,50]}
+{"kind":"textbox","id":"sh/cvyl8rut","slide":7,"text":"A useful personal memory product depends on fast capture, reliable offline behavior, and user trust.","textPreview":"A useful personal memory product depends on fast capture, reliable offline behavior, and user trust.","textChars":100,"textLines":1,"bbox":[66,118,735,42]}
+{"kind":"shape","id":"sh/zypkjmd4","slide":7,"bbox":[80,230,240,116]}
+{"kind":"textbox","id":"sh/yxg3ahcj","slide":7,"text":"Mobile clients","textPreview":"Mobile clients","textChars":14,"textLines":1,"bbox":[100,248,200,30]}
+{"kind":"textbox","id":"sh/l07mlwva","slide":7,"text":"iOS, Android, lightweight web viewer","textPreview":"iOS, Android, lightweight web viewer","textChars":36,"textLines":1,"bbox":[100,286,200,44]}
+{"kind":"shape","id":"sh/0zylcrup","slide":7,"bbox":[382,230,240,116]}
+{"kind":"textbox","id":"sh/nm94n6dg","slide":7,"text":"Local memory","textPreview":"Local memory","textChars":12,"textLines":1,"bbox":[402,248,200,30]}
+{"kind":"textbox","id":"sh/m103e1cv","slide":7,"text":"Raw content, encrypted tokens, search index","textPreview":"Raw content, encrypted tokens, search index","textChars":43,"textLines":1,"bbox":[402,286,200,44]}
+{"kind":"shape","id":"sh/c3ixkril","slide":7,"bbox":[684,230,240,116]}
+{"kind":"textbox","id":"sh/x4rydwj6","slide":7,"text":"Sync service","textPreview":"Sync service","textChars":12,"textLines":1,"bbox":[704,248,200,30]}
+{"kind":"textbox","id":"sh/a10fih0v","slide":7,"text":"Push, pull, merge rules, retry queue","textPreview":"Push, pull, merge rules, retry queue","textChars":36,"textLines":1,"bbox":[704,286,200,44]}
+{"kind":"shape","id":"sh/b29gbm10","slide":7,"bbox":[986,230,240,116]}
+{"kind":"textbox","id":"sh/k7ihorix","slide":7,"text":"User-owned cloud","textPreview":"User-owned cloud","textChars":16,"textLines":1,"bbox":[1006,248,200,30]}
+{"kind":"textbox","id":"sh/l8byhwji","slide":7,"text":"Metadata DB and object storage","textPreview":"Metadata DB and object storage","textChars":30,"textLines":1,"bbox":[1006,286,200,44]}
+{"kind":"shape","id":"sh/y50fmh0r","slide":7,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/z69gfm1c","slide":7,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/8b2hsbit","slide":7,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/9cbylgje","slide":7,"bbox":[382,462,542,96]}
+{"kind":"textbox","id":"sh/hgn6pc76","slide":7,"text":"Processing layer","textPreview":"Processing layer","textChars":16,"textLines":1,"bbox":[402,480,502,30]}
+{"kind":"textbox","id":"sh/wfepg761","slide":7,"text":"OCR, readable link extraction, classification, summary, auto tags","textPreview":"OCR, readable link extraction, classification, summary, auto tags","textChars":65,"textLines":1,"bbox":[402,518,502,24]}
+{"kind":"shape","id":"sh/ve5on2pg","slide":7,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/udw7exov","slide":7,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/5k7qtc7i","slide":7,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/4jypk76x","slide":7,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/jipormpc","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/ok4s7t","slide":7,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nArchitecture from MEMORA_README.md and MEMORYHIVE_REQUIREMENTS.md sections 7, 10, and 11."}
+{"kind":"slide","id":"sl/8vcayo","slide":8,"title":"Roadmap","textShapes":17}
+{"kind":"textbox","id":"sh/ojihgzu1","slide":8,"text":"Roadmap","textPreview":"Roadmap","textChars":7,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/nipg7udg","slide":8,"text":"The product can scale in layers while keeping v1 focused.","textPreview":"The product can scale in layers while keeping v1 focused.","textChars":57,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/mhgzepcv","slide":8,"bbox":[88,185,240,264]}
+{"kind":"shape","id":"sh/xorid4vi","slide":8,"bbox":[88,185,240,8]}
+{"kind":"textbox","id":"sh/wnihkzux","slide":8,"text":"Phase 1","textPreview":"Phase 1","textChars":7,"textLines":1,"bbox":[110,220,160,24]}
+{"kind":"textbox","id":"sh/bm9gbudc","slide":8,"text":"MVP base","textPreview":"MVP base","textChars":8,"textLines":1,"bbox":[110,254,192,56]}
+{"kind":"textbox","id":"sh/al0zipc7","slide":8,"text":"Auth, item capture, local storage, dashboard, search, settings","textPreview":"Auth, item capture, local storage, dashboard, search, settings","textChars":62,"textLines":1,"bbox":[110,326,190,88]}
+{"kind":"shape","id":"sh/lcbihovu","slide":8,"bbox":[380,185,240,264]}
+{"kind":"shape","id":"sh/kr2hoju9","slide":8,"bbox":[380,185,240,8]}
+{"kind":"textbox","id":"sh/adc7yh4v","slide":8,"text":"Phase 2","textPreview":"Phase 2","textChars":7,"textLines":1,"bbox":[402,220,160,24]}
+{"kind":"textbox","id":"sh/belormlg","slide":8,"text":"Sync and polish","textPreview":"Sync and polish","textChars":15,"textLines":1,"bbox":[402,254,192,56]}
+{"kind":"textbox","id":"sh/wfep0rm1","slide":8,"text":"Background sync, pull-to-refresh, conflict UI, retry logic","textPreview":"Background sync, pull-to-refresh, conflict UI, retry logic","textChars":58,"textLines":1,"bbox":[402,326,190,88]}
+{"kind":"shape","id":"sh/xgn6tw3m","slide":8,"bbox":[672,185,240,264]}
+{"kind":"shape","id":"sh/yhw72147","slide":8,"bbox":[672,185,240,8]}
+{"kind":"textbox","id":"sh/ji5ov6ls","slide":8,"text":"Phase 3","textPreview":"Phase 3","textChars":7,"textLines":1,"bbox":[694,220,160,24]}
+{"kind":"textbox","id":"sh/kjep4bmd","slide":8,"text":"AI integration","textPreview":"AI integration","textChars":14,"textLines":1,"bbox":[694,254,192,56]}
+{"kind":"textbox","id":"sh/5kn6xw3i","slide":8,"text":"OCR, summaries, keyword extraction, auto tags","textPreview":"OCR, summaries, keyword extraction, auto tags","textChars":45,"textLines":1,"bbox":[694,326,190,88]}
+{"kind":"shape","id":"sh/elsnqx43","slide":8,"bbox":[964,185,240,264]}
+{"kind":"shape","id":"sh/zm1oz2l8","slide":8,"bbox":[964,185,240,8]}
+{"kind":"textbox","id":"sh/3qh4ry10","slide":8,"text":"Phase 4","textPreview":"Phase 4","textChars":7,"textLines":1,"bbox":[986,220,160,24]}
+{"kind":"textbox","id":"sh/2p83ytkv","slide":8,"text":"Distribution features","textPreview":"Distribution features","textChars":21,"textLines":1,"bbox":[986,254,192,56]}
+{"kind":"textbox","id":"sh/pszmt8j6","slide":8,"text":"Share sheet, export, deep links, widget support","textPreview":"Share sheet, export, deep links, widget support","textChars":47,"textLines":1,"bbox":[986,326,190,88]}
+{"kind":"textbox","id":"sh/4rql032l","slide":8,"text":"The README marks Phase 1 capabilities as built. Investor diligence should confirm product completeness, code quality, and user readiness.","textPreview":"The README marks Phase 1 capabilities as built. Investor diligence should confirm product completeness, code quality, and user readiness.","textChars":137,"textLines":1,"bbox":[146,525,988,52]}
+{"kind":"shape","id":"sh/fmxkny14","slide":8,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/u1o3utkj","slide":8,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/hozmpoja","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/8vcayo","slide":8,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nRoadmap from MEMORA_README.md. Status should be validated against the current app before external fundraising use."}
+{"kind":"slide","id":"sl/4xgi7z","slide":9,"title":"Business Model","textShapes":12}
+{"kind":"textbox","id":"sh/1o76tsve","slide":9,"text":"Business Model","textPreview":"Business Model","textChars":14,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/elg7ydc3","slide":9,"text":"Monetization should follow trust: keep core capture useful, charge for higher value layers.","textPreview":"Monetization should follow trust: keep core capture useful, charge for higher value layers.","textChars":91,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/fmporido","slide":9,"bbox":[110,220,300,170]}
+{"kind":"textbox","id":"sh/orip47u5","slide":9,"text":"Free local tier","textPreview":"Free local tier","textChars":15,"textLines":1,"bbox":[130,238,260,30]}
+{"kind":"textbox","id":"sh/9srqxcvq","slide":9,"text":"Private capture, local search, basic item limits, export","textPreview":"Private capture, local search, basic item limits, export","textChars":56,"textLines":1,"bbox":[130,276,260,98]}
+{"kind":"shape","id":"sh/2pg72xcz","slide":9,"bbox":[490,220,300,170]}
+{"kind":"textbox","id":"sh/nq98v2dk","slide":9,"text":"Paid sync tier","textPreview":"Paid sync tier","textChars":14,"textLines":1,"bbox":[510,238,260,30]}
+{"kind":"textbox","id":"sh/4veps3u1","slide":9,"text":"Cross-device sync, larger storage, backups, priority processing","textPreview":"Cross-device sync, larger storage, backups, priority processing","textChars":63,"textLines":1,"bbox":[510,276,260,98]}
+{"kind":"shape","id":"sh/5wn6l8v6","slide":9,"bbox":[870,220,300,170]}
+{"kind":"textbox","id":"sh/90ju5gju","slide":9,"text":"Advanced AI tier","textPreview":"Advanced AI tier","textChars":16,"textLines":1,"bbox":[890,238,260,30]}
+{"kind":"textbox","id":"sh/8zadcb29","slide":9,"text":"Stronger summaries, OCR for larger libraries, related-item discovery","textPreview":"Stronger summaries, OCR for larger libraries, related-item discovery","textChars":68,"textLines":1,"bbox":[890,276,260,98]}
+{"kind":"shape","id":"sh/7yhc3q1o","slide":9,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/mx8valk3","slide":9,"bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/hoju90jq","slide":9,"text":"Pricing remains a validation item before packaging decisions.","textPreview":"Pricing remains a validation item before packaging decisions.","textChars":61,"textLines":1,"bbox":[146,488,988,40]}
+{"kind":"textbox","id":"sh/w3adgv2l","slide":9,"text":"Early tests should measure willingness to pay for sync, recovery confidence, and search quality before optimizing packaging.","textPreview":"Early tests should measure willingness to pay for sync, recovery confidence, and search quality before optimizing packaging.","textChars":124,"textLines":1,"bbox":[194,538,892,42]}
+{"kind":"shape","id":"sh/v21c7q10","slide":9,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/u1svelkf","slide":9,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/5s3ed0j2","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/4xgi7z","slide":9,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nMonetization direction from MEMORYHIVE_REQUIREMENTS.md section 12. Specific prices were not provided."}
+{"kind":"slide","id":"sl/794esk","slide":10,"title":"Go-to-Market","textShapes":16}
+{"kind":"textbox","id":"sh/90zilwjm","slide":10,"text":"Go-to-Market","textPreview":"Go-to-Market","textChars":12,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/md8jq1kb","slide":10,"text":"A credible launch starts with workflows where saved information already has obvious value.","textPreview":"A credible launch starts with workflows where saved information already has obvious value.","textChars":90,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/neh0j61w","slide":10,"bbox":[86,166,1108,74]}
+{"kind":"textbox","id":"sh/w3a1wb2d","slide":10,"text":"Founder workflow","textPreview":"Founder workflow","textChars":16,"textLines":1,"bbox":[112,183,220,26]}
+{"kind":"textbox","id":"sh/x4j2pgjy","slide":10,"text":"Competitor screenshots, customer quotes, product references","textPreview":"Competitor screenshots, customer quotes, product references","textChars":59,"textLines":1,"bbox":[356,182,360,34]}
+{"kind":"textbox","id":"sh/a18ju1k7","slide":10,"text":"Build examples from real saved libraries","textPreview":"Build examples from real saved libraries","textChars":40,"textLines":1,"bbox":[760,182,360,34]}
+{"kind":"shape","id":"sh/v210n61s","slide":10,"bbox":[86,262,1108,74]}
+{"kind":"textbox","id":"sh/k7a10v2p","slide":10,"text":"Research workflow","textPreview":"Research workflow","textChars":17,"textLines":1,"bbox":[112,279,220,26]}
+{"kind":"textbox","id":"sh/58j2tgju","slide":10,"text":"Articles, papers, charts, reports, source links","textPreview":"Articles, papers, charts, reports, source links","textChars":47,"textLines":1,"bbox":[356,278,360,34]}
+{"kind":"textbox","id":"sh/hg321wjy","slide":10,"text":"Show OCR and source recall in public demos","textPreview":"Show OCR and source recall in public demos","textChars":42,"textLines":1,"bbox":[760,278,360,34]}
+{"kind":"shape","id":"sh/gfu18rid","slide":10,"bbox":[86,358,1108,74]}
+{"kind":"textbox","id":"sh/ve1kzm1s","slide":10,"text":"Professional workflow","textPreview":"Professional workflow","textChars":21,"textLines":1,"bbox":[112,375,220,26]}
+{"kind":"textbox","id":"sh/udsj6h07","slide":10,"text":"Receipts, snippets, posts, useful links from mobile browsing","textPreview":"Receipts, snippets, posts, useful links from mobile browsing","textChars":60,"textLines":1,"bbox":[356,374,360,34]}
+{"kind":"textbox","id":"sh/54325wzu","slide":10,"text":"Launch with a weekly search challenge","textPreview":"Launch with a weekly search challenge","textChars":37,"textLines":1,"bbox":[760,374,360,34]}
+{"kind":"shape","id":"sh/43u1cri9","slide":10,"bbox":[86,454,1108,74]}
+{"kind":"textbox","id":"sh/3ilk3m14","slide":10,"text":"Builder community","textPreview":"Builder community","textChars":17,"textLines":1,"bbox":[112,471,220,26]}
+{"kind":"textbox","id":"sh/ihcja10j","slide":10,"text":"Indie hackers, students, analysts, product managers","textPreview":"Indie hackers, students, analysts, product managers","textChars":51,"textLines":1,"bbox":[356,470,360,34]}
+{"kind":"textbox","id":"sh/l8jitcjq","slide":10,"text":"Seed beta through build-in-public updates","textPreview":"Seed beta through build-in-public updates","textChars":41,"textLines":1,"bbox":[760,470,360,34]}
+{"kind":"shape","id":"sh/k7a107i5","slide":10,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/cru1g7q1","slide":10,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/dsn29crm","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/794esk","slide":10,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nGo-to-market motions are recommendations derived from the target users in the PRD. No external traction data was provided."}
+{"kind":"slide","id":"sl/ldxgmz","slide":11,"title":"Use of Funds","textShapes":13}
+{"kind":"textbox","id":"sh/wnml43i5","slide":11,"text":"Use of Funds","textPreview":"Use of Funds","textChars":12,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/bmd4vy1k","slide":11,"text":"Capital should convert the MVP into a measurable beta and app store launch.","textPreview":"Capital should convert the MVP into a measurable beta and app store launch.","textChars":75,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/alk32t0z","slide":11,"bbox":[96,178,510,110]}
+{"kind":"textbox","id":"sh/lcvm18jm","slide":11,"text":"Product polish","textPreview":"Product polish","textChars":14,"textLines":1,"bbox":[120,198,300,26]}
+{"kind":"textbox","id":"sh/kbml8ni1","slide":11,"text":"Capture reliability, onboarding, search UX, accessibility, and app store readiness","textPreview":"Capture reliability, onboarding, search UX, accessibility, and app store readiness","textChars":82,"textLines":1,"bbox":[120,236,440,34]}
+{"kind":"shape","id":"sh/jad4zi1g","slide":11,"bbox":[674,178,510,110]}
+{"kind":"textbox","id":"sh/yp436d0v","slide":11,"text":"Sync and security","textPreview":"Sync and security","textChars":17,"textLines":1,"bbox":[698,198,300,26]}
+{"kind":"textbox","id":"sh/tgfm5sji","slide":11,"text":"Cross-device sync, export/delete flows, auth hardening, storage controls","textPreview":"Cross-device sync, export/delete flows, auth hardening, storage controls","textChars":72,"textLines":1,"bbox":[698,236,440,34]}
+{"kind":"shape","id":"sh/8f65cnix","slide":11,"bbox":[96,330,510,110]}
+{"kind":"textbox","id":"sh/qhofahs7","slide":11,"text":"AI processing","textPreview":"AI processing","textChars":13,"textLines":1,"bbox":[120,350,300,26]}
+{"kind":"textbox","id":"sh/bixwjm9s","slide":11,"text":"OCR quality, summary pipeline, tag suggestions, link extraction, local model options","textPreview":"OCR quality, summary pipeline, tag suggestions, link extraction, local model options","textChars":84,"textLines":1,"bbox":[120,388,440,34]}
+{"kind":"shape","id":"sh/cj6xcrad","slide":11,"bbox":[674,330,510,110]}
+{"kind":"textbox","id":"sh/dkfelwry","slide":11,"text":"Beta growth","textPreview":"Beta growth","textChars":11,"textLines":1,"bbox":[698,350,300,26]}
+{"kind":"textbox","id":"sh/ylofe1sj","slide":11,"text":"Founder and knowledge-worker beta cohorts, usage analytics, interview loop","textPreview":"Founder and knowledge-worker beta cohorts, usage analytics, interview loop","textChars":74,"textLines":1,"bbox":[698,388,440,34]}
+{"kind":"textbox","id":"sh/z6xwn694","slide":11,"text":"Round amount, valuation, and runway assumptions should be inserted before investor circulation.","textPreview":"Round amount, valuation, and runway assumptions should be inserted before investor circulation.","textChars":95,"textLines":1,"bbox":[144,550,992,44]}
+{"kind":"shape","id":"sh/076xgrap","slide":11,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/l8zepwru","slide":11,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/epkv2xsf","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/ldxgmz","slide":11,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nFunding allocation is a proposed use of funds. The source materials did not include round size or financial model."}
+{"kind":"slide","id":"sl/arcd20","slide":12,"title":"Next Milestones","textShapes":14}
+{"kind":"textbox","id":"sh/sbqpwvmh","slide":12,"text":"Next Milestones","textPreview":"Next Milestones","textChars":15,"textLines":1,"bbox":[64,44,900,54]}
+{"kind":"textbox","id":"sh/7ax83q5w","slide":12,"text":"The next phase should produce evidence investors can diligence.","textPreview":"The next phase should produce evidence investors can diligence.","textChars":63,"textLines":1,"bbox":[66,98,850,48]}
+{"kind":"shape","id":"sh/69o7ul4b","slide":12,"bbox":[88,206,314,246]}
+{"kind":"textbox","id":"sh/hgzq903y","slide":12,"text":"90 days","textPreview":"90 days","textChars":7,"textLines":1,"bbox":[112,238,220,26]}
+{"kind":"textbox","id":"sh/gfq90vmt","slide":12,"text":"Private beta ready","textPreview":"Private beta ready","textChars":18,"textLines":1,"bbox":[112,278,250,62]}
+{"kind":"textbox","id":"sh/feh87q58","slide":12,"text":"Reliable capture, local search, OCR path, and feedback loop with first users","textPreview":"Reliable capture, local search, OCR path, and feedback loop with first users","textChars":76,"textLines":1,"bbox":[112,354,248,64]}
+{"kind":"shape","id":"sh/ud8ryl4n","slide":12,"bbox":[474,206,314,246]}
+{"kind":"textbox","id":"sh/xkfqxwnu","slide":12,"text":"180 days","textPreview":"180 days","textChars":8,"textLines":1,"bbox":[498,238,220,26]}
+{"kind":"textbox","id":"sh/wjmpobm9","slide":12,"text":"Public app launch","textPreview":"Public app launch","textChars":17,"textLines":1,"bbox":[498,278,250,62]}
+{"kind":"textbox","id":"sh/elw3ed8n","slide":12,"text":"App store release, paid sync validation, support path, and retention baseline","textPreview":"App store release, paid sync validation, support path, and retention baseline","textChars":77,"textLines":1,"bbox":[498,354,248,64]}
+{"kind":"shape","id":"sh/zm54nips","slide":12,"bbox":[860,206,314,246]}
+{"kind":"textbox","id":"sh/0nylg3qd","slide":12,"text":"Fundable evidence","textPreview":"Fundable evidence","textChars":17,"textLines":1,"bbox":[884,238,220,26]}
+{"kind":"textbox","id":"sh/1o7mp87y","slide":12,"text":"Usage quality","textPreview":"Usage quality","textChars":13,"textLines":1,"bbox":[884,278,250,62]}
+{"kind":"textbox","id":"sh/mpg3id8j","slide":12,"text":"Activation, weekly repeat saves, search success, paid intent, and privacy trust signals","textPreview":"Activation, weekly repeat saves, search success, paid intent, and privacy trust signals","textChars":87,"textLines":1,"bbox":[884,354,248,64]}
+{"kind":"textbox","id":"sh/nqp4rip4","slide":12,"text":"This pitch should be paired with a live product demo and a short metric sheet once beta usage begins.","textPreview":"This pitch should be paired with a live product demo and a short metric sheet once beta usage begins.","textChars":101,"textLines":1,"bbox":[164,528,950,48]}
+{"kind":"shape","id":"sh/ory5knqp","slide":12,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/9s7mts7a","slide":12,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/atgnmx8f","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/arcd20","slide":12,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nMilestones are proposed planning targets for fundraising readiness."}
+{"kind":"slide","id":"sl/htpqq0","slide":13,"title":"Funding Ask","textShapes":5}
+{"kind":"shape","id":"sh/nylc3upo","slide":13,"bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/mxcvapo3","slide":13,"text":"Funding Ask","textPreview":"Funding Ask","textChars":11,"textLines":1,"bbox":[72,88,560,50]}
+{"kind":"textbox","id":"sh/x4ne947q","slide":13,"text":"Help move Memora from focused MVP to measurable beta.","textPreview":"Help move Memora from focused MVP to measurable beta.","textChars":53,"textLines":1,"bbox":[72,178,610,110]}
+{"kind":"textbox","id":"sh/w3udgz6l","slide":13,"text":"Finish the app store-ready mobile experience.\nValidate sync and AI as paid value layers.\nBuild evidence around activation, recall success, and retention.\nInsert round amount and terms before external circulation.","textPreview":"Finish the app store-ready mobile experience. | Validate sync and AI as paid value layers. | Build evidence around activation, recall suc...","textChars":212,"textLines":4,"bbox":[86,344,570,152]}
+{"kind":"shape","id":"sh/v2lw7up0","slide":13,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/a1cvepof","slide":13,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/5sned472","slide":13,"text":"13","textPreview":"13","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"image","id":"im/xkbqpwva","slide":13,"name":"","alt":"Memora product visual","bbox":[648,0,632,720]}
+{"kind":"notes","id":"nt/htpqq0","slide":13,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nAsk slide contains a placeholder because round size and terms were not supplied."}

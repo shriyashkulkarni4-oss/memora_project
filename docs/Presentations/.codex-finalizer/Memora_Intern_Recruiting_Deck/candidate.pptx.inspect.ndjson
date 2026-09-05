@@ -1,0 +1,264 @@
+{"kind":"deck","id":"pr/ap9huy","name":"Deck"}
+{"kind":"layout","layoutId":"b146e1f3-52b9-45d1-8d78-36f315f6d1b4","name":"Master","type":"master"}
+{"kind":"layout","layoutId":"cf437f54-88ce-4d89-8f1f-94b9733e515a","name":"Title Slide","type":"title"}
+{"kind":"slide","id":"sl/3mplfk","slide":1,"title":"New Graduate Engineering Pitch","textShapes":5}
+{"kind":"shape","id":"sh/0b6x4nq5","slide":1,"bbox":[0,0,1280,720]}
+{"kind":"textbox","id":"sh/1cfexs7q","slide":1,"text":"New Graduate Engineering Pitch","textPreview":"New Graduate Engineering Pitch","textChars":30,"textLines":1,"bbox":[72,74,520,28]}
+{"kind":"textbox","id":"sh/q54fyd83","slide":1,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[72,143,650,144]}
+{"kind":"textbox","id":"sh/r6dwripo","slide":1,"text":"Build the mobile memory layer for useful links, screenshots, and notes","textPreview":"Build the mobile memory layer for useful links, screenshots, and notes","textChars":70,"textLines":1,"bbox":[74,315,610,86]}
+{"kind":"shape","id":"sh/c76x03q9","slide":1,"bbox":[74,430,240,1]}
+{"kind":"textbox","id":"sh/d8fet87e","slide":1,"text":"Prepared for Coding Monkey Labs","textPreview":"Prepared for Coding Monkey Labs","textChars":31,"textLines":1,"bbox":[74,458,360,26]}
+{"kind":"textbox","id":"sh/a18fax87","slide":1,"text":"September 2026","textPreview":"September 2026","textChars":14,"textLines":1,"bbox":[74,486,220,24]}
+{"kind":"image","id":"im/idozet0r","slide":1,"name":"","alt":"Memora visual","bbox":[0,0,1280,720]}
+{"kind":"notes","id":"nt/3mplfk","slide":1,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nGenerated cover visual created for this pitch package. No external market claims used on this slide."}
+{"kind":"slide","id":"sl/z2wbwe","slide":2,"title":"Why Memora Exists","textShapes":12}
+{"kind":"textbox","id":"sh/d432lcny","slide":2,"text":"Why Memora Exists","textPreview":"Why Memora Exists","textChars":17,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/q1s3qh47","slide":2,"text":"People save useful knowledge faster than they can organize it.","textPreview":"People save useful knowledge faster than they can organize it.","textChars":62,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/b21kjm5s","slide":2,"bbox":[78,185,304,116]}
+{"kind":"shape","id":"sh/0rulwrm9","slide":2,"bbox":[78,185,8,116]}
+{"kind":"textbox","id":"sh/ls32pwnu","slide":2,"text":"2 sec","textPreview":"2 sec","textChars":5,"textLines":1,"bbox":[102,205,256,34]}
+{"kind":"textbox","id":"sh/y5c3uh4j","slide":2,"text":"Target time to capture a useful item","textPreview":"Target time to capture a useful item","textChars":36,"textLines":1,"bbox":[102,247,256,36]}
+{"kind":"shape","id":"sh/zqlknm54","slide":2,"bbox":[488,185,304,116]}
+{"kind":"shape","id":"sh/gvq1knm5","slide":2,"bbox":[488,185,8,116]}
+{"kind":"textbox","id":"sh/hwj2tsnq","slide":2,"text":"500 ms","textPreview":"500 ms","textChars":6,"textLines":1,"bbox":[512,205,256,34]}
+{"kind":"textbox","id":"sh/lwvel83q","slide":2,"text":"Target save action for instant local capture","textPreview":"Target save action for instant local capture","textChars":44,"textLines":1,"bbox":[512,247,256,36]}
+{"kind":"shape","id":"sh/kvmxs3m5","slide":2,"bbox":[898,185,304,116]}
+{"kind":"shape","id":"sh/zudwjylk","slide":2,"bbox":[898,185,8,116]}
+{"kind":"textbox","id":"sh/yt4fqt4z","slide":2,"text":"Offline","textPreview":"Offline","textChars":7,"textLines":1,"bbox":[922,205,256,34]}
+{"kind":"textbox","id":"sh/9kfyp83m","slide":2,"text":"Core capture and search should work without network access","textPreview":"Core capture and search should work without network access","textChars":58,"textLines":1,"bbox":[922,247,256,36]}
+{"kind":"textbox","id":"sh/8jmxwnm1","slide":2,"text":"The user pain is simple: links, screenshots, and notes get saved across apps, then disappear when the user actually needs them.","textPreview":"The user pain is simple: links, screenshots, and notes get saved across apps, then disappear when the user actually needs them.","textChars":127,"textLines":1,"bbox":[108,365,1040,82]}
+{"kind":"textbox","id":"sh/7ydgnilg","slide":2,"text":"Screenshots hold valuable text, but normal bookmark tools cannot search them.\nBookmarks preserve the URL, but lose the reason the user saved it.\nNotes apps work only when users stop and organize manually.","textPreview":"Screenshots hold valuable text, but normal bookmark tools cannot search them. | Bookmarks preserve the URL, but lose the reason the user ...","textChars":204,"textLines":3,"bbox":[190,482,900,126]}
+{"kind":"shape","id":"sh/mx4fud4b","slide":2,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/hofyts3y","slide":2,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/wn6x0nmd","slide":2,"text":"02","textPreview":"02","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/z2wbwe","slide":2,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nTargets come from MEMORYHIVE_REQUIREMENTS.md success criteria and non-functional requirements."}
+{"kind":"slide","id":"sl/3w9xiw","slide":3,"title":"PRODUCT DEFINITION","textShapes":17}
+{"kind":"textbox","id":"sh/r29gfep4","slide":3,"text":"PRODUCT DEFINITION","textPreview":"PRODUCT DEFINITION","textChars":18,"textLines":1,"bbox":[64,32,380,26]}
+{"kind":"textbox","id":"sh/s3ih8j6p","slide":3,"text":"Capture, Understanding, Recall","textPreview":"Capture, Understanding, Recall","textChars":30,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/d4ryho7a","slide":3,"text":"The product rule: every feature must improve one of these three jobs.","textPreview":"The product rule: every feature must improve one of these three jobs.","textChars":69,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/ixgf29o7","slide":3,"bbox":[88,215,304,155]}
+{"kind":"textbox","id":"sh/3y9gbeps","slide":3,"text":"Capture","textPreview":"Capture","textChars":7,"textLines":1,"bbox":[108,233,264,28]}
+{"kind":"textbox","id":"sh/4zix4j6d","slide":3,"text":"Screenshots, URLs, text, and photos saved from mobile flows","textPreview":"Screenshots, URLs, text, and photos saved from mobile flows","textChars":59,"textLines":1,"bbox":[108,269,264,85]}
+{"kind":"shape","id":"sh/50rydo7y","slide":3,"bbox":[488,215,304,155]}
+{"kind":"textbox","id":"sh/2tkzedor","slide":3,"text":"Understand","textPreview":"Understand","textChars":10,"textLines":1,"bbox":[508,233,264,28]}
+{"kind":"textbox","id":"sh/nutgnypc","slide":3,"text":"OCR, readable link extraction, summaries, and tags run in the background","textPreview":"OCR, readable link extraction, summaries, and tags run in the background","textChars":72,"textLines":1,"bbox":[508,269,264,85]}
+{"kind":"shape","id":"sh/f2por6xo","slide":3,"bbox":[888,215,304,155]}
+{"kind":"textbox","id":"sh/e1w7y1g3","slide":3,"text":"Recall","textPreview":"Recall","textChars":6,"textLines":1,"bbox":[908,233,264,28]}
+{"kind":"textbox","id":"sh/147qtgfu","slide":3,"text":"Full-text search across items, source filters, time filters, and resurfaced context","textPreview":"Full-text search across items, source filters, time filters, and resurfaced context","textChars":83,"textLines":1,"bbox":[908,269,264,85]}
+{"kind":"shape","id":"sh/03yp0by9","slide":3,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/n6p8vqxk","slide":3,"bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/25g72lgf","slide":3,"text":"Core principles","textPreview":"Core principles","textChars":15,"textLines":1,"bbox":[92,452,240,32]}
+{"kind":"textbox","id":"sh/p87qxgfq","slide":3,"text":"Mobile-first","textPreview":"Mobile-first","textChars":12,"textLines":1,"bbox":[92,500,144,31]}
+{"kind":"textbox","id":"sh/o7yp4by5","slide":3,"text":"Offline-first","textPreview":"Offline-first","textChars":13,"textLines":1,"bbox":[260,500,142,31]}
+{"kind":"textbox","id":"sh/ba98zqxw","slide":3,"text":"Local ownership","textPreview":"Local ownership","textChars":15,"textLines":1,"bbox":[428,500,160,31]}
+{"kind":"textbox","id":"sh/a9076lwb","slide":3,"text":"Background AI","textPreview":"Background AI","textChars":13,"textLines":1,"bbox":[612,500,150,31]}
+{"kind":"textbox","id":"sh/614jet4v","slide":3,"text":"Minimal effort","textPreview":"Minimal effort","textChars":14,"textLines":1,"bbox":[786,500,142,31]}
+{"kind":"shape","id":"sh/72d0nylg","slide":3,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/s3m1gjm1","slide":3,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/t4v2po36","slide":3,"text":"03","textPreview":"03","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/3w9xiw","slide":3,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nProduct framing from MEMORYHIVE_REQUIREMENTS.md sections 1, 6, and 15."}
+{"kind":"slide","id":"sl/mmrrsa","slide":4,"title":"MVP Experience","textShapes":17}
+{"kind":"textbox","id":"sh/4z21sfi9","slide":4,"text":"MVP Experience","textPreview":"MVP Experience","textChars":14,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/3ytkjaho","slide":4,"text":"The first release should make capture feel instant and recall feel obvious.","textPreview":"The first release should make capture feel instant and recall feel obvious.","textChars":75,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/ixkjq503","slide":4,"bbox":[72,220,236,228]}
+{"kind":"shape","id":"sh/d4b2pkzq","slide":4,"bbox":[94,240,34,34]}
+{"kind":"textbox","id":"sh/c321wzil","slide":4,"text":"1","textPreview":"1","textChars":1,"textLines":1,"bbox":[94,246,34,20]}
+{"kind":"textbox","id":"sh/r2tknuh0","slide":4,"text":"Save from share menu","textPreview":"Save from share menu","textChars":20,"textLines":1,"bbox":[144,238,144,28]}
+{"kind":"textbox","id":"sh/q1kjup0f","slide":4,"text":"A screenshot, link, or text snippet reaches Memora without extra metadata.","textPreview":"A screenshot, link, or text snippet reaches Memora without extra metadata.","textChars":74,"textLines":1,"bbox":[144,274,144,156]}
+{"kind":"shape","id":"sh/t8rit0zm","slide":4,"bbox":[372,220,236,228]}
+{"kind":"shape","id":"sh/87i1kvi1","slide":4,"bbox":[394,240,34,34]}
+{"kind":"textbox","id":"sh/214fq9of","slide":4,"text":"2","textPreview":"2","textChars":1,"textLines":1,"bbox":[394,246,34,20]}
+{"kind":"textbox","id":"sh/n2dgjep0","slide":4,"text":"Store locally","textPreview":"Store locally","textChars":13,"textLines":1,"bbox":[444,238,144,28]}
+{"kind":"textbox","id":"sh/o3mxsj65","slide":4,"text":"Raw content and the first search index land on the device first.","textPreview":"Raw content and the first search index land on the device first.","textChars":64,"textLines":1,"bbox":[444,274,144,156]}
+{"kind":"shape","id":"sh/p4vylo7q","slide":4,"bbox":[672,220,236,228]}
+{"kind":"shape","id":"sh/a5ofutob","slide":4,"bbox":[694,240,34,34]}
+{"kind":"textbox","id":"sh/b6xgnypw","slide":4,"text":"3","textPreview":"3","textChars":1,"textLines":1,"bbox":[694,246,34,20]}
+{"kind":"textbox","id":"sh/c76xw36h","slide":4,"text":"Process in background","textPreview":"Process in background","textChars":21,"textLines":1,"bbox":[744,238,144,28]}
+{"kind":"textbox","id":"sh/x8fyp872","slide":4,"text":"OCR, title extraction, summary, and tags run after the save action.","textPreview":"OCR, title extraction, summary, and tags run after the save action.","textChars":67,"textLines":1,"bbox":[744,274,144,156]}
+{"kind":"shape","id":"sh/y9ofydon","slide":4,"bbox":[972,220,236,228]}
+{"kind":"shape","id":"sh/zaxgryp8","slide":4,"bbox":[994,240,34,34]}
+{"kind":"textbox","id":"sh/vyhwfil0","slide":4,"text":"4","textPreview":"4","textChars":1,"textLines":1,"bbox":[994,246,34,20]}
+{"kind":"textbox","id":"sh/ud8f6d4f","slide":4,"text":"Search later","textPreview":"Search later","textChars":12,"textLines":1,"bbox":[1044,238,144,28]}
+{"kind":"textbox","id":"sh/h0zeh836","slide":4,"text":"Users find items by words inside screenshots, links, source, or time.","textPreview":"Users find items by words inside screenshots, links, source, or time.","textChars":69,"textLines":1,"bbox":[1044,274,144,156]}
+{"kind":"shape","id":"sh/wzqx83ml","slide":4,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/7axwby54","slide":4,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/m9of2t4j","slide":4,"bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/9czed8na","slide":4,"text":"The MVP avoids folders, collaboration feeds, task management, and chat with notes. That restraint gives interns a clearer product surface and a better engineering target.","textPreview":"The MVP avoids folders, collaboration feeds, task management, and chat with notes. That restraint gives interns a clearer product surface...","textChars":170,"textLines":1,"bbox":[135,520,1010,78]}
+{"kind":"shape","id":"sh/8b6x43mp","slide":4,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/z6xw7y5s","slide":4,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/y5ovyt4n","slide":4,"text":"04","textPreview":"04","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/mmrrsa","slide":4,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nMVP scope and explicit non-goals are from MEMORYHIVE_REQUIREMENTS.md sections 9 and 14."}
+{"kind":"slide","id":"sl/iehbd7","slide":5,"title":"What New Grads Will Build","textShapes":12}
+{"kind":"textbox","id":"sh/p8ripkju","slide":5,"text":"What New Grads Will Build","textPreview":"What New Grads Will Build","textChars":25,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/2lgjupk3","slide":5,"text":"A real product surface with meaningful ownership across mobile, backend, search, sync, and AI.","textPreview":"A real product surface with meaningful ownership across mobile, backend, search, sync, and AI.","textChars":94,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/36p0nu1o","slide":5,"bbox":[92,160,1096,78]}
+{"kind":"shape","id":"sh/cbi10z25","slide":5,"bbox":[92,160,7,78]}
+{"kind":"textbox","id":"sh/dcr2t4jq","slide":5,"text":"Mobile capture","textPreview":"Mobile capture","textChars":14,"textLines":1,"bbox":[114,176,230,56]}
+{"kind":"textbox","id":"sh/q90jypkz","slide":5,"text":"React Native and Expo flows for camera, image picker, share sheet, deep links, and offline-first UX.","textPreview":"React Native and Expo flows for camera, image picker, share sheet, deep links, and offline-first UX.","textChars":100,"textLines":1,"bbox":[367,176,796,56]}
+{"kind":"shape","id":"sh/ba9kru1k","slide":5,"bbox":[92,260,1096,78]}
+{"kind":"shape","id":"sh/0f214j2h","slide":5,"bbox":[92,260,7,78]}
+{"kind":"textbox","id":"sh/lgb2x4jm","slide":5,"text":"Local data layer","textPreview":"Local data layer","textChars":16,"textLines":1,"bbox":[114,276,230,56]}
+{"kind":"textbox","id":"sh/1ov2xcba","slide":5,"text":"MMKV storage, encrypted session state, search index persistence, and device-first performance tuning.","textPreview":"MMKV storage, encrypted session state, search index persistence, and device-first performance tuning.","textChars":101,"textLines":1,"bbox":[367,276,796,56]}
+{"kind":"shape","id":"sh/0nm1o7up","slide":5,"bbox":[92,360,1096,78]}
+{"kind":"shape","id":"sh/fmtkvmt4","slide":5,"bbox":[92,360,7,78]}
+{"kind":"textbox","id":"sh/elkjmhcj","slide":5,"text":"Backend services","textPreview":"Backend services","textChars":16,"textLines":1,"bbox":[114,376,230,56]}
+{"kind":"textbox","id":"sh/pcv21wb6","slide":5,"text":"FastAPI APIs for auth, metadata, items, sync push/pull, stats, and cloud persistence.","textPreview":"FastAPI APIs for auth, metadata, items, sync push/pull, stats, and cloud persistence.","textChars":85,"textLines":1,"bbox":[367,376,796,56]}
+{"kind":"shape","id":"sh/obm1srul","slide":5,"bbox":[92,460,1096,78]}
+{"kind":"shape","id":"sh/nadkzmtg","slide":5,"bbox":[92,460,7,78]}
+{"kind":"textbox","id":"sh/294jqhcv","slide":5,"text":"Search and AI","textPreview":"Search and AI","textChars":13,"textLines":1,"bbox":[114,476,230,56]}
+{"kind":"textbox","id":"sh/5gbipsb2","slide":5,"text":"OCR, readable link extraction, summary generation, auto tags, and background processing orchestration.","textPreview":"OCR, readable link extraction, summary generation, auto tags, and background processing orchestration.","textChars":102,"textLines":1,"bbox":[367,476,796,56]}
+{"kind":"shape","id":"sh/4fi1gnuh","slide":5,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/gb6tsr6p","slide":5,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/hcfalw7a","slide":5,"text":"05","textPreview":"05","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/iehbd7","slide":5,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nWorkstreams map to MEMORA_README.md architecture and roadmap sections."}
+{"kind":"slide","id":"sl/7qp0y5","slide":6,"title":"REFERENCE ARCHITECTURE","textShapes":15}
+{"kind":"textbox","id":"sh/gre9cnex","slide":6,"text":"REFERENCE ARCHITECTURE","textPreview":"REFERENCE ARCHITECTURE","textChars":22,"textLines":1,"bbox":[64,32,380,26]}
+{"kind":"textbox","id":"sh/fql8j2xc","slide":6,"text":"Mobile-First Technical System","textPreview":"Mobile-First Technical System","textChars":29,"textLines":1,"bbox":[64,64,760,48]}
+{"kind":"textbox","id":"sh/epcraxwr","slide":6,"text":"The architecture teaches practical product engineering: latency, offline behavior, sync, data ownership, and asynchronous processing.","textPreview":"The architecture teaches practical product engineering: latency, offline behavior, sync, data ownership, and asynchronous processing.","textChars":133,"textLines":1,"bbox":[66,116,780,44]}
+{"kind":"shape","id":"sh/pwnapcfe","slide":6,"bbox":[82,230,235,132]}
+{"kind":"textbox","id":"sh/ove9g7et","slide":6,"text":"Mobile app","textPreview":"Mobile app","textChars":10,"textLines":1,"bbox":[102,248,195,28]}
+{"kind":"textbox","id":"sh/3u5sn2x8","slide":6,"text":"Expo Router, React Native, Zustand","textPreview":"Expo Router, React Native, Zustand","textChars":34,"textLines":1,"bbox":[102,284,195,62]}
+{"kind":"shape","id":"sh/2twrexwn","slide":6,"bbox":[380,230,235,132]}
+{"kind":"textbox","id":"sh/d07atcfa","slide":6,"text":"Local store","textPreview":"Local store","textChars":11,"textLines":1,"bbox":[400,248,195,28]}
+{"kind":"textbox","id":"sh/czy9k7e5","slide":6,"text":"MMKV, SecureStore, local search index","textPreview":"MMKV, SecureStore, local search index","textChars":37,"textLines":1,"bbox":[400,284,195,62]}
+{"kind":"shape","id":"sh/65o7q1wz","slide":6,"bbox":[678,230,235,132]}
+{"kind":"textbox","id":"sh/r6x8j6dk","slide":6,"text":"API layer","textPreview":"API layer","textChars":9,"textLines":1,"bbox":[698,248,195,28]}
+{"kind":"textbox","id":"sh/s76psbe5","slide":6,"text":"Auth, items, search, sync, stats","textPreview":"Auth, items, search, sync, stats","textChars":32,"textLines":1,"bbox":[698,284,195,62]}
+{"kind":"shape","id":"sh/t8fqlgvq","slide":6,"bbox":[976,230,235,132]}
+{"kind":"textbox","id":"sh/e9o7u1wb","slide":6,"text":"Data services","textPreview":"Data services","textChars":13,"textLines":1,"bbox":[996,248,195,28]}
+{"kind":"textbox","id":"sh/fah8n6dg","slide":6,"text":"Postgres or MongoDB, MinIO object storage","textPreview":"Postgres or MongoDB, MinIO object storage","textChars":41,"textLines":1,"bbox":[996,284,195,62]}
+{"kind":"shape","id":"sh/gvqpwbe1","slide":6,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/1wzqpgvm","slide":6,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/ud47ihwr","slide":6,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/vedobmxc","slide":6,"bbox":[380,470,533,94]}
+{"kind":"textbox","id":"sh/zi94jid4","slide":6,"text":"Background processing","textPreview":"Background processing","textChars":21,"textLines":1,"bbox":[400,488,493,28]}
+{"kind":"textbox","id":"sh/yh0nadcj","slide":6,"text":"OCR, summary, keywords, auto tags","textPreview":"OCR, summary, keywords, auto tags","textChars":33,"textLines":1,"bbox":[400,524,493,24]}
+{"kind":"shape","id":"sh/lkbmlsva","slide":6,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/kj25cnup","slide":6,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/be94fyd8","slide":6,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/ad036tcn","slide":6,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/xgrmh8vy","slide":6,"text":"06","textPreview":"06","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/7qp0y5","slide":6,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nArchitecture combines MEMORA_README.md current stack with MEMORYHIVE_REQUIREMENTS.md target storage and AI pipeline options."}
+{"kind":"slide","id":"sl/vugixa","slide":7,"title":"Learning Outcomes","textShapes":16}
+{"kind":"textbox","id":"sh/4jq9s3mp","slide":7,"text":"Learning Outcomes","textPreview":"Learning Outcomes","textChars":17,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/3ihsjyl4","slide":7,"text":"The project is narrow enough for focus and deep enough for serious engineering growth.","textPreview":"The project is narrow enough for focus and deep enough for serious engineering growth.","textChars":86,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/ih8rqd4j","slide":7,"bbox":[88,158,516,96]}
+{"kind":"textbox","id":"sh/hgzah83y","slide":7,"text":"Mobile UX","textPreview":"Mobile UX","textChars":9,"textLines":1,"bbox":[112,176,210,26]}
+{"kind":"textbox","id":"sh/gfq9o3md","slide":7,"text":"Capture flows, navigation, permissions, and app store constraints","textPreview":"Capture flows, navigation, permissions, and app store constraints","textChars":65,"textLines":1,"bbox":[112,208,455,30]}
+{"kind":"shape","id":"sh/vehsfyl8","slide":7,"bbox":[676,158,516,96]}
+{"kind":"textbox","id":"sh/ud8rmt4n","slide":7,"text":"Offline systems","textPreview":"Offline systems","textChars":15,"textLines":1,"bbox":[700,176,210,26]}
+{"kind":"textbox","id":"sh/tcfado32","slide":7,"text":"Local persistence, sync queues, retries, and conflict handling","textPreview":"Local persistence, sync queues, retries, and conflict handling","textChars":62,"textLines":1,"bbox":[700,208,455,30]}
+{"kind":"shape","id":"sh/8b69kjmh","slide":7,"bbox":[88,288,516,96]}
+{"kind":"textbox","id":"sh/mtw3a1wr","slide":7,"text":"API design","textPreview":"API design","textChars":10,"textLines":1,"bbox":[112,306,210,26]}
+{"kind":"textbox","id":"sh/nu54j6xc","slide":7,"text":"Auth, pagination, filters, CRUD, and observable service behavior","textPreview":"Auth, pagination, filters, CRUD, and observable service behavior","textChars":64,"textLines":1,"bbox":[112,338,455,30]}
+{"kind":"shape","id":"sh/8velcbeh","slide":7,"bbox":[676,288,516,96]}
+{"kind":"textbox","id":"sh/9wnmlgf2","slide":7,"text":"Search quality","textPreview":"Search quality","textChars":14,"textLines":1,"bbox":[700,306,210,26]}
+{"kind":"textbox","id":"sh/ypc361wf","slide":7,"text":"Text extraction, indexing, ranking, and empty-state design","textPreview":"Text extraction, indexing, ranking, and empty-state design","textChars":58,"textLines":1,"bbox":[700,338,455,30]}
+{"kind":"shape","id":"sh/zq54f6x0","slide":7,"bbox":[88,418,516,96]}
+{"kind":"textbox","id":"sh/0rel8bel","slide":7,"text":"AI product judgment","textPreview":"AI product judgment","textChars":19,"textLines":1,"bbox":[112,436,210,26]}
+{"kind":"textbox","id":"sh/lsnmhwf6","slide":7,"text":"When OCR and summaries help, and when they should stay optional","textPreview":"When OCR and summaries help, and when they should stay optional","textChars":63,"textLines":1,"bbox":[112,468,455,30]}
+{"kind":"shape","id":"sh/q1c32hgj","slide":7,"bbox":[676,418,516,96]}
+{"kind":"textbox","id":"sh/b2l4bmx4","slide":7,"text":"Privacy engineering","textPreview":"Privacy engineering","textChars":19,"textLines":1,"bbox":[700,436,210,26]}
+{"kind":"textbox","id":"sh/f6h0jidw","slide":7,"text":"Data export, deletion, clear storage choices, and trust-building UX","textPreview":"Data export, deletion, clear storage choices, and trust-building UX","textChars":67,"textLines":1,"bbox":[700,468,455,30]}
+{"kind":"shape","id":"sh/u58jadcb","slide":7,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/h8jilsvm","slide":7,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/g7a1cnuh","slide":7,"text":"07","textPreview":"07","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/vugixa","slide":7,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nLearning outcomes are derived from the requested audience and source architecture."}
+{"kind":"slide","id":"sl/gucj1j","slide":8,"title":"Intern Project Tracks","textShapes":17}
+{"kind":"textbox","id":"sh/wvah0fmd","slide":8,"text":"Intern Project Tracks","textPreview":"Intern Project Tracks","textChars":21,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/buhgru5s","slide":8,"text":"Each track ends with a demoable product increment and a written engineering decision record.","textPreview":"Each track ends with a demoable product increment and a written engineering decision record.","textChars":92,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/at8fyp47","slide":8,"bbox":[78,160,1124,82]}
+{"kind":"textbox","id":"sh/lkjyx43u","slide":8,"text":"Capture track","textPreview":"Capture track","textChars":13,"textLines":1,"bbox":[104,178,184,30]}
+{"kind":"textbox","id":"sh/kzah4zmp","slide":8,"text":"Share sheet, camera/gallery intake, text note capture","textPreview":"Share sheet, camera/gallery intake, text note capture","textChars":53,"textLines":1,"bbox":[310,177,390,32]}
+{"kind":"textbox","id":"sh/jy1gvul4","slide":8,"text":"A capture flow that works in under two seconds","textPreview":"A capture flow that works in under two seconds","textChars":46,"textLines":1,"bbox":[740,177,410,32]}
+{"kind":"shape","id":"sh/yxsz2p4j","slide":8,"bbox":[78,266,1124,82]}
+{"kind":"textbox","id":"sh/1ozyl0nq","slide":8,"text":"Recall track","textPreview":"Recall track","textChars":12,"textLines":1,"bbox":[104,284,184,30]}
+{"kind":"textbox","id":"sh/03qxsvm5","slide":8,"text":"OCR ingestion, local index, filters, result grouping","textPreview":"OCR ingestion, local index, filters, result grouping","textChars":52,"textLines":1,"bbox":[310,283,390,32]}
+{"kind":"textbox","id":"sh/m1crqdwf","slide":8,"text":"Search that finds screenshot text and saved links","textPreview":"Search that finds screenshot text and saved links","textChars":49,"textLines":1,"bbox":[740,283,410,32]}
+{"kind":"shape","id":"sh/72lszyd0","slide":8,"bbox":[78,372,1124,82]}
+{"kind":"textbox","id":"sh/83uts3el","slide":8,"text":"Sync track","textPreview":"Sync track","textChars":10,"textLines":1,"bbox":[104,390,184,30]}
+{"kind":"textbox","id":"sh/943al8v6","slide":8,"text":"Push/pull, retry queue, merge rules, network states","textPreview":"Push/pull, retry queue, merge rules, network states","textChars":51,"textLines":1,"bbox":[310,389,390,32]}
+{"kind":"textbox","id":"sh/u5wbudwr","slide":8,"text":"Offline capture that syncs without user intervention","textPreview":"Offline capture that syncs without user intervention","textChars":52,"textLines":1,"bbox":[740,389,410,32]}
+{"kind":"shape","id":"sh/v65snidc","slide":8,"bbox":[78,478,1124,82]}
+{"kind":"textbox","id":"sh/w7etwnex","slide":8,"text":"AI track","textPreview":"AI track","textChars":8,"textLines":1,"bbox":[104,496,184,30]}
+{"kind":"textbox","id":"sh/h8napsv2","slide":8,"text":"Readable link extraction, summaries, keywords, auto tags","textPreview":"Readable link extraction, summaries, keywords, auto tags","textChars":56,"textLines":1,"bbox":[310,495,390,32]}
+{"kind":"textbox","id":"sh/i9wbyxwn","slide":8,"text":"Background enrichment that never blocks saving","textPreview":"Background enrichment that never blocks saving","textChars":46,"textLines":1,"bbox":[740,495,410,32]}
+{"kind":"textbox","id":"sh/3a5srid8","slide":8,"text":"Track scope can be assigned to individuals or two-person pods depending on intern count.","textPreview":"Track scope can be assigned to individuals or two-person pods depending on intern count.","textChars":88,"textLines":1,"bbox":[92,610,760,28]}
+{"kind":"shape","id":"sh/fypsf2tg","slide":8,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/exgrmxsv","slide":8,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/107ahsbm","slide":8,"text":"08","textPreview":"08","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/gucj1j","slide":8,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nProject tracks translate the PRD into intern-sized delivery units."}
+{"kind":"slide","id":"sl/3jj6i3","slide":9,"title":"Eight Week Build Plan","textShapes":15}
+{"kind":"textbox","id":"sh/ho32d8j2","slide":9,"text":"Eight Week Build Plan","textPreview":"Eight Week Build Plan","textChars":21,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/u1cj2tkb","slide":9,"text":"The plan balances onboarding, implementation, validation, and a final product demo.","textPreview":"The plan balances onboarding, implementation, validation, and a final product demo.","textChars":83,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/v2l0by1w","slide":9,"bbox":[130,305,1010,1]}
+{"kind":"shape","id":"sh/4ru18n2t","slide":9,"bbox":[162,286,38,38]}
+{"kind":"textbox","id":"sh/5s32h8jy","slide":9,"text":"Week 1","textPreview":"Week 1","textChars":6,"textLines":1,"bbox":[88,350,190,28]}
+{"kind":"textbox","id":"sh/ipcj6dkn","slide":9,"text":"Product and stack onboarding","textPreview":"Product and stack onboarding","textChars":28,"textLines":1,"bbox":[83,388,200,56]}
+{"kind":"shape","id":"sh/jqlkfi18","slide":9,"bbox":[400,286,38,38]}
+{"kind":"textbox","id":"sh/sve1cn2p","slide":9,"text":"Weeks 2-3","textPreview":"Weeks 2-3","textChars":9,"textLines":1,"bbox":[326,350,190,28]}
+{"kind":"textbox","id":"sh/dwn2lsja","slide":9,"text":"Track implementation starts","textPreview":"Track implementation starts","textChars":27,"textLines":1,"bbox":[321,388,200,56]}
+{"kind":"shape","id":"sh/pcb2lwne","slide":9,"bbox":[638,286,38,38]}
+{"kind":"textbox","id":"sh/ob21srmt","slide":9,"text":"Weeks 4-5","textPreview":"Weeks 4-5","textChars":9,"textLines":1,"bbox":[564,350,190,28]}
+{"kind":"textbox","id":"sh/natkjm5o","slide":9,"text":"Search, sync, and quality pass","textPreview":"Search, sync, and quality pass","textChars":30,"textLines":1,"bbox":[559,388,200,56]}
+{"kind":"shape","id":"sh/29kjqh43","slide":9,"bbox":[876,286,38,38]}
+{"kind":"textbox","id":"sh/x0v2pwnq","slide":9,"text":"Weeks 6-7","textPreview":"Weeks 6-7","textChars":9,"textLines":1,"bbox":[802,350,190,28]}
+{"kind":"textbox","id":"sh/czmlwrm5","slide":9,"text":"Beta hardening and analytics","textPreview":"Beta hardening and analytics","textChars":28,"textLines":1,"bbox":[797,388,200,56]}
+{"kind":"shape","id":"sh/betknm5k","slide":9,"bbox":[1114,286,38,38]}
+{"kind":"textbox","id":"sh/adk3u14z","slide":9,"text":"Week 8","textPreview":"Week 8","textChars":6,"textLines":1,"bbox":[1040,350,190,28]}
+{"kind":"textbox","id":"sh/d4r2dcn6","slide":9,"text":"Demo, handoff, next backlog","textPreview":"Demo, handoff, next backlog","textChars":27,"textLines":1,"bbox":[1035,388,200,56]}
+{"kind":"textbox","id":"sh/sji1k7m1","slide":9,"text":"Expected cadence: weekly demos, short design reviews, small pull requests, and a product metric attached to every feature.","textPreview":"Expected cadence: weekly demos, short design reviews, small pull requests, and a product metric attached to every feature.","textChars":122,"textLines":1,"bbox":[170,525,940,64]}
+{"kind":"shape","id":"sh/4nml07uh","slide":9,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/5ov29cv2","slide":9,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/il4jyxcr","slide":9,"text":"09","textPreview":"09","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/3jj6i3","slide":9,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nBuild plan is an operating proposal, not a source requirement."}
+{"kind":"slide","id":"sl/cz869g","slide":10,"title":"Engineering Operating Model","textShapes":13}
+{"kind":"textbox","id":"sh/jqhg7i1o","slide":10,"text":"Engineering Operating Model","textPreview":"Engineering Operating Model","textChars":27,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/4rqx0329","slide":10,"text":"New grads learn how product, design, and engineering decisions connect.","textPreview":"New grads learn how product, design, and engineering decisions connect.","textChars":71,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"shape","id":"sh/5szy98ju","slide":10,"bbox":[126,228,230,128]}
+{"kind":"textbox","id":"sh/6t8z2dkf","slide":10,"text":"User problem","textPreview":"User problem","textChars":12,"textLines":1,"bbox":[146,246,190,28]}
+{"kind":"textbox","id":"sh/ruhgbi10","slide":10,"text":"Start with a real saved item and the recall moment the user wants","textPreview":"Start with a real saved item and the recall moment the user wants","textChars":65,"textLines":1,"bbox":[146,282,190,58]}
+{"kind":"shape","id":"sh/svqh4n2l","slide":10,"bbox":[420,228,230,128]}
+{"kind":"textbox","id":"sh/twjydsjq","slide":10,"text":"Thin spec","textPreview":"Thin spec","textChars":9,"textLines":1,"bbox":[440,246,190,28]}
+{"kind":"textbox","id":"sh/exsz6xkb","slide":10,"text":"Define the smallest behavior change worth building","textPreview":"Define the smallest behavior change worth building","textChars":50,"textLines":1,"bbox":[440,282,190,58]}
+{"kind":"shape","id":"sh/fy1gf21w","slide":10,"bbox":[714,228,230,128]}
+{"kind":"textbox","id":"sh/jupwral4","slide":10,"text":"Build","textPreview":"Build","textChars":5,"textLines":1,"bbox":[734,246,190,28]}
+{"kind":"textbox","id":"sh/itwfy5kj","slide":10,"text":"Ship a focused increment with tests and observability","textPreview":"Ship a focused increment with tests and observability","textChars":53,"textLines":1,"bbox":[734,282,190,58]}
+{"kind":"shape","id":"sh/5w7etk3u","slide":10,"bbox":[1008,228,230,128]}
+{"kind":"textbox","id":"sh/4vyx0f29","slide":10,"text":"Learn","textPreview":"Learn","textChars":5,"textLines":1,"bbox":[1028,246,190,28]}
+{"kind":"textbox","id":"sh/v65wnals","slide":10,"text":"Review usage, latency, bugs, and the next product question","textPreview":"Review usage, latency, bugs, and the next product question","textChars":58,"textLines":1,"bbox":[1028,282,190,58]}
+{"kind":"shape","id":"sh/u5wfu5k7","slide":10,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/hsnepk3y","slide":10,"bbox":[0,0,0,0]}
+{"kind":"shape","id":"sh/wrexwf2d","slide":10,"bbox":[0,0,0,0]}
+{"kind":"textbox","id":"sh/f29gzulc","slide":10,"text":"This model keeps the internship practical. Every project should improve capture speed, search success, or user trust.","textPreview":"This model keeps the internship practical. Every project should improve capture speed, search success, or user trust.","textChars":117,"textLines":1,"bbox":[170,470,940,64]}
+{"kind":"shape","id":"sh/e10f6pkr","slide":10,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/ahkzyt4z","slide":10,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/bit0ry5k","slide":10,"text":"10","textPreview":"10","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/cz869g","slide":10,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nOperating model created for the recruiting pitch."}
+{"kind":"slide","id":"sl/a6cl64","slide":11,"title":"Why This Internship Matters","textShapes":6}
+{"kind":"textbox","id":"sh/kzqpwjah","slide":11,"text":"Why This Internship Matters","textPreview":"Why This Internship Matters","textChars":27,"textLines":1,"bbox":[64,44,870,54]}
+{"kind":"textbox","id":"sh/jyh8ne9c","slide":11,"text":"New grads can own visible product behavior instead of isolated tasks.","textPreview":"New grads can own visible product behavior instead of isolated tasks.","textChars":69,"textLines":1,"bbox":[66,98,820,46]}
+{"kind":"textbox","id":"sh/ix87utsr","slide":11,"text":"The strongest learning happens when engineers see how a small decision affects a real user flow.","textPreview":"The strongest learning happens when engineers see how a small decision affects a real user flow.","textChars":96,"textLines":1,"bbox":[92,170,1040,52]}
+{"kind":"textbox","id":"sh/xwzqlor6","slide":11,"text":"A capture bug directly affects whether users trust the app.\nA slow search result directly affects whether users come back.\nA poor privacy choice directly affects whether users store personal knowledge.\nA clear demo lets interns show product judgment, not only implementation effort.","textPreview":"A capture bug directly affects whether users trust the app. | A slow search result directly affects whether users come back. | A poor pri...","textChars":282,"textLines":4,"bbox":[118,275,850,160]}
+{"kind":"shape","id":"sh/wvqpsjal","slide":11,"bbox":[990,235,140,250]}
+{"kind":"shape","id":"sh/buh8je90","slide":11,"bbox":[1004,258,112,190]}
+{"kind":"shape","id":"sh/ato7q9sf","slide":11,"bbox":[1020,278,80,22]}
+{"kind":"shape","id":"sh/hsjqx8ra","slide":11,"bbox":[1020,318,80,22]}
+{"kind":"shape","id":"sh/gra943ap","slide":11,"bbox":[1020,358,80,22]}
+{"kind":"shape","id":"sh/ipkn21g3","slide":11,"bbox":[1045,460,28,28]}
+{"kind":"shape","id":"sh/jqt4b6h8","slide":11,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/4rm54ryt","slide":11,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/5cvmdwze","slide":11,"text":"11","textPreview":"11","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/a6cl64","slide":11,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nPhone sketch is a native editable product concept diagram, not a screenshot."}
+{"kind":"slide","id":"sl/wkriu9","slide":12,"title":"The Opportunity","textShapes":9}
+{"kind":"textbox","id":"sh/l0zepwru","slide":12,"text":"The Opportunity","textPreview":"The Opportunity","textChars":15,"textLines":1,"bbox":[72,86,650,58]}
+{"kind":"textbox","id":"sh/yxovuhs3","slide":12,"text":"Build the memory layer for mobile knowledge workers.","textPreview":"Build the memory layer for mobile knowledge workers.","textChars":52,"textLines":1,"bbox":[72,178,760,96]}
+{"kind":"textbox","id":"sh/zyhwnm9o","slide":12,"text":"Memora is narrow by design: capture useful information once, understand it in the background, and recall it when it matters.","textPreview":"Memora is narrow by design: capture useful information once, understand it in the background, and recall it when it matters.","textChars":124,"textLines":1,"bbox":[76,318,710,74]}
+{"kind":"textbox","id":"sh/cv6dsrax","slide":12,"text":"Mobile engineering","textPreview":"Mobile engineering","textChars":18,"textLines":1,"bbox":[80,460,180,31]}
+{"kind":"textbox","id":"sh/xwfulwri","slide":12,"text":"Backend systems","textPreview":"Backend systems","textChars":15,"textLines":1,"bbox":[285,460,170,31]}
+{"kind":"textbox","id":"sh/atovqhs7","slide":12,"text":"Search and AI","textPreview":"Search and AI","textChars":13,"textLines":1,"bbox":[480,460,152,31]}
+{"kind":"textbox","id":"sh/buxcjm9c","slide":12,"text":"Product craft","textPreview":"Product craft","textChars":13,"textLines":1,"bbox":[656,460,145,31]}
+{"kind":"shape","id":"sh/wrad4bqh","slide":12,"bbox":[64,682,1030,1]}
+{"kind":"textbox","id":"sh/hsjexgrm","slide":12,"text":"Memora","textPreview":"Memora","textChars":6,"textLines":1,"bbox":[64,688,160,20]}
+{"kind":"textbox","id":"sh/dsnmxk7m","slide":12,"text":"12","textPreview":"12","textChars":2,"textLines":1,"bbox":[1158,688,58,20]}
+{"kind":"notes","id":"nt/wkriu9","slide":12,"text":"Product source: MEMORA_README.md, cml-memoryhive-apps.\nProduct source: MEMORYHIVE_REQUIREMENTS.md, cml-memoryhive/docs.\nDeck standardizes on the user-facing product name Memora. The PRD source uses Memoryhive.\nClosing slide for intern recruiting conversation."}

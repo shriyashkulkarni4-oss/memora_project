@@ -9,6 +9,7 @@ const message = (error: unknown) => error instanceof Error ? error.message : 'So
 
 interface LibraryState {
   items: Item[];
+  searchResults: Item[] | null;
   categories: Category[];
   tags: ManagedTag[];
   query: string;
@@ -24,6 +25,7 @@ interface LibraryState {
   clear: () => void;
   dismissMessage: () => void;
   setQuery: (query: string) => void;
+  search: (query: string) => Promise<void>;
   setTypeFilter: (type: ItemType | 'all') => void;
   setViewMode: (mode: ViewMode) => void;
   setCaptureOpen: (open: boolean) => void;
@@ -77,6 +79,7 @@ function demoItem(data: CreateItemRequest, file?: File): Item {
 
 export const useLibraryStore = create<LibraryState>((set, get) => ({
   items: demoMode ? fixtureItems : [],
+  searchResults: null,
   categories: demoMode ? fixtureCategories : [],
   tags: demoMode ? fixtureTags : [],
   query: '', typeFilter: 'all', viewMode: 'grid', captureOpen: false,
@@ -97,9 +100,27 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       set({ error: message(error), isLoading: false });
     }
   },
-  clear: () => set({ items: [], categories: [], tags: [], initialized: false, error: null, notice: null }),
+  clear: () => set({ items: [], searchResults: null, categories: [], tags: [], initialized: false, error: null, notice: null }),
   dismissMessage: () => set({ error: null, notice: null }),
   setQuery: (query) => set({ query }),
+  search: async (query) => {
+    const value = query.trim();
+    if (demoMode || !value) {
+      set({ searchResults: null });
+      return;
+    }
+    try {
+      const [active, archived] = await Promise.all([
+        itemsApi.list({ q: value, limit: 100 }),
+        itemsApi.list({ q: value, limit: 100, is_archived: true }),
+      ]);
+      if (get().query.trim() === value) {
+        set({ searchResults: await withPreviews([...active.items, ...archived.items]), error: null });
+      }
+    } catch (error) {
+      if (get().query.trim() === value) set({ error: message(error) });
+    }
+  },
   setTypeFilter: (typeFilter) => set({ typeFilter }),
   setViewMode: (viewMode) => set({ viewMode }),
   setCaptureOpen: (captureOpen) => set({ captureOpen }),

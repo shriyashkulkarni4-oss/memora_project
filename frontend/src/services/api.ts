@@ -81,6 +81,21 @@ async function request<T>(endpoint: string, options: RequestInit = {}, retry = t
   return response.json() as Promise<T>;
 }
 
+async function requestBlob(endpoint: string, retry = true) {
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
+  if (response.status === 401 && retry && localStorage.getItem(REFRESH_KEY)) {
+    await refreshSession();
+    return requestBlob(endpoint, false);
+  }
+  if (!response.ok) throw await parseError(response);
+  return {
+    blob: await response.blob(),
+    disposition: response.headers.get('Content-Disposition'),
+  };
+}
+
 export const authApi = {
   register: (data: { email: string; password: string; name?: string }) =>
     request<User>('/auth/register', { method: 'POST', body: JSON.stringify(data) }, false),
@@ -106,6 +121,7 @@ export const authApi = {
 };
 
 export interface ItemFilters {
+  q?: string;
   cursor?: string;
   limit?: number;
   type?: ItemType;
@@ -197,4 +213,12 @@ export const tagsApi = {
   list: () => request<ManagedTag[]>('/tags'),
   create: (data: { name: string; color?: string }) => request<ManagedTag>('/tags', { method: 'POST', body: JSON.stringify(data) }),
   remove: (id: string) => request<void>(`/tags/${id}`, { method: 'DELETE' }),
+};
+
+export const accountApi = {
+  export: () => requestBlob('/account/export'),
+  remove: (password: string) => request<void>('/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ password, confirmation: 'DELETE' }),
+  }),
 };

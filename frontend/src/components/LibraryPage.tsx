@@ -8,7 +8,7 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLibraryStore } from '../store/libraryStore';
 import type { ItemType } from '../types/api';
 import ItemCard from './ItemCard';
@@ -26,11 +26,18 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
   const store = useLibraryStore();
   const [category, setCategory] = useState('all');
   const [sort, setSort] = useState('newest');
+  const query = store.query;
+  const search = store.search;
   const pageTitle = mode === 'favorites' ? 'Favorites' : mode === 'archive' ? 'Archive' : 'Library';
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void search(query), 250);
+    return () => window.clearTimeout(timer);
+  }, [query, search]);
 
   const visibleItems = useMemo(() => {
     const query = store.query.trim().toLowerCase();
-    const records = store.items.filter((item) => {
+    const records = (query && store.searchResults ? store.searchResults : store.items).filter((item) => {
       if (mode === 'favorites' && (!item.is_favorite || item.is_archived)) return false;
       if (mode === 'archive' && !item.is_archived) return false;
       if (mode === 'library' && item.is_archived) return false;
@@ -53,7 +60,7 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
       return b.created_at.localeCompare(a.created_at);
     });
-  }, [category, mode, sort, store.items, store.query, store.typeFilter]);
+  }, [category, mode, sort, store.items, store.query, store.searchResults, store.typeFilter]);
 
   const activeItems = store.items.filter((item) => !item.is_archived);
   const pending = activeItems.filter((item) => ['pending', 'processing'].includes(item.processing_status)).length;

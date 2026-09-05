@@ -24,6 +24,7 @@ function renderLibrary() {
 beforeEach(() => {
   useLibraryStore.setState({
     items: fixtureItems,
+    searchResults: null,
     categories: fixtureCategories,
     tags: fixtureTags,
     query: '',

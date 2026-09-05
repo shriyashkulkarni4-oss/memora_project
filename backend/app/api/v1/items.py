@@ -19,7 +19,7 @@ from fastapi import (
     status,
 )
 from PIL import Image, UnidentifiedImageError
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, func, literal, or_, select
 from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
@@ -35,6 +35,7 @@ from app.schemas.item import (
     ProcessingStateResponse,
 )
 from app.services.storage import StorageService, get_storage_service
+from app.services.urls import normalize_url
 
 router = APIRouter()
 settings = get_settings()
@@ -196,6 +197,7 @@ async def list_items(
     created_to: datetime | None = None,
     processing_status: ProcessingStatus | None = None,
     tag: list[str] | None = Query(default=None),
+    q: str | None = Query(default=None, min_length=1, max_length=200),
 ) -> ItemListResponse:
     query = (
         select(Item)
@@ -235,6 +237,32 @@ async def list_items(
                 and_(Tag.user_id == current_user.id, Tag.name == normalized_tag)
             )
         )
+    if q:
+        value = q.strip()
+        pattern = f"%{value}%"
+        searchable = [
+            Item.title,
+            Item.url,
+            Item.raw_text,
+            Item.extracted_text,
+            Item.summary,
+            Item.description,
+            Item.notes,
+            Item.source_domain,
+        ]
+        text_matches = [column.ilike(pattern) for column in searchable]
+        if db.bind and db.bind.dialect.name == "postgresql":
+            document_text = func.coalesce(searchable[0], "")
+            for column in searchable[1:]:
+                document_text = document_text + literal(" ") + func.coalesce(column, "")
+            document = func.to_tsvector(
+                "simple",
+                document_text,
+            )
+            text_matches.append(
+                document.op("@@")(func.websearch_to_tsquery("simple", value))
+            )
+        query = query.where(or_(*text_matches, Item.tags.any(Tag.name.ilike(pattern))))
 
     result = await db.execute(
         query.order_by(Item.created_at.desc(), Item.id.desc()).limit(limit + 1)
@@ -267,12 +295,22 @@ async def create_item(
         db, current_user.id, str(data.category_id) if data.category_id else None
     )
     url = str(data.url) if data.url else None
+    normalized_url = normalize_url(url) if url else None
+    if normalized_url and await db.scalar(
+        select(Item.id).where(
+            Item.user_id == current_user.id,
+            Item.normalized_url == normalized_url,
+            Item.deleted_at.is_(None),
+        )
+    ):
+        raise HTTPException(status_code=409, detail="This link is already saved")
     created_at = data.created_at or datetime.now(timezone.utc)
     item = Item(
         id=item_id,
         user_id=current_user.id,
         type=data.type,
         url=url,
+        normalized_url=normalized_url,
         raw_text=data.raw_text,
         title=data.title,
         description=data.description,
@@ -454,6 +492,17 @@ async def update_item(
     if "url" in update:
         update["url"] = str(update["url"]) if update["url"] else None
         item.source_domain = urlparse(update["url"]).hostname if update["url"] else None
+        normalized_url = normalize_url(update["url"]) if update["url"] else None
+        if normalized_url and await db.scalar(
+            select(Item.id).where(
+                Item.user_id == current_user.id,
+                Item.normalized_url == normalized_url,
+                Item.deleted_at.is_(None),
+                Item.id != item.id,
+            )
+        ):
+            raise HTTPException(status_code=409, detail="This link is already saved")
+        item.normalized_url = normalized_url
     for key, value in update.items():
         setattr(item, key, value)
     if item.type == ItemType.LINK and not item.url:

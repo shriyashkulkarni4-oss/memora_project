@@ -103,7 +103,10 @@ class ProcessingWorker:
                     "summary",
                 ):
                     value = getattr(result, field)
-                    if value is not None:
+                    preserves_user_value = field in {"title", "description"}
+                    if value is not None and (
+                        not preserves_user_value or getattr(item, field) is None
+                    ):
                         setattr(item, field, value)
                 item.item_metadata = {**(item.item_metadata or {}), **result.metadata}
                 item.processing_status = ProcessingStatus.READY

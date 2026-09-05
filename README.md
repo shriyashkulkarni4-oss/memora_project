@@ -47,6 +47,19 @@ docker compose down
 
 Compose builds the `development` Docker stages. The backend uses Uvicorn reload, the frontend uses the Vite development server, and both source directories are bind-mounted.
 
+## Demo data
+
+With the development stack running, seed four realistic demo libraries:
+
+```bash
+python3 seed_data.py
+```
+
+The script creates software-engineer, graduate-student, e-commerce, and home
+lifestyle accounts. It is idempotent, so rerunning it does not duplicate items.
+Use `python3 seed_data.py --help` to select one persona, target another API URL,
+or preview the data with `--dry-run`.
+
 ## Local development
 
 Start PostgreSQL, MinIO, and Redis-backed application services in Docker:

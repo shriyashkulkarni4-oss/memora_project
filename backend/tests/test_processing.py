@@ -104,6 +104,8 @@ async def test_screenshot_ocr_is_normalized_and_language_detected() -> None:
 class SuccessfulProcessor:
     async def process(self, _value: ProcessingInput) -> ProcessingResult:
         return ProcessingResult(
+            title="Automatically extracted title",
+            description="Automatically extracted description",
             extracted_text="OCR makes screenshots searchable",
             normalized_text="ocr makes screenshots searchable",
             language="en",
@@ -126,6 +128,8 @@ async def processing_database(tmp_path: Path):
             id="item-1",
             user_id=user.id,
             type=ItemType.SCREENSHOT,
+            title="User-provided title",
+            description="User-provided description",
             processing_status=ProcessingStatus.PENDING,
         )
         session.add_all(
@@ -144,6 +148,8 @@ async def test_worker_completes_and_indexes_extracted_content(tmp_path: Path) ->
         item = await session.get(Item, "item-1")
         job = await session.get(ProcessingJob, "job-1")
         assert item and item.processing_status == ProcessingStatus.READY
+        assert item.title == "User-provided title"
+        assert item.description == "User-provided description"
         assert item.extracted_text == "OCR makes screenshots searchable"
         assert item.revision == 2
         assert job and job.status == "completed" and job.completed_at is not None

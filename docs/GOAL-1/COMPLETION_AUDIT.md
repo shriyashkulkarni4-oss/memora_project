@@ -4,6 +4,7 @@ Last audited: 2026-09-06.
 
 ## Evidence Reviewed
 
+- Current handoff reports under `docs/GOAL-1/Goal Status/`.
 - Active requirements and implementation log in `docs/GOAL-1/CODEX-GOAL-1.MD`.
 - Decision log in `docs/GOAL-1/DECISIONS-GOAL-1.MD`.
 - Current web, mobile, backend, Temporal, ops, automation, Kubernetes, and Knowledge-harness source files.
@@ -53,3 +54,6 @@ These items are not provably complete because they require external account owne
 ## Audit Result
 
 Goal 1 is not ready to mark complete. The repository-local application, admin, processing, automation, deployment, knowledge-harness, and mobile release-validation requirements are implemented and documented. Mobile CI now distinguishes repository defects from external release prerequisites, rejects stale generated submission packets, and reports 0 repository blockers in the current tree. Store submission remains blocked on external release identity, production deployment and URLs, real contact metadata, dedicated reviewer account setup, EAS environment/signing evidence, signed artifacts, native device-test evidence, store-console forms, final production privacy disclosure verification, and native screenshot replacement if required.
+
+The concise restart point is `docs/GOAL-1/Goal Status/README.md`; the detailed
+current-state report is `docs/GOAL-1/Goal Status/GENERAL-STATUS-REPORT.md`.

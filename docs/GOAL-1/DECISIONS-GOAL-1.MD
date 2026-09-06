@@ -577,3 +577,14 @@ Rationale: Native build initiation should be repeatable once account setup is co
 Decision: Treat the web account-deletion modal as the confirmation boundary because it requires both the current password and exact typed `DELETE`; do not stack a second generic confirmation dialog. Add component coverage across the destructive workflows instead.
 
 Rationale: The existing modal exceeds a yes/no confirmation while remaining accessible and understandable. A nested dialog would add friction and focus-management risk without improving intent verification; regression tests provide the missing assurance.
+
+### D-097 - Separate Chronology From Goal Status Handoff
+
+Decision: Keep `CODEX-GOAL-1.MD` as the append-only implementation chronology
+and maintain an indexed summary, numbered requirement matrix, and current-state report under
+`docs/GOAL-1/Goal Status/` for continuation and completion decisions.
+
+Rationale: Forty-plus implementation slices preserve useful evidence but obscure
+the current verdict. A separate handoff package makes repository completion,
+external blockers, ownership, validation results, and the next action explicit
+without rewriting historical records.

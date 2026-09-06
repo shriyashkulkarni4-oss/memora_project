@@ -7,6 +7,7 @@
 - `MEMORYHIVE_REQUIREMENTS.md` and `REQUIREMENTS_TRACEABILITY.md` track product requirements.
 - `OPERATIONS_RUNBOOK.md` tracks deployment, monitoring, backup, restore, and rollback.
 - `KUBERNETES_DEPLOYMENT.md` tracks build-manifest and Kubernetes deployment commands.
+- `GOAL-1/Goal Status/README.md` is the current Goal 1 verdict and restart point.
 - `GOAL-1/CODEX-GOAL-1.MD` is the active implementation log.
 - `GOAL-1/DECISIONS-GOAL-1.MD` is the active decision log.
 

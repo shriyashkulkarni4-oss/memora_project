@@ -1,0 +1,42 @@
+{
+  "generated_at": "2026-09-06T00:00:00.000Z",
+  "app_store_connect": {
+    "app_record_created": false,
+    "bundle_identifier": "com.codingmonkeylabs.memoryhive",
+    "privacy_policy_url": "https://app.memoryhive.example.com/privacy",
+    "support_url": "https://app.memoryhive.example.com/support",
+    "review_account_email": "reviewer@memoryhive.example.com",
+    "store_listing_completed": false,
+    "screenshots_uploaded": false,
+    "app_privacy_completed": false,
+    "age_rating_completed": false,
+    "export_compliance_completed": false,
+    "review_information_completed": false,
+    "notes": "Copy this file to store-console-evidence.json after App Store Connect fields are complete. Do not add reviewer passwords."
+  },
+  "google_play_console": {
+    "app_record_created": false,
+    "package_name": "com.codingmonkeylabs.memoryhive",
+    "privacy_policy_url": "https://app.memoryhive.example.com/privacy",
+    "account_deletion_url": "https://app.memoryhive.example.com/account/delete",
+    "support_email": "support@memoryhive.example.com",
+    "review_account_email": "reviewer@memoryhive.example.com",
+    "store_listing_completed": false,
+    "feature_graphic_uploaded": false,
+    "screenshots_uploaded": false,
+    "data_safety_completed": false,
+    "content_rating_completed": false,
+    "target_audience_completed": false,
+    "app_access_completed": false,
+    "notes": "Copy this file to store-console-evidence.json after Play Console fields are complete. Do not add reviewer passwords."
+  },
+  "privacy_verification": {
+    "verified_by": "replace-with-owner-name",
+    "verified_at": "2026-09-06T00:00:00.000Z",
+    "external_ai_processing": "none",
+    "production_telemetry": "none",
+    "retention_review_completed": false,
+    "deletion_flow_verified": false,
+    "notes": "Set these values after legal/product/operations owners verify production behavior."
+  }
+}

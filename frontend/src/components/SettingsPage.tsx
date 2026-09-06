@@ -1,9 +1,10 @@
-import { AlertCircle, Cloud, Database, Download, ShieldCheck, Trash2, UserRound, X } from 'lucide-react';
+import { AlertCircle, Cloud, Database, Download, LockKeyhole, ShieldCheck, Trash2, UserRound, X } from 'lucide-react';
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { accountApi } from '../services/api';
+import { accountApi, authApi } from '../services/api';
 import { useLibraryStore } from '../store/libraryStore';
+import ConfirmDialog from './ConfirmDialog';
 
 function SettingToggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
   return (
@@ -13,6 +14,8 @@ function SettingToggle({ label, checked, onChange }: { label: string; checked: b
   );
 }
 
+const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+
 export default function SettingsPage() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -21,6 +24,12 @@ export default function SettingsPage() {
   const [processing, setProcessing] = useState(true);
   const [dark, setDark] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [changeOpen, setChangeOpen] = useState(false);
+  const [changeConfirmOpen, setChangeConfirmOpen] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [repeatPassword, setRepeatPassword] = useState('');
+  const [changingPassword, setChangingPassword] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmation, setConfirmation] = useState('');
@@ -61,6 +70,48 @@ export default function SettingsPage() {
     }
   };
 
+  const resetPasswordForm = () => {
+    setCurrentPassword('');
+    setNewPassword('');
+    setRepeatPassword('');
+    setChangeConfirmOpen(false);
+  };
+
+  const requestPasswordChange = (event: FormEvent) => {
+    event.preventDefault();
+    setError('');
+    if (newPassword !== repeatPassword) {
+      setError('New passwords do not match');
+      return;
+    }
+    setChangeConfirmOpen(true);
+  };
+
+  const changePassword = async () => {
+    setChangingPassword(true);
+    setError('');
+    try {
+      if (!demoMode) {
+        await authApi.changePassword({
+          current_password: currentPassword,
+          new_password: newPassword,
+        });
+      }
+      resetPasswordForm();
+      setChangeOpen(false);
+      await logout({ localOnly: true });
+      clear();
+      navigate('/login', {
+        replace: true,
+        state: { notice: 'Password changed successfully. Sign in with your new password.' },
+      });
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Password change failed');
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
   return (
     <div className="page settings-page">
       <header className="page-header"><div><span className="eyebrow">Account</span><h1>Settings</h1><p>Preferences and data</p></div></header>
@@ -84,19 +135,63 @@ export default function SettingsPage() {
       </section>
 
       <section className="settings-section">
+        <div className="settings-title"><LockKeyhole size={19} /><div><h2>Security</h2><p>Password and active sessions</p></div></div>
+        <div className="settings-actions">
+          <button className="button secondary" type="button" onClick={() => { setError(''); setChangeOpen(true); }}>
+            <LockKeyhole size={17} /> Change password
+          </button>
+          <span className="privacy-note"><ShieldCheck size={16} /> Changes sign out all sessions</span>
+        </div>
+      </section>
+
+      <section className="settings-section">
         <div className="settings-title"><Database size={19} /><div><h2>Data</h2><p>Portable and user-owned</p></div></div>
         <div className="settings-actions">
           <button className="button secondary" type="button" disabled={exporting} onClick={() => void exportData()}><Download size={17} /> {exporting ? 'Preparing export' : 'Export data'}</button>
+          <Link className="button secondary" to="/privacy"><ShieldCheck size={16} /> Privacy policy</Link>
           <span className="privacy-note"><ShieldCheck size={16} /> Private storage</span>
         </div>
       </section>
 
       <section className="settings-section danger-zone">
         <div className="settings-title"><Trash2 size={19} /><div><h2>Delete account</h2><p>Permanently removes all stored data</p></div></div>
-        <button className="button danger" type="button" onClick={() => { setError(''); setDeleteOpen(true); }}>Delete account</button>
+        <div className="settings-actions">
+          <button className="button danger" type="button" onClick={() => { setError(''); setDeleteOpen(true); }}>Delete account</button>
+          <Link className="privacy-note" to="/account/delete">Web deletion instructions</Link>
+        </div>
       </section>
 
-      {error && !deleteOpen && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
+      {error && !deleteOpen && !changeOpen && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
+      {changeOpen && (
+        <div className="dialog-layer" role="presentation" onMouseDown={() => !changingPassword && setChangeOpen(false)}>
+          <section className="edit-dialog" role="dialog" aria-modal="true" aria-labelledby="change-password-title" onMouseDown={(event) => event.stopPropagation()}>
+            <header className="dialog-header">
+              <div><span className="eyebrow">Security</span><h2 id="change-password-title">Change password</h2></div>
+              <button className="icon-button" type="button" disabled={changingPassword} onClick={() => setChangeOpen(false)}><X size={20} /><span className="sr-only">Close</span></button>
+            </header>
+            <form className="capture-form" onSubmit={requestPasswordChange}>
+              {error && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
+              <label className="field"><span>Current password</span><input type="password" value={currentPassword} onChange={(event) => setCurrentPassword(event.target.value)} autoComplete="current-password" required /></label>
+              <label className="field"><span>New password</span><input type="password" value={newPassword} onChange={(event) => setNewPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+              <label className="field"><span>Confirm new password</span><input type="password" value={repeatPassword} onChange={(event) => setRepeatPassword(event.target.value)} autoComplete="new-password" minLength={8} required /></label>
+              <footer className="dialog-actions">
+                <button className="button secondary" type="button" disabled={changingPassword} onClick={() => setChangeOpen(false)}>Cancel</button>
+                <button className="button primary" type="submit" disabled={changingPassword}><LockKeyhole size={17} /> Continue</button>
+              </footer>
+            </form>
+          </section>
+        </div>
+      )}
+      {changeConfirmOpen && (
+        <ConfirmDialog
+          title="Change password?"
+          description="Your password will be updated and every active session will be signed out."
+          confirmLabel="Change password"
+          busy={changingPassword}
+          onCancel={() => setChangeConfirmOpen(false)}
+          onConfirm={changePassword}
+        />
+      )}
       {deleteOpen && (
         <div className="dialog-layer" role="presentation" onMouseDown={() => !deleting && setDeleteOpen(false)}>
           <section className="edit-dialog" role="dialog" aria-modal="true" aria-labelledby="delete-account-title" onMouseDown={(event) => event.stopPropagation()}>

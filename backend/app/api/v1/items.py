@@ -24,7 +24,15 @@ from sqlalchemy.orm import selectinload
 
 from app.config import get_settings
 from app.core.deps import CurrentUser, DbSession
-from app.models import Asset, Category, Item, ItemType, ProcessingStatus, Tag
+from app.models import (
+    AnalysisStatus,
+    Asset,
+    Category,
+    Item,
+    ItemType,
+    ProcessingStatus,
+    Tag,
+)
 from app.schemas.common import ErrorResponse
 from app.schemas.item import (
     ItemChangesResponse,
@@ -133,6 +141,12 @@ def _response(item: Item) -> ItemResponse:
         metadata=item.item_metadata,
         processing_status=item.processing_status,
         processing_error=item.processing_error,
+        analysis_status=item.analysis_status,
+        analysis_error=item.analysis_error,
+        analysis_version=item.analysis_version,
+        analysis_requested_at=item.analysis_requested_at,
+        analysis_started_at=item.analysis_started_at,
+        analysis_completed_at=item.analysis_completed_at,
         category_id=item.category_id,
         tags=item.tags,
         assets=item.assets,
@@ -188,6 +202,14 @@ async def _resolve_tags(db: DbSession, user_id: str, names: list[str]) -> list[T
             db.add(tag)
         tags.append(tag)
     return tags
+
+
+def _mark_analysis_pending(item: Item, requested_at: datetime) -> None:
+    item.analysis_status = AnalysisStatus.PENDING
+    item.analysis_error = None
+    item.analysis_requested_at = requested_at
+    item.analysis_started_at = None
+    item.analysis_completed_at = None
 
 
 @router.get("", response_model=ItemListResponse, responses=ERROR_RESPONSES)
@@ -327,6 +349,8 @@ async def create_item(
         source_domain=urlparse(url).hostname if url else None,
         category_id=category_id,
         item_metadata=data.metadata,
+        analysis_status=AnalysisStatus.PENDING,
+        analysis_requested_at=created_at,
         processing_status=(
             ProcessingStatus.READY
             if data.type == ItemType.TEXT
@@ -337,7 +361,7 @@ async def create_item(
     )
     item.tags = await _resolve_tags(db, current_user.id, data.tags)
     db.add(item)
-    if data.type != ItemType.TEXT:
+    if data.type != ItemType.TEXT and not settings.temporal_enabled:
         db.add(enqueue_processing_job(item))
     await db.commit()
     return _response(await _load_item(db, current_user.id, item.id))
@@ -367,6 +391,10 @@ async def get_item_stats(current_user: CurrentUser, db: DbSession) -> ItemStats:
         failed_processing=await count(
             Item.processing_status == ProcessingStatus.FAILED
         ),
+        pending_analysis=await count(
+            Item.analysis_status.in_([AnalysisStatus.PENDING, AnalysisStatus.ANALYZING])
+        ),
+        failed_analysis=await count(Item.analysis_status == AnalysisStatus.FAILED),
         by_type=by_type,
     )
 
@@ -472,6 +500,8 @@ async def create_screenshot_item(
         source=source,
         category_id=owned_category,
         processing_status=ProcessingStatus.PENDING,
+        analysis_status=AnalysisStatus.PENDING,
+        analysis_requested_at=now,
         created_at=now,
         updated_at=now,
     )
@@ -490,7 +520,8 @@ async def create_screenshot_item(
         )
     )
     db.add(item)
-    db.add(enqueue_processing_job(item))
+    if not settings.temporal_enabled:
+        db.add(enqueue_processing_job(item))
     try:
         await db.commit()
     except Exception:
@@ -577,6 +608,8 @@ async def update_item(
         ):
             raise HTTPException(status_code=409, detail="This link is already saved")
         item.normalized_url = normalized_url
+    content_fields = {"url", "raw_text", "title", "description", "notes"}
+    analysis_content_changed = any(field in update for field in content_fields)
     for key, value in update.items():
         setattr(item, key, value)
     if item.type == ItemType.LINK and not item.url:
@@ -585,6 +618,9 @@ async def update_item(
         raise HTTPException(status_code=400, detail="Text items require raw text")
     if tag_names is not None:
         item.tags = await _resolve_tags(db, current_user.id, tag_names)
+    if analysis_content_changed:
+        item.analysis_version += 1
+        _mark_analysis_pending(item, datetime.now(timezone.utc))
     item.revision += 1
     item.updated_at = datetime.now(timezone.utc)
     await db.commit()

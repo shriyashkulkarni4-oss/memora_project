@@ -47,6 +47,20 @@ class ProcessingStatus(str, enum.Enum):
     SKIPPED = "skipped"
 
 
+class AnalysisStatus(str, enum.Enum):
+    NOT_ANALYZED = "not_analyzed"
+    PENDING = "pending"
+    ANALYZING = "analyzing"
+    ANALYZED = "analyzed"
+    FAILED = "failed"
+    SKIPPED = "skipped"
+
+
+class UserRole(str, enum.Enum):
+    ADMIN = "admin"
+    USER = "user"
+
+
 item_tags = Table(
     "item_tags",
     Base.metadata,
@@ -72,6 +86,13 @@ class User(Base):
     email: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     hashed_password: Mapped[str] = mapped_column(String(255))
     name: Mapped[str | None] = mapped_column(String(255))
+    role: Mapped[str] = mapped_column(
+        String(20), default=UserRole.USER.value, server_default=UserRole.USER.value
+    )
+    session_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    password_changed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )
@@ -198,6 +219,22 @@ class Item(Base):
         String(20), default=ProcessingStatus.PENDING, server_default="pending"
     )
     processing_error: Mapped[str | None] = mapped_column(Text)
+    analysis_status: Mapped[AnalysisStatus] = mapped_column(
+        String(20), default=AnalysisStatus.PENDING, server_default="pending"
+    )
+    analysis_error: Mapped[str | None] = mapped_column(Text)
+    analysis_version: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1"
+    )
+    analysis_requested_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    analysis_started_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
+    analysis_completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True)
+    )
     category_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("categories.id", ondelete="SET NULL")
     )

@@ -1,5 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
+const apiUrl = process.env.MEMORYHIVE_API_URL ?? "http://127.0.0.1:8000/api/v1";
+
 export default defineConfig({
   testDir: "./e2e",
   testMatch: "**/*.e2e.ts",
@@ -14,7 +16,7 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npx expo start --web --port 8083",
+    command: `EXPO_PUBLIC_API_URL=${apiUrl} npx expo start --web --port 8083`,
     url: "http://127.0.0.1:8083",
     reuseExistingServer: true,
     timeout: 120_000,

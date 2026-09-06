@@ -1,4 +1,4 @@
-import { Link, router } from "expo-router";
+import { Link, router, useLocalSearchParams } from "expo-router";
 import React, { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -8,6 +8,7 @@ import { colors } from "@/src/theme";
 
 export default function Login() {
   const { login } = useAppState();
+  const params = useLocalSearchParams<{ notice?: string }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -35,6 +36,7 @@ export default function Login() {
           <Text style={styles.subtitle}>Sign in to access your saved knowledge.</Text>
         </View>
         <View style={styles.form}>
+          {params.notice ? <Text style={styles.notice}>{params.notice}</Text> : null}
           <Field autoCapitalize="none" autoComplete="email" keyboardType="email-address" label="Email" onChangeText={setEmail} value={email} />
           <Field autoCapitalize="none" autoComplete="password" label="Password" onChangeText={setPassword} secureTextEntry value={password} />
           {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
@@ -54,6 +56,7 @@ const styles = StyleSheet.create({
   subtitle: { color: colors.textMuted, fontSize: 16, lineHeight: 23 },
   form: { gap: 17 },
   error: { color: colors.danger, fontSize: 14 },
+  notice: { backgroundColor: "#EAF8F5", borderColor: "#A7D9D0", borderRadius: 7, borderWidth: 1, color: colors.primaryDark, fontSize: 14, lineHeight: 20, padding: 12 },
   footer: { color: colors.textMuted, fontSize: 14, marginTop: 24, textAlign: "center" },
   link: { color: colors.primary, fontWeight: "700" },
 });

@@ -1,8 +1,11 @@
 import * as SQLite from "expo-sqlite";
 
+import { normalizeTag } from "./item-filters";
 import { matchesLocalSearch } from "./local-search";
 import type { Item, ItemCreate, ItemUpdate, PendingMutation } from "./types";
 import type { SyncRepository } from "./sync";
+
+type PendingPayload = ItemCreate | ItemUpdate;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | undefined;
 
@@ -64,7 +67,13 @@ function draftItem(payload: ItemCreate): Item {
     metadata: payload.metadata ?? null,
     processing_status: payload.type === "text" ? "skipped" : "pending",
     processing_error: null,
-    category_id: null,
+    analysis_status: "pending",
+    analysis_error: null,
+    analysis_version: 1,
+    analysis_requested_at: now,
+    analysis_started_at: null,
+    analysis_completed_at: null,
+    category_id: payload.category_id ?? null,
     tags: (payload.tags ?? []).map((name) => ({ id: `local:${name}`, name, color: "#087F6D" })),
     assets: [],
     is_favorite: false,
@@ -107,11 +116,19 @@ export async function updateLocal(id: string, update: ItemUpdate) {
   if (!row) throw new Error("Item not found");
   const current = JSON.parse(row.payload) as Item;
   const tags = update.tags?.map((name) => ({ id: `local:${name}`, name, color: "#087F6D" }));
+  const contentChanged = update.url !== undefined || update.raw_text !== undefined || update.title !== undefined || update.notes !== undefined;
+  const now = new Date().toISOString();
   const item: Item = {
     ...current,
     ...update,
     tags: tags ?? current.tags,
-    updated_at: new Date().toISOString(),
+    analysis_status: contentChanged ? "pending" : current.analysis_status,
+    analysis_error: contentChanged ? null : current.analysis_error,
+    analysis_version: contentChanged ? current.analysis_version + 1 : current.analysis_version,
+    analysis_requested_at: contentChanged ? now : current.analysis_requested_at,
+    analysis_started_at: contentChanged ? null : current.analysis_started_at,
+    analysis_completed_at: contentChanged ? null : current.analysis_completed_at,
+    updated_at: now,
   };
   await db.withTransactionAsync(async () => {
     await db.runAsync(
@@ -150,6 +167,72 @@ export async function deleteLocal(id: string) {
       now,
     );
   });
+}
+
+async function rewriteCachedItems(transform: (item: Item) => Item) {
+  const db = await database();
+  const rows = await db.getAllAsync<{ id: string; payload: string }>(
+    "SELECT id, payload FROM items WHERE deleted_at IS NULL",
+  );
+  await db.withTransactionAsync(async () => {
+    for (const row of rows) {
+      const current = JSON.parse(row.payload) as Item;
+      const next = transform(current);
+      const payload = JSON.stringify(next);
+      if (payload !== row.payload) {
+        await db.runAsync("UPDATE items SET payload = ? WHERE id = ?", payload, row.id);
+      }
+    }
+  });
+}
+
+async function rewritePendingPayloads(transform: (payload: PendingPayload) => PendingPayload) {
+  const db = await database();
+  const rows = await db.getAllAsync<{ sequence: number; payload: string }>(
+    "SELECT sequence, payload FROM mutations",
+  );
+  await db.withTransactionAsync(async () => {
+    for (const row of rows) {
+      const current = JSON.parse(row.payload) as PendingPayload;
+      const next = transform(current);
+      const payload = JSON.stringify(next);
+      if (payload !== row.payload) {
+        await db.runAsync("UPDATE mutations SET payload = ? WHERE sequence = ?", payload, row.sequence);
+      }
+    }
+  });
+}
+
+export async function clearLocalCategory(categoryId: string) {
+  await rewriteCachedItems((item) =>
+    item.category_id === categoryId ? { ...item, category_id: null } : item,
+  );
+  await rewritePendingPayloads((payload) => {
+    if (payload.category_id !== categoryId) return payload;
+    if (!("type" in payload)) return { ...payload, category_id: null };
+    const next = { ...payload };
+    delete next.category_id;
+    return next;
+  });
+}
+
+export async function removeLocalTag(tagId: string, tagName?: string) {
+  const normalizedName = tagName ? normalizeTag(tagName) : undefined;
+  await rewriteCachedItems((item) => {
+    const tags = item.tags.filter((tag) => (
+      tag.id !== tagId && (!normalizedName || normalizeTag(tag.name) !== normalizedName)
+    ));
+    return tags.length === item.tags.length ? item : { ...item, tags };
+  });
+  if (normalizedName) {
+    await rewritePendingPayloads((payload) => {
+      if (!payload.tags?.length) return payload;
+      return {
+        ...payload,
+        tags: payload.tags.filter((tag) => normalizeTag(tag) !== normalizedName),
+      };
+    });
+  }
 }
 
 export async function listLocal(search = "", includeArchived = false): Promise<Item[]> {

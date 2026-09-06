@@ -33,16 +33,20 @@ test('server-backed capture and lifecycle workflow', async ({ page }) => {
     });
   }, { times: 1 });
   await page.getByTitle('Add to favorites').click();
+  await page.getByRole('button', { name: 'Add favorite', exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Synthetic service failure');
   await expect(page.getByTitle('Add to favorites')).toBeVisible();
   await page.getByRole('button', { name: 'Dismiss message' }).click();
 
   await page.getByTitle('Add to favorites').click();
+  await page.getByRole('button', { name: 'Add favorite', exact: true }).click();
   await page.getByRole('button', { name: 'Archive item' }).click();
+  await page.getByRole('button', { name: 'Archive', exact: true }).click();
   await page.getByRole('link', { name: 'Archive' }).first().click();
   await expect(page.getByRole('link', { name: 'Live API reference' })).toBeVisible();
   await page.getByRole('link', { name: 'Live API reference' }).click();
   await page.getByRole('button', { name: 'Restore item' }).click();
+  await page.getByRole('button', { name: 'Restore', exact: true }).click();
 
   await page.getByRole('button', { name: 'Capture' }).click();
   await page.getByRole('tab', { name: 'Text' }).click();
@@ -77,10 +81,9 @@ test('server-backed capture and lifecycle workflow', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('heading', { name: 'Edited persistent note' })).toBeVisible();
 
-  page.once('dialog', (dialog) => dialog.accept());
   await page.getByRole('button', { name: 'Delete item' }).click();
+  await page.getByRole('button', { name: 'Delete', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Library' })).toBeVisible();
-  await page.getByRole('button', { name: 'Clear search' }).click();
   await expect(page.getByText('2 items')).toBeVisible();
 
   await page.getByRole('link', { name: 'Settings' }).click();

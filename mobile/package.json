@@ -12,6 +12,13 @@
     "lint": "expo lint",
     "test": "vitest run",
     "test:e2e:web": "playwright test --config playwright.web.config.ts",
+    "eas:build:preflight": "node scripts/check-eas-ci-preflight.mjs",
+    "store:assets": "node scripts/generate-store-assets.mjs",
+    "store:screenshots": "node scripts/capture-store-screenshots.mjs",
+    "store:submission": "node scripts/generate-store-submission.mjs",
+    "store:submission:check": "node scripts/generate-store-submission.mjs --check",
+    "store:check": "node scripts/check-store-readiness.mjs",
+    "store:check:ci": "node scripts/check-store-readiness.mjs --ci",
     "postinstall": "patch-package"
   },
   "dependencies": {
@@ -27,6 +34,7 @@
     "expo-router": "~6.0.23",
     "expo-secure-store": "~15.0.8",
     "expo-share-intent": "5.1.1",
+    "expo-sharing": "~14.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-sqlite": "~16.0.10",
     "expo-status-bar": "~3.0.9",
@@ -43,6 +51,7 @@
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "patch-package": "^8.0.0",
+    "pngjs": "^3.4.0",
     "typescript": "~5.9.2",
     "vitest": "^3.2.4"
   }

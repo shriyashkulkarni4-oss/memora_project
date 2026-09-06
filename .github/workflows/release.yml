@@ -10,8 +10,25 @@ permissions:
   id-token: write
 
 jobs:
+  validate-release-config:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate frontend support email
+        env:
+          VITE_SUPPORT_EMAIL: ${{ vars.VITE_SUPPORT_EMAIL }}
+        run: |
+          if ! printf '%s' "$VITE_SUPPORT_EMAIL" | grep -Eq '^[^@]+@[^@]+\.[^@]+$'; then
+            echo "Set repository variable VITE_SUPPORT_EMAIL to the real public support address before releasing frontend images." >&2
+            exit 1
+          fi
+          if printf '%s' "$VITE_SUPPORT_EMAIL" | grep -Eq '(^|[.@])example\.'; then
+            echo "VITE_SUPPORT_EMAIL must not use an example-domain placeholder." >&2
+            exit 1
+          fi
+
   publish:
     runs-on: ubuntu-latest
+    needs: validate-release-config
     strategy:
       matrix:
         include:
@@ -23,6 +40,8 @@ jobs:
             build_args: VITE_API_URL=/api/v1
     steps:
       - uses: actions/checkout@v4
+      - id: vars
+        run: echo "short_sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -34,8 +53,9 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository }}-${{ matrix.component }}
           tags: |
-            type=ref,event=tag
-            type=sha
+            type=raw,value=${{ github.ref_name }}-${{ steps.vars.outputs.short_sha }}
+            type=raw,value=${{ github.ref_name }}
+            type=raw,value=latest
       - uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
@@ -43,12 +63,27 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ matrix.build_args }}
+          build-args: |
+            ${{ matrix.build_args }}
+            VITE_SUPPORT_EMAIL=${{ vars.VITE_SUPPORT_EMAIL }}
           provenance: mode=max
           sbom: true
       - uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ghcr.io/${{ github.repository }}-${{ matrix.component }}:${{ github.ref_name }}
+          image-ref: ghcr.io/${{ github.repository }}-${{ matrix.component }}:${{ github.ref_name }}-${{ steps.vars.outputs.short_sha }}
           severity: CRITICAL,HIGH
           exit-code: "1"
           ignore-unfixed: true
+
+  manifest:
+    runs-on: ubuntu-latest
+    needs: publish
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python3 build/scripts/generate_image_manifest.py --version ${{ github.ref_name }} --sha ${{ github.sha }} --namespace ${{ github.repository }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memoryhive-image-versions
+          path: build/output/image-versions.json

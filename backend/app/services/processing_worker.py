@@ -7,7 +7,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
-from app.models import Item, ItemType, ProcessingJob, ProcessingStatus
+from app.models import AnalysisStatus, Item, ItemType, ProcessingJob, ProcessingStatus
 from app.services.processing import ContentProcessor, ProcessingResult, processing_input
 
 logger = logging.getLogger(__name__)
@@ -57,6 +57,9 @@ class ProcessingWorker:
             if item:
                 item.processing_status = ProcessingStatus.PROCESSING
                 item.processing_error = None
+                item.analysis_status = AnalysisStatus.ANALYZING
+                item.analysis_started_at = now
+                item.analysis_error = None
             await session.commit()
             return job.id
 
@@ -108,9 +111,20 @@ class ProcessingWorker:
                         not preserves_user_value or getattr(item, field) is None
                     ):
                         setattr(item, field, value)
-                item.item_metadata = {**(item.item_metadata or {}), **result.metadata}
+                item.item_metadata = {
+                    **(item.item_metadata or {}),
+                    **result.metadata,
+                    "analysis": {
+                        "engine": "processing_worker",
+                        "version": item.analysis_version,
+                        "completed_at": now.isoformat(),
+                    },
+                }
                 item.processing_status = ProcessingStatus.READY
                 item.processing_error = None
+                item.analysis_status = AnalysisStatus.ANALYZED
+                item.analysis_error = None
+                item.analysis_completed_at = now
                 item.revision += 1
                 item.updated_at = now
             job.status = "completed"
@@ -138,6 +152,11 @@ class ProcessingWorker:
                     ProcessingStatus.FAILED if exhausted else ProcessingStatus.PENDING
                 )
                 item.processing_error = job.last_error
+                item.analysis_status = (
+                    AnalysisStatus.FAILED if exhausted else AnalysisStatus.PENDING
+                )
+                item.analysis_error = job.last_error
+                item.analysis_completed_at = now if exhausted else None
                 item.updated_at = now
             await session.commit()
 
@@ -155,7 +174,13 @@ async def retry_failed_item(session: AsyncSession, item: Item) -> ProcessingJob:
         raise ValueError("Item processing is already queued")
     job = ProcessingJob(item_id=item.id, kind=ItemType(item.type).value)
     session.add(job)
+    now = datetime.now(timezone.utc)
     item.processing_status = ProcessingStatus.PENDING
     item.processing_error = None
-    item.updated_at = datetime.now(timezone.utc)
+    item.analysis_status = AnalysisStatus.PENDING
+    item.analysis_error = None
+    item.analysis_requested_at = now
+    item.analysis_started_at = None
+    item.analysis_completed_at = None
+    item.updated_at = now
     return job

@@ -10,7 +10,14 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from app.config import Settings
 from app.database import Base
-from app.models import Item, ItemType, ProcessingJob, ProcessingStatus, User
+from app.models import (
+    AnalysisStatus,
+    Item,
+    ItemType,
+    ProcessingJob,
+    ProcessingStatus,
+    User,
+)
 from app.services.processing import (
     ContentProcessor,
     ProcessingInput,
@@ -151,6 +158,10 @@ async def test_worker_completes_and_indexes_extracted_content(tmp_path: Path) ->
         assert item.title == "User-provided title"
         assert item.description == "User-provided description"
         assert item.extracted_text == "OCR makes screenshots searchable"
+        assert item.analysis_status == AnalysisStatus.ANALYZED
+        assert item.analysis_error is None
+        assert item.analysis_completed_at is not None
+        assert item.item_metadata["analysis"]["engine"] == "processing_worker"
         assert item.revision == 2
         assert job and job.status == "completed" and job.completed_at is not None
     await engine.dispose()
@@ -170,6 +181,8 @@ async def test_exhausted_job_can_be_requeued(tmp_path: Path) -> None:
         job = await session.get(ProcessingJob, "job-1")
         assert item and item.processing_status == ProcessingStatus.FAILED
         assert item.processing_error == "OCR executable unavailable"
+        assert item.analysis_status == AnalysisStatus.FAILED
+        assert item.analysis_error == "OCR executable unavailable"
         assert job and job.status == "failed"
         await retry_failed_item(session, item)
         await session.commit()
@@ -177,6 +190,8 @@ async def test_exhausted_job_can_be_requeued(tmp_path: Path) -> None:
             await session.scalar(select(func.count()).select_from(ProcessingJob)) == 2
         )
         assert item.processing_status == ProcessingStatus.PENDING
+        assert item.analysis_status == AnalysisStatus.PENDING
+        assert item.analysis_error is None
     await engine.dispose()
 
 

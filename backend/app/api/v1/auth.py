@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 
 from app.config import get_settings
@@ -16,8 +16,9 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models import RefreshToken, User
+from app.models import RefreshToken, User, UserRole
 from app.schemas.auth import (
+    ChangePasswordRequest,
     LogoutRequest,
     RefreshRequest,
     TokenPair,
@@ -54,7 +55,9 @@ async def _issue_token_pair(db: DbSession, user: User) -> TokenPair:
         )
     )
     return TokenPair(
-        access_token=create_access_token({"sub": user.id}),
+        access_token=create_access_token(
+            {"sub": user.id, "session_version": user.session_version}
+        ),
         refresh_token=raw_refresh_token,
         expires_in=settings.access_token_expire_minutes * 60,
     )
@@ -71,11 +74,19 @@ async def register(user_data: UserCreate, db: DbSession) -> User:
     if await db.scalar(select(User.id).where(User.email == email)):
         raise HTTPException(status_code=409, detail="Email already registered")
 
+    existing_users = await db.scalar(select(func.count()).select_from(User))
+    bootstrap_emails = {value.lower() for value in settings.admin_bootstrap_emails}
+    role = (
+        UserRole.ADMIN.value
+        if email in bootstrap_emails or (settings.is_development and not existing_users)
+        else UserRole.USER.value
+    )
     user = User(
         id=str(uuid.uuid4()),
         email=email,
         hashed_password=hash_password(user_data.password),
         name=user_data.name,
+        role=role,
     )
     db.add(user)
     try:
@@ -145,6 +156,31 @@ async def logout_all(current_user: CurrentUser, db: DbSession) -> None:
             RefreshToken.revoked_at.is_(None),
         )
         .values(revoked_at=datetime.now(timezone.utc))
+    )
+    await db.commit()
+
+
+@router.post("/change-password", status_code=204, responses=AUTH_ERRORS)
+async def change_password(
+    data: ChangePasswordRequest, current_user: CurrentUser, db: DbSession
+) -> None:
+    if not verify_password(data.current_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    if verify_password(data.new_password, current_user.hashed_password):
+        raise HTTPException(status_code=400, detail="New password must be different")
+
+    now = datetime.now(timezone.utc)
+    current_user.hashed_password = hash_password(data.new_password)
+    current_user.session_version += 1
+    current_user.password_changed_at = now
+    current_user.updated_at = now
+    await db.execute(
+        update(RefreshToken)
+        .where(
+            RefreshToken.user_id == current_user.id,
+            RefreshToken.revoked_at.is_(None),
+        )
+        .values(revoked_at=now)
     )
     await db.commit()
 

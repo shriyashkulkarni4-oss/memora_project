@@ -1,0 +1,30 @@
+{
+  "generated_at": "2026-09-06T00:00:00.000Z",
+  "eas": {
+    "project_id": "replace-with-eas-project-id",
+    "production_environment": "production",
+    "production_environment_variables": [
+      "EXPO_PUBLIC_API_URL",
+      "EXPO_PUBLIC_PRIVACY_POLICY_URL",
+      "EXPO_PUBLIC_SUPPORT_URL"
+    ],
+    "notes": "Set these variables in the EAS production environment with real public HTTPS values. Do not store secret values here."
+  },
+  "ios": {
+    "credentials_configured": false,
+    "bundle_identifier": "com.codingmonkeylabs.memoryhive",
+    "apple_team_id": "replace-with-apple-team-id",
+    "production_profile_verified": false,
+    "submit_profile_configured": false,
+    "notes": "Record true only after EAS iOS signing and submit settings are configured."
+  },
+  "android": {
+    "credentials_configured": false,
+    "package_name": "com.codingmonkeylabs.memoryhive",
+    "keystore_configured": false,
+    "play_app_signing_enabled": false,
+    "service_account_configured": false,
+    "submit_profile_configured": false,
+    "notes": "Record true only after EAS Android signing, Play app signing, and submit service-account setup are configured."
+  }
+}

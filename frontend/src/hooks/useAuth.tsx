@@ -8,7 +8,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
-  logout: () => Promise<void>;
+  logout: (options?: { localOnly?: boolean }) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
         email: 'mahesh@example.com',
         name: 'Mahesh',
+        role: 'admin',
         is_active: true,
         created_at: '2026-08-01T00:00:00Z',
         updated_at: '2026-08-01T00:00:00Z',
@@ -49,9 +50,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await login(email, password);
   };
 
-  const logout = async () => {
-    if (!demoMode) await authApi.logout();
-    setUser(null);
+  const logout = async (options: { localOnly?: boolean } = {}) => {
+    try {
+      if (options.localOnly || demoMode) authApi.clearSession();
+      else await authApi.logout();
+    } catch {
+      // Server-side revocation is best effort; local cleanup must always complete.
+    } finally {
+      authApi.clearSession();
+      setUser(null);
+    }
   };
 
   return (

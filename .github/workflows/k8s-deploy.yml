@@ -1,0 +1,57 @@
+name: Kubernetes Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment from k8s/config/environments.json"
+        required: true
+        default: staging
+        type: choice
+        options: [local, staging, production]
+      profile:
+        description: "Deployment profile from k8s/config/profiles.json"
+        required: true
+        default: full
+        type: choice
+        options: [full, temporal, app-only, infra]
+      action:
+        description: "Validate renders only, or operate against the configured cluster"
+        required: true
+        default: validate
+        type: choice
+        options: [validate, apply, upgrade, status]
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python3 -m py_compile k8s/scripts/manage.py
+      - run: python3 k8s/scripts/manage.py --output /tmp/memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memoryhive-k8s-${{ inputs.environment }}-${{ inputs.profile }}
+          path: /tmp/memoryhive-k8s/${{ inputs.environment }}/${{ inputs.profile }}
+
+  deploy:
+    if: inputs.action != 'validate'
+    runs-on: ubuntu-latest
+    needs: render
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: azure/setup-kubectl@v4
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBECONFIG_B64 }}" | base64 --decode > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+      - run: python3 k8s/scripts/manage.py ${{ inputs.action }} ${{ inputs.environment }} ${{ inputs.profile }}

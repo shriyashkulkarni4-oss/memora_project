@@ -13,7 +13,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.models import ItemType, ProcessingStatus
+from app.models import AnalysisStatus, ItemType, ProcessingStatus
 
 
 class TagReference(BaseModel):
@@ -122,6 +122,12 @@ class ItemResponse(BaseModel):
     metadata: dict[str, Any] | None
     processing_status: ProcessingStatus
     processing_error: str | None
+    analysis_status: AnalysisStatus
+    analysis_error: str | None
+    analysis_version: int
+    analysis_requested_at: datetime | None
+    analysis_started_at: datetime | None
+    analysis_completed_at: datetime | None
     category_id: str | None
     tags: list[TagReference]
     assets: list[AssetResponse]
@@ -162,6 +168,8 @@ class ItemStats(BaseModel):
     archived_items: int
     pending_processing: int
     failed_processing: int
+    pending_analysis: int
+    failed_analysis: int
     by_type: dict[ItemType, int]
 
 

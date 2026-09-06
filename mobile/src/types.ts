@@ -1,10 +1,26 @@
 export type ItemType = "link" | "screenshot" | "text";
 export type ProcessingStatus = "pending" | "processing" | "ready" | "failed" | "skipped";
+export type AnalysisStatus = "not_analyzed" | "pending" | "analyzing" | "analyzed" | "failed" | "skipped";
 
 export interface TagReference {
   id: string;
   name: string;
   color: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  color: string;
+  icon: string;
+  description: string | null;
+  item_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ManagedTag extends TagReference {
+  usage_count: number;
 }
 
 export interface Asset {
@@ -37,6 +53,12 @@ export interface Item {
   metadata: Record<string, unknown> | null;
   processing_status: ProcessingStatus;
   processing_error: string | null;
+  analysis_status: AnalysisStatus;
+  analysis_error: string | null;
+  analysis_version: number;
+  analysis_requested_at: string | null;
+  analysis_started_at: string | null;
+  analysis_completed_at: string | null;
   category_id: string | null;
   tags: TagReference[];
   assets: Asset[];
@@ -57,6 +79,7 @@ export interface ItemCreate {
   raw_text?: string;
   title?: string;
   notes?: string;
+  category_id?: string;
   tags?: string[];
   metadata?: Record<string, unknown>;
   created_at: string;
@@ -64,10 +87,11 @@ export interface ItemCreate {
 
 export interface ItemUpdate {
   expected_revision?: number;
-  url?: string;
-  raw_text?: string;
-  title?: string;
-  notes?: string;
+  url?: string | null;
+  raw_text?: string | null;
+  title?: string | null;
+  notes?: string | null;
+  category_id?: string | null;
   tags?: string[];
   is_favorite?: boolean;
   is_archived?: boolean;
@@ -95,6 +119,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  role?: "admin" | "user";
 }
 
 export interface Tokens {

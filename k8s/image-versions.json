@@ -1,0 +1,32 @@
+{
+  "local": {
+    "backend": "memoryhive-backend:local",
+    "worker": "memoryhive-backend:local",
+    "temporal-worker": "memoryhive-backend:local",
+    "temporal-scheduler": "memoryhive-backend:local",
+    "frontend": "memoryhive-frontend:local",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  },
+  "staging": {
+    "backend": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "worker": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "temporal-worker": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "temporal-scheduler": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "frontend": "ghcr.io/OWNER/REPO-frontend:replace-me",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  },
+  "production": {
+    "backend": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "worker": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "temporal-worker": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "temporal-scheduler": "ghcr.io/OWNER/REPO-backend:replace-me",
+    "frontend": "ghcr.io/OWNER/REPO-frontend:replace-me",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  }
+}

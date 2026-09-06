@@ -8,23 +8,27 @@ import {
   Plus,
   Search,
   Settings,
+  ShieldCheck,
   Star,
   UserRound,
   X,
 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useLibraryStore } from '../store/libraryStore';
 import Brand from './Brand';
 import CaptureDialog from './CaptureDialog';
 
-const navigation = [
+const baseNavigation = [
   { to: '/', label: 'Library', icon: Library, end: true },
   { to: '/favorites', label: 'Favorites', icon: Star },
   { to: '/archive', label: 'Archive', icon: Archive },
   { to: '/organize', label: 'Organize', icon: FolderTree },
 ];
+
+const IDLE_REFRESH_MS = 60_000;
+const IDLE_LOGOUT_MS = 10 * 60_000;
 
 export default function AppShell() {
   const { user, logout } = useAuth();
@@ -35,14 +39,51 @@ export default function AppShell() {
   const error = useLibraryStore((state) => state.error);
   const notice = useLibraryStore((state) => state.notice);
   const dismissMessage = useLibraryStore((state) => state.dismissMessage);
+  const navigation = user?.role === 'admin'
+    ? [...baseNavigation, { to: '/admin', label: 'Admin', icon: ShieldCheck }]
+    : baseNavigation;
+
+  const signOut = useCallback(async (message?: string, localOnly = false) => {
+    await logout({ localOnly });
+    clear();
+    navigate('/login', {
+      replace: true,
+      state: message ? { notice: message } : undefined,
+    });
+  }, [clear, logout, navigate]);
 
   useEffect(() => { void initialize(); }, [initialize]);
 
-  const signOut = async () => {
-    await logout();
-    clear();
-    navigate('/login');
-  };
+  useEffect(() => {
+    const onExpired = (event: Event) => {
+      const detail = event instanceof CustomEvent ? event.detail as { message?: string } : null;
+      void signOut(detail?.message ?? 'Your session expired. Sign in again.', true);
+    };
+    window.addEventListener('memoryhive:session-expired', onExpired);
+    return () => window.removeEventListener('memoryhive:session-expired', onExpired);
+  }, [signOut]);
+
+  const lastActivity = useRef(Date.now());
+  useEffect(() => {
+    if (!user) return undefined;
+    const markActive = () => {
+      lastActivity.current = Date.now();
+    };
+    const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
+    events.forEach((event) => window.addEventListener(event, markActive, { passive: true }));
+    const timer = window.setInterval(() => {
+      const idleFor = Date.now() - lastActivity.current;
+      if (idleFor >= IDLE_LOGOUT_MS) {
+        void signOut('Signed out after 10 minutes of inactivity.', true);
+        return;
+      }
+      if (idleFor >= IDLE_REFRESH_MS) void initialize(true);
+    }, IDLE_REFRESH_MS);
+    return () => {
+      window.clearInterval(timer);
+      events.forEach((event) => window.removeEventListener(event, markActive));
+    };
+  }, [initialize, signOut, user]);
 
   return (
     <div className="app-shell">

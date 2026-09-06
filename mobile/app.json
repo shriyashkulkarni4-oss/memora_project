@@ -25,6 +25,7 @@
     "android": {
       "package": "com.codingmonkeylabs.memoryhive",
       "versionCode": 1,
+      "blockedPermissions": ["android.permission.RECORD_AUDIO"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#F7F8F6"

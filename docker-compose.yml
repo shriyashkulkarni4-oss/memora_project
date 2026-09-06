@@ -51,6 +51,25 @@ services:
       retries: 10
     restart: unless-stopped
 
+  migrate:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      ENVIRONMENT: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoryhive}:${POSTGRES_PASSWORD:-memoryhive123}@db:5432/${POSTGRES_DB:-memoryhive}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-dev-secret-key-change-before-production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-encryption-key-32-bytes-long!}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    restart: "no"
+
   backend:
     build:
       context: ./backend
@@ -72,9 +91,17 @@ services:
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-dev-encryption-key-32-bytes-long!}
       CORS_ORIGINS: '${CORS_ORIGINS:-["http://localhost:3000"]}'
+      TEMPORAL_ENABLED: ${TEMPORAL_ENABLED:-false}
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+      TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-10}
+      TEMPORAL_SCHEDULER_BATCH_SIZE: ${TEMPORAL_SCHEDULER_BATCH_SIZE:-25}
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       minio:
@@ -110,7 +137,15 @@ services:
       N8N_API_KEY: ${N8N_API_KEY:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
       OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      TEMPORAL_ENABLED: ${TEMPORAL_ENABLED:-false}
+      TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+      TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-10}
+      TEMPORAL_SCHEDULER_BATCH_SIZE: ${TEMPORAL_SCHEDULER_BATCH_SIZE:-25}
     depends_on:
+      migrate:
+        condition: service_completed_successfully
       db:
         condition: service_healthy
       minio:
@@ -131,6 +166,7 @@ services:
       target: development
     environment:
       VITE_API_URL: ${VITE_API_URL:-/api/v1}
+      VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:-support@memoryhive.example.com}
       VITE_PROXY_TARGET: http://backend:8000
     ports:
       - "${FRONTEND_PORT:-3000}:3000"
@@ -148,8 +184,122 @@ services:
       start_period: 15s
     restart: unless-stopped
 
+  temporal-db:
+    image: postgres:15-alpine
+    profiles: ["temporal"]
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+    volumes:
+      - temporal_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  temporal:
+    image: temporalio/auto-setup:${TEMPORAL_VERSION:-latest}
+    profiles: ["temporal"]
+    environment:
+      DB: postgres12
+      DB_PORT: 5432
+      POSTGRES_USER: temporal
+      POSTGRES_PWD: temporal
+      POSTGRES_SEEDS: temporal-db
+      DYNAMIC_CONFIG_FILE_PATH: config/dynamicconfig/development-sql.yaml
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CLI_ADDRESS: temporal:7233
+    ports:
+      - "${TEMPORAL_PORT:-7233}:7233"
+    volumes:
+      - ./ops/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro
+    depends_on:
+      temporal-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  temporal-ui:
+    image: temporalio/ui:${TEMPORAL_UI_VERSION:-latest}
+    profiles: ["temporal"]
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
+    ports:
+      - "${TEMPORAL_UI_PORT:-8088}:8080"
+    depends_on:
+      - temporal
+    restart: unless-stopped
+
+  temporal-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    command: ["python", "-m", "app.temporal_pipeline.worker"]
+    profiles: ["temporal"]
+    environment:
+      ENVIRONMENT: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoryhive}:${POSTGRES_PASSWORD:-memoryhive123}@db:5432/${POSTGRES_DB:-memoryhive}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-memoryhive-uploads}
+      MINIO_SECURE: "false"
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+      TEMPORAL_ENABLED: "true"
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  temporal-scheduler:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: development
+    command: ["python", "-m", "app.temporal_pipeline.scheduler"]
+    profiles: ["temporal"]
+    environment:
+      ENVIRONMENT: development
+      APP_DEBUG: "false"
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-memoryhive}:${POSTGRES_PASSWORD:-memoryhive123}@db:5432/${POSTGRES_DB:-memoryhive}
+      TEMPORAL_ENABLED: "true"
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+      TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-10}
+      TEMPORAL_SCHEDULER_BATCH_SIZE: ${TEMPORAL_SCHEDULER_BATCH_SIZE:-25}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      db:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
 volumes:
   pgdata:
   miniodata:
   redisdata:
+  temporal_pgdata:
   frontend_node_modules:

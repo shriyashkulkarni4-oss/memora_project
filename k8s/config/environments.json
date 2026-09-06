@@ -1,0 +1,134 @@
+{
+  "local": {
+    "namespace": "memoryhive-local",
+    "expected_context": "minikube",
+    "domain": "memoryhive.local",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "selfsigned",
+    "temporal_address": "temporal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "IfNotPresent",
+    "default_profile": "full",
+    "replicas": {
+      "backend": 1,
+      "worker": 1,
+      "temporal-worker": 1,
+      "temporal-scheduler": 1,
+      "frontend": 1
+    },
+    "storage": {
+      "postgres": "5Gi",
+      "minio": "10Gi"
+    },
+    "resources": {
+      "backend": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "500m", "memory": "768Mi" }
+      },
+      "worker": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "750m", "memory": "1Gi" }
+      },
+      "temporal-worker": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "750m", "memory": "1Gi" }
+      },
+      "temporal-scheduler": {
+        "requests": { "cpu": "50m", "memory": "128Mi" },
+        "limits": { "cpu": "250m", "memory": "256Mi" }
+      },
+      "frontend": {
+        "requests": { "cpu": "50m", "memory": "96Mi" },
+        "limits": { "cpu": "250m", "memory": "256Mi" }
+      }
+    }
+  },
+  "staging": {
+    "namespace": "memoryhive-staging",
+    "expected_context": "memoryhive-staging",
+    "domain": "staging.memoryhive.example.com",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "letsencrypt-staging",
+    "temporal_address": "temporal.example.internal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "Always",
+    "default_profile": "full",
+    "replicas": {
+      "backend": 1,
+      "worker": 1,
+      "temporal-worker": 1,
+      "temporal-scheduler": 1,
+      "frontend": 1
+    },
+    "storage": {
+      "postgres": "20Gi",
+      "minio": "50Gi"
+    },
+    "resources": {
+      "backend": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "1Gi" }
+      },
+      "worker": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "2Gi" }
+      },
+      "temporal-worker": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "2Gi" }
+      },
+      "temporal-scheduler": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      },
+      "frontend": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      }
+    }
+  },
+  "production": {
+    "namespace": "memoryhive-production",
+    "expected_context": "memoryhive-production",
+    "domain": "memoryhive.example.com",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "letsencrypt-production",
+    "temporal_address": "temporal.example.internal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "IfNotPresent",
+    "default_profile": "full",
+    "replicas": {
+      "backend": 2,
+      "worker": 1,
+      "temporal-worker": 1,
+      "temporal-scheduler": 1,
+      "frontend": 2
+    },
+    "storage": {
+      "postgres": "100Gi",
+      "minio": "250Gi"
+    },
+    "resources": {
+      "backend": {
+        "requests": { "cpu": "500m", "memory": "768Mi" },
+        "limits": { "cpu": "2", "memory": "2Gi" }
+      },
+      "worker": {
+        "requests": { "cpu": "500m", "memory": "1Gi" },
+        "limits": { "cpu": "2", "memory": "4Gi" }
+      },
+      "temporal-worker": {
+        "requests": { "cpu": "500m", "memory": "1Gi" },
+        "limits": { "cpu": "2", "memory": "4Gi" }
+      },
+      "temporal-scheduler": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      },
+      "frontend": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      }
+    }
+  }
+}

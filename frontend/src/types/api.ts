@@ -9,6 +9,20 @@ export type ProcessingStatus =
   | 'failed'
   | 'skipped';
 
+export type AdminProcessingJobStatus =
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
+
+export type AnalysisStatus =
+  | 'not_analyzed'
+  | 'pending'
+  | 'analyzing'
+  | 'analyzed'
+  | 'failed'
+  | 'skipped';
+
 export interface ApiError {
   error: {
     code: string;
@@ -54,6 +68,12 @@ export interface Item {
   metadata: Record<string, unknown> | null;
   processing_status: ProcessingStatus;
   processing_error: string | null;
+  analysis_status: AnalysisStatus;
+  analysis_error: string | null;
+  analysis_version: number;
+  analysis_requested_at: string | null;
+  analysis_started_at: string | null;
+  analysis_completed_at: string | null;
   category_id: string | null;
   tags: ItemTag[];
   assets: Asset[];
@@ -125,6 +145,8 @@ export interface ItemStats {
   archived_items: number;
   pending_processing: number;
   failed_processing: number;
+  pending_analysis: number;
+  failed_analysis: number;
   by_type: Record<ItemType, number>;
 }
 
@@ -132,7 +154,89 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  role: 'admin' | 'user';
   is_active: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface AdminDashboard {
+  users_total: number;
+  active_users: number;
+  disabled_users: number;
+  admin_users: number;
+  items_total: number;
+  archived_items: number;
+  assets_total: number;
+  storage_bytes: number;
+  processing_pending: number;
+  processing_failed: number;
+  analysis_pending: number;
+  analysis_failed: number;
+}
+
+export interface AdminUser extends User {
+  item_count: number;
+  asset_count: number;
+  storage_bytes: number;
+}
+
+export interface AdminUsersPage {
+  users: AdminUser[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminProcessingJob {
+  id: string;
+  item_id: string;
+  item_title: string | null;
+  item_type: ItemType;
+  item_processing_status: ProcessingStatus;
+  user_id: string;
+  user_email: string;
+  status: AdminProcessingJobStatus;
+  attempts: number;
+  max_attempts: number;
+  next_attempt_at: string;
+  locked_at: string | null;
+  last_error: string | null;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+}
+
+export interface AdminProcessingJobsPage {
+  jobs: AdminProcessingJob[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface AdminBackupRecord {
+  path: string;
+  created_at: string;
+  size_bytes: number;
+  has_postgres_dump: boolean;
+  has_minio_dir: boolean;
+  has_checksums: boolean;
+}
+
+export interface AdminBackupStatus {
+  configured: boolean;
+  command: string | null;
+  backup_root: string;
+  retention_days: number;
+  latest: AdminBackupRecord | null;
+  recent: AdminBackupRecord[];
+}
+
+export interface AdminBackupRunResult {
+  status: 'succeeded';
+  exit_code: number;
+  stdout: string;
+  stderr: string;
+  latest: AdminBackupRecord | null;
+  duration_seconds: number;
 }

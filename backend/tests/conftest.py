@@ -1,12 +1,13 @@
 """Database-isolated API integration fixtures."""
 
 from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.database import Base, get_db
 from app.main import app
@@ -49,8 +50,10 @@ class FakeStorage:
         return True
 
 
-@pytest_asyncio.fixture
-async def api_client(tmp_path: Path) -> AsyncIterator[tuple[AsyncClient, FakeStorage]]:
+@asynccontextmanager
+async def isolated_api_client(
+    tmp_path: Path,
+) -> AsyncIterator[tuple[AsyncClient, FakeStorage, async_sessionmaker[AsyncSession]]]:
     engine = create_async_engine(f"sqlite+aiosqlite:///{tmp_path / 'api.db'}")
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
 
@@ -69,9 +72,23 @@ async def api_client(tmp_path: Path) -> AsyncIterator[tuple[AsyncClient, FakeSto
     app.dependency_overrides[get_db] = override_db
     app.dependency_overrides[get_storage_service] = lambda: storage
 
-    transport = ASGITransport(app=app)
+    transport = ASGITransport(app=app, client=(f"test-{tmp_path.name}", 12345))
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        yield client, storage
+        yield client, storage, session_factory
 
     app.dependency_overrides.clear()
     await engine.dispose()
+
+
+@pytest_asyncio.fixture
+async def api_client(tmp_path: Path) -> AsyncIterator[tuple[AsyncClient, FakeStorage]]:
+    async with isolated_api_client(tmp_path) as (client, storage, _session_factory):
+        yield client, storage
+
+
+@pytest_asyncio.fixture
+async def api_client_with_db(
+    tmp_path: Path,
+) -> AsyncIterator[tuple[AsyncClient, FakeStorage, async_sessionmaker[AsyncSession]]]:
+    async with isolated_api_client(tmp_path) as context:
+        yield context

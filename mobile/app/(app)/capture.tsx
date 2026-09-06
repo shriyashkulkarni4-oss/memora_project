@@ -3,11 +3,12 @@ import * as Crypto from "expo-crypto";
 import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { useShareIntentContext } from "expo-share-intent";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { useAppState } from "@/src/app-state";
-import { Field, PrimaryButton } from "@/src/components";
+import { CategoryPicker, Field, PrimaryButton, TagPicker } from "@/src/components";
+import { tagsFromItems, uniqueTags } from "@/src/item-filters";
 import { colors } from "@/src/theme";
 import type { ItemType } from "@/src/types";
 
@@ -18,16 +19,19 @@ const modes: { type: ItemType; label: string; icon: keyof typeof Ionicons.glyphM
 ];
 
 export default function Capture() {
-  const { capture } = useAppState();
+  const { capture, categories, items } = useAppState();
   const { hasShareIntent, resetShareIntent, shareIntent } = useShareIntentContext();
   const [type, setType] = useState<ItemType>("link");
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [notes, setNotes] = useState("");
-  const [tags, setTags] = useState("");
+  const [categoryId, setCategoryId] = useState<string | null>(null);
+  const [tags, setTags] = useState<string[]>([]);
+  const [pendingTagInput, setPendingTagInput] = useState("");
   const [imageUri, setImageUri] = useState<string>();
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const pressInSubmit = useRef(false);
 
   useEffect(() => {
     if (!hasShareIntent) return;
@@ -70,7 +74,8 @@ export default function Capture() {
         created_at: now,
         title: title.trim() || undefined,
         notes: notes.trim() || undefined,
-        tags: tags.split(",").map((tag) => tag.trim().toLowerCase()).filter(Boolean),
+        category_id: categoryId ?? undefined,
+        tags: uniqueTags([...tags, ...pendingTagInput.split(",")]),
         ...(type === "link" ? { url: content.trim() } : {}),
         ...(type === "text" ? { raw_text: content.trim() } : {}),
         ...(type === "screenshot" ? { metadata: { local_uri: imageUri } } : {}),
@@ -82,6 +87,19 @@ export default function Capture() {
     } finally {
       setSaving(false);
     }
+  }
+
+  function submitFromPressIn() {
+    pressInSubmit.current = true;
+    void submit();
+  }
+
+  function submitFromPress() {
+    if (pressInSubmit.current) {
+      pressInSubmit.current = false;
+      return;
+    }
+    void submit();
   }
 
   return (
@@ -105,9 +123,22 @@ export default function Capture() {
           </Pressable>
         ) : null}
         <Field label="Notes (optional)" multiline onChangeText={setNotes} placeholder="Why is this worth keeping?" value={notes} />
-        <Field autoCapitalize="none" label="Tags (optional)" onChangeText={setTags} placeholder="research, design, later" value={tags} />
+        <CategoryPicker categories={categories} selectedId={categoryId} onChange={setCategoryId} />
+        <TagPicker
+          available={tagsFromItems(items)}
+          placeholder="research, design, later"
+          selected={tags}
+          onChange={setTags}
+          onInputChange={setPendingTagInput}
+        />
         {error ? <Text accessibilityRole="alert" style={styles.error}>{error}</Text> : null}
-        <PrimaryButton icon="bookmark-outline" label="Save to library" loading={saving} onPress={() => void submit()} />
+        <PrimaryButton
+          icon="bookmark-outline"
+          label="Save to library"
+          loading={saving}
+          onPress={submitFromPress}
+          onPressIn={Platform.OS === "web" ? submitFromPressIn : undefined}
+        />
         <Text style={styles.offlineNote}>Saved on this device immediately. Sync runs when a connection is available.</Text>
       </ScrollView>
     </KeyboardAvoidingView>

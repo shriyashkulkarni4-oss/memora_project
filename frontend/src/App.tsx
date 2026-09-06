@@ -1,10 +1,14 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import AccountDeletionPage from './components/AccountDeletionPage';
+import AdminPage from './components/AdminPage';
 import AppShell from './components/AppShell';
 import AuthPage from './components/AuthPage';
 import ItemDetailPage from './components/ItemDetailPage';
 import LibraryPage from './components/LibraryPage';
 import OrganizationPage from './components/OrganizationPage';
+import PrivacyPage from './components/PrivacyPage';
 import SettingsPage from './components/SettingsPage';
+import SupportPage from './components/SupportPage';
 import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function LoadingScreen() {
@@ -33,6 +37,9 @@ function PublicRoute({ children }: { children: JSX.Element }) {
 function AppRoutes() {
   return (
     <Routes>
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/account/delete" element={<AccountDeletionPage />} />
+      <Route path="/support" element={<SupportPage />} />
       <Route path="/login" element={<PublicRoute><AuthPage mode="login" /></PublicRoute>} />
       <Route path="/register" element={<PublicRoute><AuthPage mode="register" /></PublicRoute>} />
       <Route path="/" element={<RequireAuth><AppShell /></RequireAuth>}>
@@ -40,6 +47,7 @@ function AppRoutes() {
         <Route path="favorites" element={<LibraryPage mode="favorites" />} />
         <Route path="archive" element={<LibraryPage mode="archive" />} />
         <Route path="organize" element={<OrganizationPage />} />
+        <Route path="admin" element={<AdminPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="items/:id" element={<ItemDetailPage />} />
       </Route>

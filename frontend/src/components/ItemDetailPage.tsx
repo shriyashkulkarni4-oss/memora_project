@@ -18,8 +18,11 @@ import {
 import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
+import ConfirmDialog from './ConfirmDialog';
+import TagPicker from './TagPicker';
 
 const icons = { link: Link2, screenshot: ImageIcon, text: FileText };
+type DetailConfirmation = 'favorite' | 'archive' | 'delete' | null;
 
 export default function ItemDetailPage() {
   const { id } = useParams();
@@ -30,9 +33,19 @@ export default function ItemDetailPage() {
   const [title, setTitle] = useState(item?.title ?? '');
   const [notes, setNotes] = useState(item?.notes ?? '');
   const [categoryId, setCategoryId] = useState(item?.category_id ?? '');
+  const [tagNames, setTagNames] = useState(item?.tags.map((tag) => tag.name) ?? []);
+  const [confirmation, setConfirmation] = useState<DetailConfirmation>(null);
   const [busy, setBusy] = useState(false);
   const initialize = store.initialize;
   const processingActive = Boolean(item && ['pending', 'processing'].includes(item.processing_status));
+
+  useEffect(() => {
+    if (!item || editing) return;
+    setTitle(item.title ?? '');
+    setNotes(item.notes ?? '');
+    setCategoryId(item.category_id ?? '');
+    setTagNames(item.tags.map((tag) => tag.name));
+  }, [editing, item]);
 
   useEffect(() => {
     if (!processingActive) return;
@@ -66,8 +79,24 @@ export default function ItemDetailPage() {
         title: title || null,
         notes: notes || null,
         category_id: categoryId || null,
+        tags: tagNames,
       });
       setEditing(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const confirmAction = async () => {
+    setBusy(true);
+    try {
+      if (confirmation === 'favorite') await store.toggleFavorite(item.id);
+      if (confirmation === 'archive') await store.toggleArchive(item.id);
+      if (confirmation === 'delete') {
+        await store.deleteItem(item.id);
+        navigate('/');
+      }
+      setConfirmation(null);
     } finally {
       setBusy(false);
     }
@@ -92,7 +121,7 @@ export default function ItemDetailPage() {
           <button
             className={`icon-button${item.is_favorite ? ' selected' : ''}`}
             type="button"
-            onClick={() => store.toggleFavorite(item.id)}
+            onClick={() => setConfirmation('favorite')}
             title={item.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
           >
             <Star size={19} fill={item.is_favorite ? 'currentColor' : 'none'} />
@@ -151,7 +180,9 @@ export default function ItemDetailPage() {
           <section>
             <span className="section-label">Tags</span>
             <div className="item-tags large">
-              {item.tags.length ? item.tags.map((tag) => <span key={tag.id}>#{tag.name}</span>) : <em>None</em>}
+              {item.tags.length ? item.tags.map((tag) => (
+                <Link key={tag.id} to={`/?tag=${encodeURIComponent(tag.name)}`}>#{tag.name}</Link>
+              )) : <em>None</em>}
             </div>
           </section>
           <section>
@@ -168,23 +199,14 @@ export default function ItemDetailPage() {
             )}
           </section>
           <section className="aside-actions">
-            <button type="button" onClick={() => store.toggleArchive(item.id)}>
+            <button type="button" onClick={() => setConfirmation('archive')}>
               {item.is_archived ? <RotateCcw size={17} /> : <Archive size={17} />}
               {item.is_archived ? 'Restore item' : 'Archive item'}
             </button>
             <button
               type="button"
               className="danger"
-              onClick={async () => {
-                if (window.confirm('Delete this item?')) {
-                  try {
-                    await store.deleteItem(item.id);
-                    navigate('/');
-                  } catch {
-                    // The global message keeps the failure visible and the item is restored.
-                  }
-                }
-              }}
+              onClick={() => setConfirmation('delete')}
             >
               <Trash2 size={17} /> Delete item
             </button>
@@ -210,6 +232,7 @@ export default function ItemDetailPage() {
             <form className="capture-form" onSubmit={save}>
               <label className="field"><span>Title</span><input value={title} onChange={(event) => setTitle(event.target.value)} /></label>
               <label className="field"><span>Category</span><select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}><option value="">None</option>{store.categories.map((record) => <option key={record.id} value={record.id}>{record.name}</option>)}</select></label>
+              <TagPicker selected={tagNames} available={store.tags} onChange={setTagNames} />
               <label className="field"><span>Notes</span><textarea rows={5} value={notes} onChange={(event) => setNotes(event.target.value)} /></label>
               <footer className="dialog-actions">
                 <button className="button secondary" type="button" disabled={busy} onClick={() => setEditing(false)}>Cancel</button>
@@ -218,6 +241,29 @@ export default function ItemDetailPage() {
             </form>
           </section>
         </div>
+      )}
+      {confirmation && (
+        <ConfirmDialog
+          title={confirmation === 'delete'
+            ? 'Delete item?'
+            : confirmation === 'favorite'
+              ? item.is_favorite ? 'Remove favorite?' : 'Add favorite?'
+              : item.is_archived ? 'Restore item?' : 'Archive item?'}
+          description={confirmation === 'delete'
+            ? 'This item will be removed from your library.'
+            : confirmation === 'favorite'
+              ? `${item.title || 'This item'} will ${item.is_favorite ? 'leave' : 'appear in'} Favorites.`
+              : `${item.title || 'This item'} will be ${item.is_archived ? 'restored to the library' : 'moved to Archive'}.`}
+          confirmLabel={confirmation === 'delete'
+            ? 'Delete'
+            : confirmation === 'favorite'
+              ? item.is_favorite ? 'Remove favorite' : 'Add favorite'
+              : item.is_archived ? 'Restore' : 'Archive'}
+          danger={confirmation === 'delete'}
+          busy={busy}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={confirmAction}
+        />
       )}
     </div>
   );

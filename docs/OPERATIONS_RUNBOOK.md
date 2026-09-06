@@ -1,6 +1,6 @@
 # Operations Runbook
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 ## Deploy
 
@@ -35,6 +35,22 @@ Forward Prometheus alerts to the organization's existing alert manager.
 Investigate sustained 5xx errors, p95 latency above one second, a failed worker,
 or a growing processing backlog. Request IDs correlate client reports to logs.
 
+## Processing operations
+
+Admins can inspect recent background jobs from the web Admin page or
+`GET /api/v1/admin/processing/jobs`. Filter with `?status=failed` to triage
+exhausted link metadata and screenshot OCR jobs. Retry a failed job with
+`POST /api/v1/admin/processing/jobs/{job_id}/retry`; this creates a new pending
+job and keeps the failed job as audit history. Do not retry jobs repeatedly
+until the underlying worker dependency, such as outbound fetch access or
+Tesseract OCR, has been fixed.
+
+Temporal-backed analysis is optional. Enable it with `TEMPORAL_ENABLED=true` and
+run the `temporal` Compose profile or point `TEMPORAL_ADDRESS` at a private
+Temporal cluster. Check `analysis_status`, `pending_analysis`, and
+`failed_analysis` before disabling the legacy worker path. Keep Temporal UI and
+frontend ports internal to operators; do not expose them publicly.
+
 ## Backup and recovery
 
 Run daily and copy the resulting directory to encrypted off-host storage:
@@ -48,6 +64,12 @@ The backup contains a PostgreSQL custom dump, an object-level MinIO mirror, and
 SHA-256 checksums. Verification restores the database into a temporary database
 without touching production. Perform a full recovery exercise quarterly in an
 isolated environment.
+
+Admins can view backup status in the web Admin page through `/api/v1/admin/backup`.
+The Admin "Run backup" button remains disabled until `ADMIN_BACKUP_COMMAND` is
+configured. Use that setting only in deployments where the backend process can
+execute the operations command and access the intended `BACKUP_ROOT`; leave it
+blank when backups are owned by an external scheduler.
 
 Full restore is destructive and briefly stops the API and worker:
 

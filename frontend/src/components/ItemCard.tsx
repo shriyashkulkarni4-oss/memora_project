@@ -1,6 +1,7 @@
 import { formatDistanceToNow } from 'date-fns';
 import {
   Archive,
+  Eye,
   ExternalLink,
   FileText,
   Image as ImageIcon,
@@ -8,17 +9,43 @@ import {
   RotateCcw,
   Star,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
 import type { Item } from '../types/api';
+import ConfirmDialog from './ConfirmDialog';
 
 const typeIcons = { link: Link2, screenshot: ImageIcon, text: FileText };
+type CardConfirmation = 'favorite' | 'archive' | null;
 
-export default function ItemCard({ item, compact = false }: { item: Item; compact?: boolean }) {
+export default function ItemCard({
+  item,
+  compact = false,
+  onTagClick,
+}: {
+  item: Item;
+  compact?: boolean;
+  onTagClick?: (tag: string) => void;
+}) {
   const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
   const toggleArchive = useLibraryStore((state) => state.toggleArchive);
+  const [confirmation, setConfirmation] = useState<CardConfirmation>(null);
+  const [busy, setBusy] = useState(false);
   const TypeIcon = typeIcons[item.type];
   const previewUrl = item.metadata?.preview_url as string | undefined;
+  const title = item.title || item.source_domain || 'Untitled capture';
+
+  const confirmAction = async () => {
+    if (!confirmation) return;
+    setBusy(true);
+    try {
+      if (confirmation === 'favorite') await toggleFavorite(item.id);
+      if (confirmation === 'archive') await toggleArchive(item.id);
+      setConfirmation(null);
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <article className={`item-card ${compact ? 'compact' : ''}`}>
@@ -45,9 +72,7 @@ export default function ItemCard({ item, compact = false }: { item: Item; compac
         </div>
 
         <h2>
-          <Link to={`/items/${item.id}`}>
-            {item.title || item.source_domain || 'Untitled capture'}
-          </Link>
+          <Link to={`/items/${item.id}`}>{title}</Link>
         </h2>
         {item.type === 'text' ? (
           <blockquote>{item.raw_text}</blockquote>
@@ -57,7 +82,9 @@ export default function ItemCard({ item, compact = false }: { item: Item; compac
 
         <div className="item-tags" aria-label="Tags">
           {item.tags.slice(0, 3).map((tag) => (
-            <span key={tag.id}>#{tag.name}</span>
+            <button key={tag.id} type="button" onClick={() => onTagClick?.(tag.name)}>
+              #{tag.name}
+            </button>
           ))}
         </div>
 
@@ -70,25 +97,43 @@ export default function ItemCard({ item, compact = false }: { item: Item; compac
             <button
               type="button"
               className={item.is_favorite ? 'active' : ''}
-              onClick={() => toggleFavorite(item.id)}
+              onClick={() => setConfirmation('favorite')}
               title={item.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
+              aria-label={item.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
             >
               <Star size={17} fill={item.is_favorite ? 'currentColor' : 'none'} />
-              <span className="sr-only">
-                {item.is_favorite ? 'Remove from favorites' : 'Add to favorites'}
-              </span>
             </button>
             <button
               type="button"
-              onClick={() => toggleArchive(item.id)}
+              onClick={() => setConfirmation('archive')}
               title={item.is_archived ? 'Restore' : 'Archive'}
+              aria-label={item.is_archived ? 'Restore' : 'Archive'}
             >
               {item.is_archived ? <RotateCcw size={17} /> : <Archive size={17} />}
-              <span className="sr-only">{item.is_archived ? 'Restore' : 'Archive'}</span>
             </button>
+            <Link className="show-details-button" to={`/items/${item.id}`} title={`Show details for ${title}`}>
+              <Eye size={16} />
+              <span>Details</span>
+            </Link>
           </span>
         </footer>
       </div>
+      {confirmation && (
+        <ConfirmDialog
+          title={confirmation === 'favorite'
+            ? item.is_favorite ? 'Remove favorite?' : 'Add favorite?'
+            : item.is_archived ? 'Restore item?' : 'Archive item?'}
+          description={confirmation === 'favorite'
+            ? `${title} will ${item.is_favorite ? 'leave' : 'appear in'} Favorites.`
+            : `${title} will be ${item.is_archived ? 'restored to the library' : 'moved to Archive'}.`}
+          confirmLabel={confirmation === 'favorite'
+            ? item.is_favorite ? 'Remove favorite' : 'Add favorite'
+            : item.is_archived ? 'Restore' : 'Archive'}
+          busy={busy}
+          onCancel={() => setConfirmation(null)}
+          onConfirm={confirmAction}
+        />
+      )}
     </article>
   );
 }

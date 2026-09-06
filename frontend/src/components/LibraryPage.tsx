@@ -8,12 +8,15 @@ import {
   Star,
   X,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
-import type { ItemType } from '../types/api';
+import type { Item, ItemType } from '../types/api';
+import FilterPills, { type FilterPill } from './FilterPills';
 import ItemCard from './ItemCard';
 
 type LibraryMode = 'library' | 'favorites' | 'archive';
+type SummaryFilter = 'saved' | 'favorites' | 'processing' | 'archived';
 
 const typeOptions: { value: ItemType | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -22,27 +25,75 @@ const typeOptions: { value: ItemType | 'all'; label: string }[] = [
   { value: 'text', label: 'Text' },
 ];
 
+const summaryLabels: Record<SummaryFilter, string> = {
+  saved: 'Saved',
+  favorites: 'Favorites',
+  processing: 'Processing',
+  archived: 'Archived',
+};
+
+function normalizeTag(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function uniqueTags(values: string[]) {
+  return Array.from(new Set(values.map(normalizeTag).filter(Boolean)));
+}
+
 export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }) {
   const store = useLibraryStore();
-  const [category, setCategory] = useState('all');
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sort, setSort] = useState('newest');
   const query = store.query;
   const search = store.search;
   const pageTitle = mode === 'favorites' ? 'Favorites' : mode === 'archive' ? 'Archive' : 'Library';
+  const requestedType = searchParams.get('type');
+  const typeFilter = typeOptions.some((option) => option.value === requestedType) ? requestedType as ItemType : 'all';
+  const category = searchParams.get('category') ?? 'all';
+  const tagFilters = useMemo(() => uniqueTags(searchParams.getAll('tag')), [searchParams]);
+  const requestedSummary = searchParams.get('summary');
+  const summaryFilter = requestedSummary !== null && requestedSummary in summaryLabels ? requestedSummary as SummaryFilter : null;
+  const effectiveSummaryFilter = mode === 'library' ? summaryFilter : null;
+
+  const updateFilters = useCallback((updates: Record<string, string | string[] | null>) => {
+    const next = new URLSearchParams(searchParams);
+    Object.entries(updates).forEach(([key, value]) => {
+      next.delete(key);
+      if (Array.isArray(value)) value.forEach((entry) => next.append(key, entry));
+      else if (value) next.set(key, value);
+    });
+    setSearchParams(next);
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void search(query), 250);
     return () => window.clearTimeout(timer);
   }, [query, search]);
 
+  useEffect(() => {
+    const paramQuery = searchParams.get('q') ?? '';
+    if (paramQuery !== store.query) store.setQuery(paramQuery);
+  }, [searchParams, store]);
+
+  useEffect(() => {
+    if (typeFilter !== store.typeFilter) store.setTypeFilter(typeFilter);
+  }, [store, typeFilter]);
+
+  const applySummaryFilter = useCallback((item: Item) => {
+    const current = effectiveSummaryFilter ?? (mode === 'favorites' ? 'favorites' : mode === 'archive' ? 'archived' : 'saved');
+    if (current === 'favorites') return item.is_favorite && !item.is_archived;
+    if (current === 'archived') return item.is_archived;
+    if (current === 'processing') return !item.is_archived && ['pending', 'processing'].includes(item.processing_status);
+    return !item.is_archived;
+  }, [effectiveSummaryFilter, mode]);
+
   const visibleItems = useMemo(() => {
     const query = store.query.trim().toLowerCase();
     const records = (query && store.searchResults ? store.searchResults : store.items).filter((item) => {
-      if (mode === 'favorites' && (!item.is_favorite || item.is_archived)) return false;
-      if (mode === 'archive' && !item.is_archived) return false;
-      if (mode === 'library' && item.is_archived) return false;
-      if (store.typeFilter !== 'all' && item.type !== store.typeFilter) return false;
+      if (!applySummaryFilter(item)) return false;
+      if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (category !== 'all' && item.category_id !== category) return false;
+      if (tagFilters.length && !tagFilters.every((tag) => item.tags.some((itemTag) => itemTag.name === tag))) return false;
       if (!query) return true;
       return [
         item.title,
@@ -60,11 +111,42 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
       return b.created_at.localeCompare(a.created_at);
     });
-  }, [category, mode, sort, store.items, store.query, store.searchResults, store.typeFilter]);
+  }, [applySummaryFilter, category, sort, store.items, store.query, store.searchResults, tagFilters, typeFilter]);
 
   const activeItems = store.items.filter((item) => !item.is_archived);
   const pending = activeItems.filter((item) => ['pending', 'processing'].includes(item.processing_status)).length;
   const favorites = activeItems.filter((item) => item.is_favorite).length;
+  const categoryLabel = store.categories.find((item) => item.id === category)?.name;
+  const activePills: FilterPill[] = [
+    ...(store.query.trim() ? [{
+      id: 'q',
+      label: `Search: ${store.query.trim()}`,
+      onRemove: () => {
+        store.setQuery('');
+        updateFilters({ q: null });
+      },
+    }] : []),
+    ...(typeFilter !== 'all' ? [{
+      id: 'type',
+      label: typeOptions.find((option) => option.value === typeFilter)?.label ?? typeFilter,
+      onRemove: () => updateFilters({ type: null }),
+    }] : []),
+    ...(category !== 'all' ? [{
+      id: 'category',
+      label: `Category: ${categoryLabel ?? 'Unknown'}`,
+      onRemove: () => updateFilters({ category: null }),
+    }] : []),
+    ...tagFilters.map((tag) => ({
+      id: `tag:${tag}`,
+      label: `#${tag}`,
+      onRemove: () => updateFilters({ tag: tagFilters.filter((value) => value !== tag) }),
+    })),
+    ...(effectiveSummaryFilter ? [{
+      id: 'summary',
+      label: summaryLabels[effectiveSummaryFilter],
+      onRemove: () => updateFilters({ summary: null }),
+    }] : []),
+  ];
 
   if (store.isLoading && !store.initialized) {
     return <div className="page"><section className="empty-state" aria-label="Loading library"><span className="brand-loader" /></section></div>;
@@ -86,10 +168,18 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
 
       {mode === 'library' && (
         <div className="library-summary" aria-label="Library summary">
-          <span><strong>{activeItems.length}</strong> saved</span>
-          <span><Star size={15} /> <strong>{favorites}</strong> favorites</span>
-          <span><Sparkles size={15} /> <strong>{pending}</strong> processing</span>
-          <span><Archive size={15} /> <strong>{store.items.length - activeItems.length}</strong> archived</span>
+          <button type="button" className={summaryFilter === null || summaryFilter === 'saved' ? 'active' : ''} onClick={() => updateFilters({ summary: null })}>
+            <strong>{activeItems.length}</strong> saved
+          </button>
+          <button type="button" className={summaryFilter === 'favorites' ? 'active' : ''} onClick={() => updateFilters({ summary: 'favorites' })}>
+            <Star size={15} /> <strong>{favorites}</strong> favorites
+          </button>
+          <button type="button" className={summaryFilter === 'processing' ? 'active' : ''} onClick={() => updateFilters({ summary: 'processing' })}>
+            <Sparkles size={15} /> <strong>{pending}</strong> processing
+          </button>
+          <button type="button" className={summaryFilter === 'archived' ? 'active' : ''} onClick={() => updateFilters({ summary: 'archived' })}>
+            <Archive size={15} /> <strong>{store.items.length - activeItems.length}</strong> archived
+          </button>
         </div>
       )}
 
@@ -101,11 +191,17 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
             id="library-search"
             type="search"
             value={store.query}
-            onChange={(event) => store.setQuery(event.target.value)}
+            onChange={(event) => {
+              store.setQuery(event.target.value);
+              updateFilters({ q: event.target.value || null });
+            }}
             placeholder="Search title, text, source, or tag"
           />
           {store.query && (
-            <button type="button" onClick={() => store.setQuery('')} title="Clear search">
+            <button type="button" onClick={() => {
+              store.setQuery('');
+              updateFilters({ q: null });
+            }} title="Clear search">
               <X size={17} />
               <span className="sr-only">Clear search</span>
             </button>
@@ -118,9 +214,9 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
               <button
                 key={option.value}
                 type="button"
-                className={store.typeFilter === option.value ? 'active' : ''}
-                aria-pressed={store.typeFilter === option.value}
-                onClick={() => store.setTypeFilter(option.value)}
+                className={typeFilter === option.value ? 'active' : ''}
+                aria-pressed={typeFilter === option.value}
+                onClick={() => updateFilters({ type: option.value === 'all' ? null : option.value })}
               >
                 {option.label}
               </button>
@@ -129,7 +225,7 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
           <div className="select-controls">
             <label>
               <span className="sr-only">Category</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value)}>
+              <select value={category} onChange={(event) => updateFilters({ category: event.target.value === 'all' ? null : event.target.value })}>
                 <option value="all">All categories</option>
                 {store.categories.map((item) => (
                   <option key={item.id} value={item.id}>{item.name}</option>
@@ -166,12 +262,24 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
             </div>
           </div>
         </div>
+        <FilterPills
+          pills={activePills}
+          onClear={activePills.length ? () => {
+            store.setQuery('');
+            updateFilters({ q: null, type: null, category: null, tag: null, summary: null });
+          } : undefined}
+        />
       </section>
 
       {visibleItems.length ? (
         <section className={`items-layout ${store.viewMode}`} aria-live="polite">
           {visibleItems.map((item) => (
-            <ItemCard key={item.id} item={item} compact={store.viewMode === 'list'} />
+            <ItemCard
+              key={item.id}
+              item={item}
+              compact={store.viewMode === 'list'}
+              onTagClick={(tag) => updateFilters({ tag: uniqueTags([...tagFilters, tag]) })}
+            />
           ))}
         </section>
       ) : (
@@ -181,8 +289,7 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
           <p>Adjust the current search or filters.</p>
           <button className="button secondary" type="button" onClick={() => {
             store.setQuery('');
-            store.setTypeFilter('all');
-            setCategory('all');
+            updateFilters({ q: null, type: null, category: null, tag: null, summary: null });
           }}>Clear filters</button>
         </section>
       )}

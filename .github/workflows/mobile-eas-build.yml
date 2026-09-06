@@ -1,0 +1,56 @@
+name: Mobile EAS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: "Native platform to queue"
+        required: true
+        default: all
+        type: choice
+        options: [all, ios, android]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-eas-production-${{ inputs.platform }}
+  cancel-in-progress: false
+
+jobs:
+  queue-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: mobile
+    env:
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      EAS_PLATFORM: ${{ inputs.platform }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+      - run: npm ci
+      - run: npm run eas:build:preflight
+      - run: npm run store:submission:check
+      - run: npm run store:check:ci
+      - name: Set up Expo and EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Queue production build
+        run: |
+          set -o pipefail
+          eas build --platform "$EAS_PLATFORM" --profile production --non-interactive --no-wait --freeze-credentials --json --message "GitHub Actions ${GITHUB_SHA}" | tee builds/eas-build-request.json
+      - name: Upload EAS build request
+        uses: actions/upload-artifact@v4
+        with:
+          name: memoryhive-eas-${{ inputs.platform }}-${{ github.run_number }}
+          path: mobile/builds/eas-build-request.json
+          if-no-files-found: error
+          retention-days: 30

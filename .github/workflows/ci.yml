@@ -45,6 +45,8 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npx expo export --platform web
+      - run: npm run store:submission:check
+      - run: npm run store:check:ci
 
   containers:
     runs-on: ubuntu-latest
@@ -68,6 +70,23 @@ jobs:
           target: production
           push: false
           tags: memoryhive-frontend:ci
-          build-args: VITE_API_URL=/api/v1
+          build-args: |
+            VITE_API_URL=/api/v1
+            VITE_SUPPORT_EMAIL=support@memoryhive.example.com
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,mode=max,scope=frontend
+
+  deployment-assets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python3 -m py_compile build/scripts/*.py k8s/scripts/*.py health_checker/*.py
+      - run: node --check automation/scripts/run.mjs
+      - run: npm --prefix automation run dry-run
+      - run: python3 scripts/generate_knowledge.py --check
+      - run: python3 build/scripts/generate_image_manifest.py --version ci --sha ${{ github.sha }} --output /tmp/image-versions.json
+      - run: python3 build/scripts/build_images.py --version ci --sha ${{ github.sha }} --dry-run
+      - run: python3 k8s/scripts/manage.py --output /tmp/memoryhive-k8s validate local full
+      - run: python3 k8s/scripts/manage.py --output /tmp/memoryhive-k8s validate local temporal

@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
+from app.models import UserRole
+
 
 class UserCreate(BaseModel):
     email: EmailStr
@@ -30,6 +32,18 @@ class UserLogin(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str = Field(min_length=1, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_bytes(cls, password: str) -> str:
+        if len(password.encode("utf-8")) > 72:
+            raise ValueError("password must be at most 72 UTF-8 bytes")
+        return password
+
+
 class RefreshRequest(BaseModel):
     refresh_token: str = Field(min_length=32, max_length=512)
 
@@ -51,6 +65,7 @@ class UserResponse(BaseModel):
     id: str
     email: str
     name: str | None
+    role: UserRole
     is_active: bool
     created_at: datetime
     updated_at: datetime

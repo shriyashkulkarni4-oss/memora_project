@@ -11,6 +11,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
 import type { ItemType } from '../types/api';
+import TagPicker from './TagPicker';
 
 const modes: { value: ItemType; label: string; icon: typeof Link2 }[] = [
   { value: 'link', label: 'Link', icon: Link2 },
@@ -18,19 +19,33 @@ const modes: { value: ItemType; label: string; icon: typeof Link2 }[] = [
   { value: 'text', label: 'Text', icon: FileText },
 ];
 
+function normalizeTag(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function mergePendingTags(selected: string[], pending: string) {
+  const next = new Set(selected.map(normalizeTag).filter(Boolean));
+  pending.split(',').map(normalizeTag).filter(Boolean).forEach((tag) => next.add(tag));
+  return [...next].sort();
+}
+
 export default function CaptureDialog() {
   const open = useLibraryStore((state) => state.captureOpen);
   const close = useLibraryStore((state) => state.setCaptureOpen);
   const createItem = useLibraryStore((state) => state.createItem);
   const categories = useLibraryStore((state) => state.categories);
+  const availableTags = useLibraryStore((state) => state.tags);
   const uploadProgress = useLibraryStore((state) => state.uploadProgress);
   const navigate = useNavigate();
   const firstField = useRef<HTMLElement | null>(null);
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const pointerSubmit = useRef(false);
   const [type, setType] = useState<ItemType>('link');
   const [url, setUrl] = useState('');
   const [text, setText] = useState('');
   const [title, setTitle] = useState('');
-  const [tags, setTags] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
+  const [pendingTagInput, setPendingTagInput] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -59,7 +74,8 @@ export default function CaptureDialog() {
     setUrl('');
     setText('');
     setTitle('');
-    setTags('');
+    setTags([]);
+    setPendingTagInput('');
     setCategoryId('');
     setNotes('');
     setFile(null);
@@ -71,6 +87,7 @@ export default function CaptureDialog() {
     setBusy(true);
     setError('');
     try {
+      const submittedTags = mergePendingTags(tags, pendingTagInput);
       const item = await createItem({
         type,
         url: type === 'link' ? url : undefined,
@@ -78,10 +95,7 @@ export default function CaptureDialog() {
         title: title || (type === 'text' ? text.slice(0, 72) : undefined),
         notes: notes || undefined,
         category_id: categoryId || undefined,
-        tags: tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean),
+        tags: submittedTags,
       }, file ?? undefined);
       reset();
       navigate(`/items/${item.id}`);
@@ -91,6 +105,8 @@ export default function CaptureDialog() {
       setBusy(false);
     }
   };
+
+  const requestSave = () => formRef.current?.requestSubmit();
 
   return (
     <div className="dialog-layer" role="presentation" onMouseDown={() => close(false)}>
@@ -128,7 +144,7 @@ export default function CaptureDialog() {
           ))}
         </div>
 
-        <form className="capture-form" onSubmit={submit}>
+        <form ref={formRef} className="capture-form" onSubmit={submit}>
           {error && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
           {uploadProgress !== null && (
             <div className="upload-progress" role="progressbar" aria-label="Screenshot upload" aria-valuemin={0} aria-valuemax={100} aria-valuenow={uploadProgress}>
@@ -205,10 +221,12 @@ export default function CaptureDialog() {
 
           {detailsOpen && (
             <div className="optional-fields">
-              <label className="field">
-                <span>Tags <small>Comma separated</small></span>
-                <input value={tags} onChange={(event) => setTags(event.target.value)} />
-              </label>
+              <TagPicker
+                selected={tags}
+                available={availableTags}
+                onChange={setTags}
+                onInputChange={setPendingTagInput}
+              />
               <label className="field">
                 <span>Category</span>
                 <select value={categoryId} onChange={(event) => setCategoryId(event.target.value)}>
@@ -227,7 +245,26 @@ export default function CaptureDialog() {
 
           <footer className="dialog-actions">
             <button className="button secondary" type="button" disabled={busy} onClick={() => close(false)}>Cancel</button>
-            <button className="button primary" type="submit" disabled={busy}>{busy ? 'Saving' : 'Save item'}</button>
+            <button
+              className="button primary"
+              type="button"
+              disabled={busy}
+              onMouseDown={(event) => {
+                if (event.button !== 0) return;
+                pointerSubmit.current = true;
+                event.preventDefault();
+                requestSave();
+              }}
+              onClick={() => {
+                if (pointerSubmit.current) {
+                  pointerSubmit.current = false;
+                  return;
+                }
+                requestSave();
+              }}
+            >
+              {busy ? 'Saving' : 'Save item'}
+            </button>
           </footer>
         </form>
       </section>

@@ -1,5 +1,7 @@
 import { defineConfig } from '@playwright/test';
 
+const apiUrl = process.env.MEMORYHIVE_API_URL ?? 'http://127.0.0.1:8000/api/v1';
+
 export default defineConfig({
   testDir: './e2e',
   testMatch: '**/live-workflow.e2e.ts',
@@ -14,7 +16,7 @@ export default defineConfig({
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'VITE_API_URL=http://127.0.0.1:8000/api/v1 npm run dev -- --host 127.0.0.1 --port 3200',
+    command: `VITE_API_URL=${apiUrl} npm run dev -- --host 127.0.0.1 --port 3200`,
     url: 'http://127.0.0.1:3200',
     reuseExistingServer: true,
   },

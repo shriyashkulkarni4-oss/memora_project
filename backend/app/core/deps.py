@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import decode_access_token
 from app.database import get_db
-from app.models.models import User
+from app.models.models import User, UserRole
 
 # HTTP Bearer token security scheme
 security = HTTPBearer(auto_error=False)
@@ -44,6 +44,7 @@ async def get_current_user(
             detail="Invalid token payload",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    token_session_version = payload.get("session_version")
 
     # Get user from database
     stmt = select(User).where(User.id == user_id)
@@ -61,6 +62,13 @@ async def get_current_user(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User account is inactive",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if user.session_version > 1 and token_session_version != user.session_version:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Session has expired",
             headers={"WWW-Authenticate": "Bearer"},
         )
 
@@ -85,3 +93,16 @@ async def get_current_user_optional(
 CurrentUser = Annotated[User, Depends(get_current_user)]
 OptionalUser = Annotated[User | None, Depends(get_current_user_optional)]
 DbSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def get_current_admin_user(current_user: CurrentUser) -> User:
+    """Require an authenticated admin persona."""
+    if current_user.role != UserRole.ADMIN.value:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
+
+
+CurrentAdmin = Annotated[User, Depends(get_current_admin_user)]

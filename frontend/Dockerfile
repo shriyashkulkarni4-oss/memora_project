@@ -21,7 +21,9 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 FROM dependencies AS build
 
 ARG VITE_API_URL=/api/v1
+ARG VITE_SUPPORT_EMAIL=support@memoryhive.example.com
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_SUPPORT_EMAIL=$VITE_SUPPORT_EMAIL
 
 COPY . .
 RUN npm run build

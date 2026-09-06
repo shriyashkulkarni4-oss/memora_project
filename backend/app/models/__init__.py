@@ -1,6 +1,7 @@
 """Public domain model exports."""
 
 from app.models.models import (
+    AnalysisStatus,
     Asset,
     Category,
     Item,
@@ -12,10 +13,12 @@ from app.models.models import (
     StorageDeletionJob,
     Tag,
     User,
+    UserRole,
     item_tags,
 )
 
 __all__ = [
+    "AnalysisStatus",
     "Asset",
     "Category",
     "Item",
@@ -27,5 +30,6 @@ __all__ = [
     "StorageDeletionJob",
     "Tag",
     "User",
+    "UserRole",
     "item_tags",
 ]

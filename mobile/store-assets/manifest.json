@@ -1,0 +1,17 @@
+{
+  "generator": "mobile/scripts/generate-store-assets.mjs",
+  "assets": [
+    {
+      "path": "mobile/store-assets/icon-1024.png",
+      "dimensions": "1024x1024",
+      "purpose": "Store icon source",
+      "alt_text": "Memoryhive app icon with a teal personal-library mark."
+    },
+    {
+      "path": "mobile/store-assets/feature-graphic.png",
+      "dimensions": "1024x500",
+      "purpose": "Google Play feature graphic",
+      "alt_text": "Memoryhive branded graphic showing a searchable library for links, screenshots, and notes."
+    }
+  ]
+}

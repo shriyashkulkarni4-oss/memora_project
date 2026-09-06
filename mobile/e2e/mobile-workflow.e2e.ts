@@ -1,16 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+const apiUrl = process.env.MEMORYHIVE_API_URL ?? "http://127.0.0.1:8000/api/v1";
 const password = "correct-horse-battery";
 let disposableEmail: string | undefined;
 
 test.afterEach(async ({ request }) => {
   if (!disposableEmail) return;
-  const login = await request.post("http://127.0.0.1:8000/api/v1/auth/login", {
+  const login = await request.post(`${apiUrl}/auth/login`, {
     data: { email: disposableEmail, password },
   });
   if (!login.ok()) return;
   const { access_token: accessToken } = await login.json();
-  await request.delete("http://127.0.0.1:8000/api/v1/account", {
+  await request.delete(`${apiUrl}/account`, {
     data: { password, confirmation: "DELETE" },
     headers: { Authorization: `Bearer ${accessToken}` },
   });
@@ -20,9 +21,12 @@ test("mobile web registration, sync, search, persistence, and seeded login", asy
   page,
   request,
 }) => {
-  const email = `mobile-${Date.now()}@example.com`;
+  const suffix = Date.now();
+  const email = `mobile-${suffix}@example.com`;
   disposableEmail = email;
-  const title = `Mobile sync note ${Date.now()}`;
+  const categoryName = `Mobile E2E ${suffix}`;
+  const title = `Mobile sync note ${suffix}`;
+  const uncategorizedTitle = `Mobile uncategorized note ${suffix}`;
 
   await page.goto("/register");
   const registrationFields = page.locator("input");
@@ -32,16 +36,39 @@ test("mobile web registration, sync, search, persistence, and seeded login", asy
   await page.getByRole("button", { name: "Create account" }).click();
   await expect(page.getByText("0 saved items")).toBeVisible();
 
+  await page.getByText("Organize", { exact: true }).last().click();
+  await page.getByLabel("Category name").fill(categoryName);
+  await page.getByRole("button", { name: "Add category" }).click();
+  await expect(page.getByText(categoryName, { exact: true }).first()).toBeVisible();
+
   await page.getByText("Capture", { exact: true }).last().click();
   await page.getByRole("tab", { name: "Note" }).click();
   await page.getByPlaceholder("A useful name").fill(title);
   await page.getByPlaceholder("What do you want to remember?").fill(
     "A note created by the mobile integration workflow.",
   );
+  await page.getByRole("button", { name: categoryName }).click();
   await page.getByPlaceholder("research, design, later").fill("mobile, integration");
   await page.getByRole("button", { name: "Save to library" }).click();
   await expect(page.getByText("1 saved item")).toBeVisible();
   await expect(page.getByText(title)).toBeVisible();
+
+  await page.getByText("Capture", { exact: true }).last().click();
+  await page.getByRole("tab", { name: "Note" }).click();
+  await page.getByPlaceholder("A useful name").fill(uncategorizedTitle);
+  await page.getByPlaceholder("What do you want to remember?").fill(
+    "A note that should be hidden when the category filter is active.",
+  );
+  await page.getByRole("button", { name: "None" }).click();
+  await page.getByPlaceholder("research, design, later").fill("mobile");
+  await page.getByRole("button", { name: "Save to library" }).click();
+  await expect(page.getByText("2 saved items")).toBeVisible();
+  await expect(page.getByText(uncategorizedTitle)).toBeVisible();
+
+  await page.getByRole("button", { name: categoryName }).click();
+  await expect(page.getByText(title)).toBeVisible();
+  await expect(page.getByText(uncategorizedTitle)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Clear all" })).toBeVisible();
 
   await page.getByText("Search", { exact: true }).last().click();
   await page.getByLabel("Search saved items").fill("Mobile sync note");
@@ -56,7 +83,7 @@ test("mobile web registration, sync, search, persistence, and seeded login", asy
     window.localStorage.getItem("memoryhive.access-token"),
   );
   expect(accessToken).toBeTruthy();
-  const deletion = await request.delete("http://127.0.0.1:8000/api/v1/account", {
+  const deletion = await request.delete(`${apiUrl}/account`, {
     data: { password, confirmation: "DELETE" },
     headers: { Authorization: `Bearer ${accessToken}` },
   });

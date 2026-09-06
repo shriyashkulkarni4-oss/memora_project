@@ -31,6 +31,7 @@ class ProcessingInput:
     item_type: ItemType
     url: str | None
     asset_keys: list[str]
+    raw_text: str | None = None
 
 
 @dataclass
@@ -63,6 +64,18 @@ def detect_language(value: str) -> str | None:
         return detect(value)
     except LangDetectException:
         return None
+
+
+def fallback_summary(value: str, *, max_sentences: int = 3) -> str | None:
+    normalized = normalize_extracted_text(value)
+    if not normalized:
+        return None
+    sentences = [
+        part.strip() for part in re.split(r"(?<=[.!?])\s+", normalized) if part.strip()
+    ]
+    if sentences:
+        return " ".join(sentences[:max_sentences])[:1200]
+    return normalized[:1200]
 
 
 async def resolve_public_host(hostname: str) -> list[str]:
@@ -200,10 +213,21 @@ class ContentProcessor:
             result = await self._screenshot(value)
         elif value.item_type == ItemType.LINK and value.url:
             result = await self._link(value.url)
+        elif value.item_type == ItemType.TEXT and value.raw_text:
+            result = self._text(value.raw_text)
         else:
             return ProcessingResult()
         await self._optional_enrichment(result)
+        result.summary = result.summary or fallback_summary(result.extracted_text or "")
         return result
+
+    def _text(self, raw_text: str) -> ProcessingResult:
+        extracted = normalize_extracted_text(raw_text)
+        return ProcessingResult(
+            extracted_text=extracted or None,
+            normalized_text=extracted.casefold() or None,
+            language=detect_language(extracted),
+        )
 
     async def _screenshot(self, value: ProcessingInput) -> ProcessingResult:
         if not value.asset_keys:
@@ -313,6 +337,7 @@ def processing_input(item: Item) -> ProcessingInput:
         item_type=ItemType(item.type),
         url=item.url,
         asset_keys=[asset.object_key for asset in item.assets],
+        raw_text=item.raw_text,
     )
 
 

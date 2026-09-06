@@ -1,13 +1,18 @@
 import { Folder, Plus, Tag, Trash2 } from 'lucide-react';
 import { FormEvent, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
+import ConfirmDialog from './ConfirmDialog';
 
 const colors = ['#0f766e', '#2563eb', '#7c3aed', '#ea580c', '#ca8a04', '#be123c'];
+type DeleteTarget = { kind: 'category' | 'tag'; id: string; name: string } | null;
 
 export default function OrganizationPage() {
   const store = useLibraryStore();
   const [name, setName] = useState('');
   const [color, setColor] = useState(colors[0]);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget>(null);
+  const [busy, setBusy] = useState(false);
 
   const create = async (event: FormEvent) => {
     event.preventDefault();
@@ -17,6 +22,18 @@ export default function OrganizationPage() {
       setName('');
     } catch {
       // The store exposes the API error through the application message.
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setBusy(true);
+    try {
+      if (deleteTarget.kind === 'category') await store.deleteCategory(deleteTarget.id);
+      else await store.deleteTag(deleteTarget.id);
+      setDeleteTarget(null);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -55,9 +72,14 @@ export default function OrganizationPage() {
           {store.categories.map((category) => (
             <div className="management-row" key={category.id}>
               <i className="category-swatch" style={{ background: category.color }} />
-              <div><strong>{category.name}</strong><span>{category.description || 'No description'}</span></div>
+              <div>
+                <Link to={`/?category=${encodeURIComponent(category.id)}`}>
+                  <strong>{category.name}</strong>
+                </Link>
+                <span>{category.description || 'No description'}</span>
+              </div>
               <span className="usage-count">{store.items.filter((item) => item.category_id === category.id).length} items</span>
-              <button className="icon-button" type="button" title="Delete category" onClick={() => void store.deleteCategory(category.id)}>
+              <button className="icon-button" type="button" title="Delete category" onClick={() => setDeleteTarget({ kind: 'category', id: category.id, name: category.name })}>
                 <Trash2 size={17} /><span className="sr-only">Delete {category.name}</span>
               </button>
             </div>
@@ -74,15 +96,28 @@ export default function OrganizationPage() {
           {store.tags.map((tag) => (
             <div key={tag.id} className="tag-management-item">
               <i style={{ background: tag.color }} />
-              <strong>#{tag.name}</strong>
+              <Link to={`/?tag=${encodeURIComponent(tag.name)}`}>
+                <strong>#{tag.name}</strong>
+              </Link>
               <span>{store.items.filter((item) => item.tags.some((value) => value.id === tag.id)).length}</span>
-              <button type="button" title="Delete tag" onClick={() => void store.deleteTag(tag.id)}>
+              <button type="button" title="Delete tag" onClick={() => setDeleteTarget({ kind: 'tag', id: tag.id, name: tag.name })}>
                 <Trash2 size={15} /><span className="sr-only">Delete {tag.name}</span>
               </button>
             </div>
           ))}
         </div>
       </section>
+      {deleteTarget && (
+        <ConfirmDialog
+          title={`Delete ${deleteTarget.kind}?`}
+          description={`${deleteTarget.name} will be removed from organization. Items remain in the library.`}
+          confirmLabel="Delete"
+          danger
+          busy={busy}
+          onCancel={() => setDeleteTarget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
     </div>
   );
 }

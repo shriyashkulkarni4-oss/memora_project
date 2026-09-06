@@ -8,6 +8,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   const { login, register } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const routeNotice = (location.state as { notice?: string } | null)?.notice;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -49,6 +50,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             <h2>{mode === 'login' ? 'Welcome back' : 'Create your library'}</h2>
             <p>{mode === 'login' ? 'Sign in to continue.' : 'Start with a private workspace.'}</p>
           </header>
+          {routeNotice && !error && <div className="form-success" role="status">{routeNotice}</div>}
           {error && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
           {mode === 'register' && (
             <label className="field"><span>Name <small>Optional</small></span><div className="input-with-icon"><UserRound size={18} /><input value={name} onChange={(event) => setName(event.target.value)} autoComplete="name" /></div></label>
@@ -62,6 +64,13 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
           <p className="auth-switch">
             {mode === 'login' ? 'New to Memoryhive?' : 'Already have an account?'}{' '}
             <Link to={mode === 'login' ? '/register' : '/login'}>{mode === 'login' ? 'Create account' : 'Sign in'}</Link>
+          </p>
+          <p className="auth-links">
+            <Link to="/privacy">Privacy policy</Link>
+            <span />
+            <Link to="/support">Support</Link>
+            <span />
+            <Link to="/account/delete">Delete account</Link>
           </p>
         </form>
       </section>

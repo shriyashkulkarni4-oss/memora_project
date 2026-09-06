@@ -4,6 +4,7 @@ import React from "react";
 import {
   ActivityIndicator,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -13,7 +14,8 @@ import {
 } from "react-native";
 
 import { colors, shadow } from "./theme";
-import type { Item } from "./types";
+import type { Category, Item } from "./types";
+import { normalizeTag, uniqueTags } from "./item-filters";
 
 export function Brand({ compact = false }: { compact?: boolean }) {
   return (
@@ -44,6 +46,7 @@ export function PrimaryButton({
   icon,
   loading,
   onPress,
+  onPressIn,
   danger = false,
   disabled = false,
 }: {
@@ -51,6 +54,7 @@ export function PrimaryButton({
   icon?: keyof typeof Ionicons.glyphMap;
   loading?: boolean;
   onPress(): void;
+  onPressIn?: () => void;
   danger?: boolean;
   disabled?: boolean;
 }) {
@@ -59,6 +63,7 @@ export function PrimaryButton({
       accessibilityRole="button"
       disabled={disabled || loading}
       onPress={onPress}
+      onPressIn={onPressIn}
       style={({ pressed }) => [
         styles.primaryButton,
         danger && styles.dangerButton,
@@ -82,6 +87,138 @@ export function EmptyState({ icon, title, body }: { icon: keyof typeof Ionicons.
   );
 }
 
+export function FilterPills({
+  pills,
+  onClear,
+}: {
+  pills: { id: string; label: string; onRemove(): void }[];
+  onClear?: () => void;
+}) {
+  if (!pills.length) return null;
+  return (
+    <View style={styles.filterPills}>
+      {pills.map((pill) => (
+        <Pressable accessibilityRole="button" key={pill.id} onPress={pill.onRemove} style={styles.filterPill}>
+          <Text style={styles.filterPillText}>{pill.label}</Text>
+          <Ionicons color={colors.primaryDark} name="close" size={14} />
+        </Pressable>
+      ))}
+      {onClear ? (
+        <Pressable accessibilityRole="button" onPress={onClear} style={styles.clearPill}>
+          <Text style={styles.clearPillText}>Clear all</Text>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+export function TagPicker({
+  selected,
+  available,
+  onChange,
+  onInputChange,
+  placeholder = "Search or add tag",
+}: {
+  selected: string[];
+  available: string[];
+  onChange(tags: string[]): void;
+  onInputChange?: (value: string) => void;
+  placeholder?: string;
+}) {
+  const [input, setInput] = React.useState("");
+  const selectedSet = React.useMemo(() => new Set(selected.map(normalizeTag)), [selected]);
+  const query = normalizeTag(input);
+  const suggestions = React.useMemo(() => available
+    .filter((tag) => !selectedSet.has(normalizeTag(tag)))
+    .filter((tag) => !query || tag.includes(query))
+    .slice(0, 8), [available, query, selectedSet]);
+  const addTags = React.useCallback((raw: string) => {
+    const next = uniqueTags([...selected, ...raw.split(",")]);
+    onChange(next);
+    setInput("");
+    onInputChange?.("");
+  }, [onChange, onInputChange, selected]);
+
+  return (
+    <View style={styles.tagPicker}>
+      <Field
+        autoCapitalize="none"
+        label="Tags"
+        onBlur={() => input.trim() && addTags(input)}
+        onChangeText={(value) => {
+          setInput(value);
+          onInputChange?.(value);
+        }}
+        onSubmitEditing={() => input.trim() && addTags(input)}
+        placeholder={placeholder}
+        value={input}
+      />
+      <FilterPills
+        pills={selected.map((tag) => ({
+          id: tag,
+          label: `#${tag}`,
+          onRemove: () => onChange(selected.filter((name) => normalizeTag(name) !== normalizeTag(tag))),
+        }))}
+      />
+      {suggestions.length ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.tagSuggestions}>
+            {suggestions.map((tag) => (
+              <Pressable accessibilityRole="button" key={tag} onPress={() => addTags(tag)} style={styles.tagSuggestion}>
+                <Text style={styles.tagSuggestionText}>#{tag}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </ScrollView>
+      ) : null}
+    </View>
+  );
+}
+
+export function CategoryPicker({
+  categories,
+  selectedId,
+  onChange,
+}: {
+  categories: Category[];
+  selectedId: string | null;
+  onChange(categoryId: string | null): void;
+}) {
+  if (!categories.length) return null;
+  return (
+    <View style={styles.categoryPicker}>
+      <Text style={styles.label}>Category</Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.categoryOptions}>
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onChange(null)}
+            style={[styles.categoryChoice, !selectedId && styles.categoryChoiceActive]}
+          >
+            <Text style={[styles.categoryChoiceText, !selectedId && styles.categoryChoiceTextActive]}>None</Text>
+          </Pressable>
+          {categories.map((category) => {
+            const selected = selectedId === category.id;
+            return (
+              <Pressable
+                accessibilityRole="button"
+                key={category.id}
+                onPress={() => onChange(category.id)}
+                style={[styles.categoryChoice, selected && styles.categoryChoiceActive]}
+              >
+                <View style={[styles.categorySwatch, { backgroundColor: category.color }]} />
+                <Text numberOfLines={1} style={[styles.categoryChoiceText, selected && styles.categoryChoiceTextActive]}>
+                  {category.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
 export function ItemRow({ item }: { item: Item }) {
   const icon = item.type === "link" ? "link" : item.type === "screenshot" ? "image-outline" : "document-text-outline";
   const subtitle = item.url ?? item.raw_text ?? item.notes ?? "Saved item";
@@ -98,6 +235,7 @@ export function ItemRow({ item }: { item: Item }) {
         <View style={styles.itemMeta}>
           <Text style={styles.metaText}>{item.type}</Text>
           {item.user_id === "local" ? <Text style={styles.localText}>Pending sync</Text> : null}
+          {item.is_archived ? <Text style={styles.metaText}>Archived</Text> : null}
           {item.is_favorite ? <Ionicons name="star" size={13} color={colors.warning} /> : null}
         </View>
       </View>
@@ -128,6 +266,22 @@ const styles = StyleSheet.create({
   empty: { alignItems: "center", gap: 9, justifyContent: "center", paddingHorizontal: 40, paddingVertical: 72 },
   emptyTitle: { color: colors.text, fontSize: 19, fontWeight: "700" },
   emptyBody: { color: colors.textMuted, fontSize: 15, lineHeight: 22, textAlign: "center" },
+  filterPills: { flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  filterPill: { alignItems: "center", backgroundColor: "#EAF8F5", borderColor: "#A7D9D0", borderRadius: 6, borderWidth: 1, flexDirection: "row", gap: 5, minHeight: 29, paddingHorizontal: 9 },
+  filterPillText: { color: colors.primaryDark, fontSize: 12, fontWeight: "700" },
+  clearPill: { justifyContent: "center", minHeight: 29, paddingHorizontal: 5 },
+  clearPillText: { color: colors.textMuted, fontSize: 12, fontWeight: "700" },
+  tagPicker: { gap: 9 },
+  tagSuggestions: { flexDirection: "row", gap: 7 },
+  tagSuggestion: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 6, borderWidth: 1, minHeight: 30, justifyContent: "center", paddingHorizontal: 10 },
+  tagSuggestionText: { color: colors.text, fontSize: 12, fontWeight: "700" },
+  categoryPicker: { gap: 7 },
+  categoryOptions: { flexDirection: "row", gap: 7 },
+  categoryChoice: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 6, borderWidth: 1, flexDirection: "row", gap: 7, maxWidth: 190, minHeight: 34, paddingHorizontal: 10 },
+  categoryChoiceActive: { backgroundColor: "#EAF8F5", borderColor: "#A7D9D0" },
+  categorySwatch: { borderRadius: 5, height: 14, width: 14 },
+  categoryChoiceText: { color: colors.textMuted, flexShrink: 1, fontSize: 12, fontWeight: "700" },
+  categoryChoiceTextActive: { color: colors.primaryDark },
   item: { ...shadow, alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 7, borderWidth: 1, flexDirection: "row", gap: 12, padding: 14 },
   itemIcon: { alignItems: "center", backgroundColor: "#E2F2EE", borderRadius: 7, height: 42, justifyContent: "center", width: 42 },
   itemCopy: { flex: 1, gap: 3 },

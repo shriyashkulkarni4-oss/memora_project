@@ -72,6 +72,8 @@ function demoItem(data: CreateItemRequest, file?: File): Item {
     language: data.type === 'text' ? 'en' : null, summary: null,
     metadata: file ? { ...data.metadata, preview_url: URL.createObjectURL(file) } : (data.metadata ?? null),
     processing_status: data.type === 'text' ? 'ready' : 'pending', processing_error: null,
+    analysis_status: 'pending', analysis_error: null, analysis_version: 1,
+    analysis_requested_at: createdAt, analysis_started_at: null, analysis_completed_at: null,
     category_id: data.category_id ?? null, tags, assets: [], is_favorite: false,
     is_archived: false, read_count: 0, last_visited_at: null, revision: 1,
     deleted_at: null, created_at: createdAt, updated_at: createdAt,

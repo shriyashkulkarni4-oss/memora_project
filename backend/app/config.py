@@ -56,6 +56,16 @@ class Settings(BaseSettings):
     sendgrid_api_key: str | None = None
     email_from: str = "noreply@memoryhive.app"
 
+    # Admin bootstrap. In development the first registered user is also promoted.
+    admin_bootstrap_emails: list[str] = []
+
+    # Admin-triggered backup. Disabled until an operator provides a command.
+    backup_root: str = "backups"
+    backup_retention_days: int = 14
+    admin_backup_command: str | None = None
+    admin_backup_working_dir: str | None = None
+    admin_backup_timeout_seconds: int = 900
+
     # Optional n8n integration
     n8n_webhook_url: str | None = None
     n8n_api_key: str | None = None
@@ -68,6 +78,15 @@ class Settings(BaseSettings):
     processing_max_attempts: int = 3
     processing_fetch_max_bytes: int = 5 * 1024 * 1024
     processing_fetch_timeout_seconds: float = 12.0
+
+    # Temporal processing pipeline. Disabled unless the Temporal Compose profile
+    # or equivalent production infrastructure is explicitly enabled.
+    temporal_enabled: bool = False
+    temporal_address: str = "localhost:7233"
+    temporal_namespace: str = "default"
+    temporal_task_queue: str = "memoryhive-analysis"
+    temporal_scheduler_poll_seconds: float = 10.0
+    temporal_scheduler_batch_size: int = 25
 
     # CORS
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]

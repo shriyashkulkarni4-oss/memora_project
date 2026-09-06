@@ -1,0 +1,182 @@
+{
+  "generator": "mobile/scripts/generate-store-submission.mjs",
+  "status": "draft",
+  "app": {
+    "name": "Memoryhive",
+    "slug": "memoryhive",
+    "version": "1.0.0",
+    "scheme": "memoryhive",
+    "ios_bundle_identifier": "com.codingmonkeylabs.memoryhive",
+    "ios_build_number": "1",
+    "android_package": "com.codingmonkeylabs.memoryhive",
+    "android_version_code": 1,
+    "category": "Productivity"
+  },
+  "urls": {
+    "api_url": "https://memoryhive.example.com/api/v1",
+    "support_url": "https://memoryhive.example.com/support",
+    "privacy_policy_url": "https://memoryhive.example.com/privacy",
+    "account_deletion_url": "https://memoryhive.example.com/account/delete"
+  },
+  "contacts": {
+    "support_email": "support@memoryhive.example.com"
+  },
+  "copy": {
+    "app_store_subtitle": "Capture. Tag. Find.",
+    "google_play_short_description": "Capture links, screenshots, and notes into a searchable offline-first library.",
+    "promotional_text": "Save what matters, organize it with tags, and find it again across web and mobile.",
+    "full_description": "Memoryhive is a personal capture and recall app for links, screenshots, and text notes. Save items from your device, add tags and notes, search locally while offline, and sync when you reconnect.",
+    "features": [
+      "Capture links, screenshots, and text notes.",
+      "Search by query, item type, status, and tag.",
+      "Edit titles, notes, and tags after capture.",
+      "Favorite, archive, restore, and delete items with confirmation.",
+      "Keep a local offline library and sync changes later.",
+      "Export account data and delete your account from Settings."
+    ],
+    "keywords": "memory, capture, bookmarks, notes, screenshots, knowledge, offline, search, tags, productivity"
+  },
+  "assets": {
+    "icon_source": {
+      "path": "mobile/store-assets/icon-1024.png",
+      "dimensions": "1024x1024",
+      "purpose": "Store icon source",
+      "alt_text": "Memoryhive app icon with a teal personal-library mark."
+    },
+    "google_play_feature_graphic": {
+      "path": "mobile/store-assets/feature-graphic.png",
+      "dimensions": "1024x500",
+      "purpose": "Google Play feature graphic",
+      "alt_text": "Memoryhive branded graphic showing a searchable library for links, screenshots, and notes."
+    },
+    "screenshots": [
+      {
+        "name": "iphone-01-library.png",
+        "platform": "ios",
+        "form_factor": "iphone",
+        "dimensions": "1290x2796",
+        "route": "/home",
+        "screen": "Library",
+        "alt_text": "Memoryhive iPhone library showing saved items, favorite counts, tags, and link cards."
+      },
+      {
+        "name": "android-phone-02-search.png",
+        "platform": "android",
+        "form_factor": "phone",
+        "dimensions": "1080x1920",
+        "route": "/search",
+        "screen": "Search",
+        "alt_text": "Memoryhive Android phone search results for FastAPI with saved filters and tags."
+      },
+      {
+        "name": "ipad-03-library.png",
+        "platform": "ios",
+        "form_factor": "ipad",
+        "dimensions": "2048x2732",
+        "route": "/home",
+        "screen": "Library",
+        "alt_text": "Memoryhive iPad library with synced seeded content and reusable tag filters."
+      },
+      {
+        "name": "android-tablet-04-organize.png",
+        "platform": "android",
+        "form_factor": "tablet",
+        "dimensions": "1600x2560",
+        "route": "/organize",
+        "screen": "Organize",
+        "alt_text": "Memoryhive Android tablet organize view showing item counts, types, categories, and tags."
+      }
+    ]
+  },
+  "app_store": {
+    "subtitle": "Capture. Tag. Find.",
+    "promotional_text": "Save what matters, organize it with tags, and find it again across web and mobile.",
+    "privacy_policy_url": "https://memoryhive.example.com/privacy",
+    "support_url": "https://memoryhive.example.com/support",
+    "review_account": {
+      "email": "reviewer@memoryhive.example.com",
+      "password": "Do not commit. Generate a temporary password and enter it directly in App Store Connect.",
+      "notes": "Mention offline mode, share intent, account export, and account deletion paths."
+    },
+    "privacy_draft": {
+      "apple_data_types": [
+        "Contact Info: email address and optional name.",
+        "User Content: photos/screenshots, text notes, links, tags, categories, and generated summaries.",
+        "Identifiers: internal user ID.",
+        "Usage Data or Diagnostics: only if production logs are treated as product interaction or crash/error diagnostics."
+      ],
+      "google_data_categories": [
+        "Personal info: email address and name.",
+        "Photos and videos or files and docs: user-selected screenshots/images.",
+        "App activity: app interactions and in-app search/capture activity if retained in logs.",
+        "App info and performance or diagnostics: crash/error logs if enabled in production."
+      ],
+      "tracking": "No, unless a future analytics, ads, or cross-app tracking SDK is added.",
+      "security": "Data is encrypted in transit when production uses HTTPS. Account deletion removes server-owned user data and uploaded assets through the backend lifecycle.",
+      "external_ai_processing": {
+        "mode": "none",
+        "content_sent_to_processor": false,
+        "configured_backend_enrichment": false,
+        "notes": "No external AI processor is declared for store privacy answers."
+      },
+      "production_telemetry": {
+        "mode": "none",
+        "production_telemetry_enabled": false,
+        "notes": "No production analytics or crash-reporting tooling is declared in this release handoff."
+      }
+    }
+  },
+  "google_play": {
+    "short_description": "Capture links, screenshots, and notes into a searchable offline-first library.",
+    "full_description": "Memoryhive is a personal capture and recall app for links, screenshots, and text notes. Save items from your device, add tags and notes, search locally while offline, and sync when you reconnect.\n\nKey features:\n- Capture links, screenshots, and text notes.\n- Search by query, item type, status, and tag.\n- Edit titles, notes, and tags after capture.\n- Favorite, archive, restore, and delete items with confirmation.\n- Keep a local offline library and sync changes later.\n- Export account data and delete your account from Settings.",
+    "privacy_policy_url": "https://memoryhive.example.com/privacy",
+    "account_deletion_url": "https://memoryhive.example.com/account/delete",
+    "review_account": {
+      "email": "reviewer@memoryhive.example.com",
+      "password": "Do not commit. Generate a temporary password and enter it directly in Play Console.",
+      "notes": "Use the same reviewer account as App Store Connect when possible."
+    },
+    "data_safety_draft": {
+      "apple_data_types": [
+        "Contact Info: email address and optional name.",
+        "User Content: photos/screenshots, text notes, links, tags, categories, and generated summaries.",
+        "Identifiers: internal user ID.",
+        "Usage Data or Diagnostics: only if production logs are treated as product interaction or crash/error diagnostics."
+      ],
+      "google_data_categories": [
+        "Personal info: email address and name.",
+        "Photos and videos or files and docs: user-selected screenshots/images.",
+        "App activity: app interactions and in-app search/capture activity if retained in logs.",
+        "App info and performance or diagnostics: crash/error logs if enabled in production."
+      ],
+      "tracking": "No, unless a future analytics, ads, or cross-app tracking SDK is added.",
+      "security": "Data is encrypted in transit when production uses HTTPS. Account deletion removes server-owned user data and uploaded assets through the backend lifecycle.",
+      "external_ai_processing": {
+        "mode": "none",
+        "content_sent_to_processor": false,
+        "configured_backend_enrichment": false,
+        "notes": "No external AI processor is declared for store privacy answers."
+      },
+      "production_telemetry": {
+        "mode": "none",
+        "production_telemetry_enabled": false,
+        "notes": "No production analytics or crash-reporting tooling is declared in this release handoff."
+      }
+    }
+  },
+  "release_blockers": [
+    "Run EAS init and commit the generated extra.eas.projectId.",
+    "Configure public HTTPS /api/v1, /privacy, and /support URL values plus a valid VITE_SUPPORT_EMAIL in the release environment.",
+    "Create a dedicated store-review account and replace STORE_REVIEW_ACCOUNT_EMAIL with its valid email.",
+    "Configure EAS production environment variables and signing credentials.",
+    "Create mobile/builds/eas-release-evidence.json from the example after EAS project, environment, and signing setup are complete.",
+    "Create Apple Developer and Google Play app records.",
+    "Produce a signed iOS .ipa and record it in mobile/builds/native-artifacts.json.",
+    "Produce a signed Android .aab or .apk and record it in mobile/builds/native-artifacts.json.",
+    "Record native-device test evidence for iOS and Android in mobile/builds/native-artifacts.json.",
+    "Verify Android targetSdkVersion >= 36 and RECORD_AUDIO absence from the final merged manifest.",
+    "Complete Apple App Privacy and Google Play Data safety forms from verified production behavior.",
+    "Create mobile/store-assets/store-console-evidence.json from the example after App Store Connect and Play Console fields are complete.",
+    "Replace Expo-web screenshots with native-device captures after signed builds if native UI differs or store review requires native screenshots."
+  ]
+}

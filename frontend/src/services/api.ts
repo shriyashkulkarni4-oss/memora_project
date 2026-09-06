@@ -1,6 +1,6 @@
 import type {
-  Category, CreateItemRequest, Item, ItemPage, ItemStats, ItemType,
-  ManagedTag, ProcessingStatus, UpdateItemRequest, User,
+  AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminProcessingJobsPage, AdminUser, AdminUsersPage, Category, CreateItemRequest,
+  Item, ItemPage, ItemStats, ItemType, ManagedTag, ProcessingStatus, UpdateItemRequest, User,
 } from '../types/api';
 
 const API_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
@@ -28,8 +28,9 @@ function saveTokens(tokens: TokenPair | null) {
     localStorage.setItem(ACCESS_KEY, tokens.access_token);
     localStorage.setItem(REFRESH_KEY, tokens.refresh_token);
   } else {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith('memoryhive.'))
+      .forEach((key) => localStorage.removeItem(key));
   }
 }
 
@@ -59,7 +60,9 @@ async function refreshSession() {
     });
     if (!response.ok) {
       saveTokens(null);
-      window.dispatchEvent(new Event('memoryhive:session-expired'));
+      window.dispatchEvent(new CustomEvent('memoryhive:session-expired', {
+        detail: { message: 'Your session expired. Sign in again.' },
+      }));
       throw await parseError(response);
     }
     saveTokens(await response.json() as TokenPair);
@@ -110,6 +113,9 @@ export const authApi = {
     catch (error) { saveTokens(null); throw error; }
   },
   me: () => request<User>('/auth/me'),
+  changePassword: (data: { current_password: string; new_password: string }) =>
+    request<void>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
+  clearSession: () => saveTokens(null),
   logout: async () => {
     const refreshToken = localStorage.getItem(REFRESH_KEY);
     try {
@@ -222,4 +228,19 @@ export const accountApi = {
     method: 'DELETE',
     body: JSON.stringify({ password, confirmation: 'DELETE' }),
   }),
+};
+
+export const adminApi = {
+  dashboard: () => request<AdminDashboard>('/admin/dashboard'),
+  backupStatus: () => request<AdminBackupStatus>('/admin/backup'),
+  runBackup: () => request<AdminBackupRunResult>('/admin/backup/run', { method: 'POST' }),
+  processingJobs: (filters: { status?: 'pending' | 'processing' | 'completed' | 'failed'; limit?: number; offset?: number } = {}) =>
+    request<AdminProcessingJobsPage>(`/admin/processing/jobs${queryString(filters)}`),
+  retryProcessingJob: (id: string) =>
+    request<AdminProcessingJob>(`/admin/processing/jobs/${id}/retry`, { method: 'POST' }),
+  users: (filters: { limit?: number; offset?: number } = {}) =>
+    request<AdminUsersPage>(`/admin/users${queryString(filters)}`),
+  updateUser: (id: string, data: { role?: AdminUser['role']; is_active?: boolean }) =>
+    request<AdminUser>(`/admin/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  removeUser: (id: string) => request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
 };

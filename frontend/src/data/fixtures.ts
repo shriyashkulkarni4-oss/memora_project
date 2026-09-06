@@ -54,6 +54,12 @@ const itemDefaults: Pick<
   | 'extracted_text'
   | 'language'
   | 'processing_error'
+  | 'analysis_status'
+  | 'analysis_error'
+  | 'analysis_version'
+  | 'analysis_requested_at'
+  | 'analysis_started_at'
+  | 'analysis_completed_at'
   | 'assets'
   | 'is_archived'
   | 'read_count'
@@ -70,6 +76,12 @@ const itemDefaults: Pick<
   extracted_text: null,
   language: 'en',
   processing_error: null,
+  analysis_status: 'analyzed',
+  analysis_error: null,
+  analysis_version: 1,
+  analysis_requested_at: '2026-09-01T00:00:00Z',
+  analysis_started_at: '2026-09-01T00:01:00Z',
+  analysis_completed_at: '2026-09-01T00:02:00Z',
   assets: [],
   is_archived: false,
   read_count: 0,

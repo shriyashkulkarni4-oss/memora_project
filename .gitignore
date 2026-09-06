@@ -5,6 +5,15 @@ dist/
 tmp/
 out-tsc/
 bazel-out/
+build/output/
+k8s/generated/
+mobile/builds/*
+!mobile/builds/
+!mobile/builds/README.md
+!mobile/builds/eas-release-evidence.example.json
+!mobile/builds/eas-release-evidence.json
+!mobile/builds/native-artifacts.example.json
+!mobile/builds/native-artifacts.json
 
 # Node
 node_modules/

@@ -22,6 +22,12 @@ x-backend-environment: &backend-environment
   N8N_API_KEY: ${N8N_API_KEY:-}
   OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
   OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+  TEMPORAL_ENABLED: ${TEMPORAL_ENABLED:-false}
+  TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal.example.internal:7233}
+  TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+  TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+  TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-10}
+  TEMPORAL_SCHEDULER_BATCH_SIZE: ${TEMPORAL_SCHEDULER_BATCH_SIZE:-25}
 
 services:
   db:
@@ -103,6 +109,30 @@ services:
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
 
+  temporal-worker:
+    image: ${BACKEND_IMAGE:-memoryhive-backend:latest}
+    command: ["python", "-m", "app.temporal_pipeline.worker"]
+    environment:
+      <<: *backend-environment
+      TEMPORAL_ENABLED: "true"
+    depends_on:
+      backend: { condition: service_healthy }
+    profiles: ["temporal"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  temporal-scheduler:
+    image: ${BACKEND_IMAGE:-memoryhive-backend:latest}
+    command: ["python", "-m", "app.temporal_pipeline.scheduler"]
+    environment:
+      <<: *backend-environment
+      TEMPORAL_ENABLED: "true"
+    depends_on:
+      backend: { condition: service_healthy }
+    profiles: ["temporal"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
   frontend:
     image: ${FRONTEND_IMAGE:-memoryhive-frontend:latest}
     build:
@@ -110,6 +140,7 @@ services:
       target: production
       args:
         VITE_API_URL: /api/v1
+        VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:?Set VITE_SUPPORT_EMAIL}
     depends_on:
       backend: { condition: service_healthy }
     healthcheck:

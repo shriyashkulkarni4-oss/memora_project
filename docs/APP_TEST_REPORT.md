@@ -1,6 +1,6 @@
 # Application Integration Test Report
 
-Last verified: 2026-09-05
+Last verified: 2026-09-06
 
 ## Runtime architecture
 
@@ -17,6 +17,10 @@ Local entry points:
 - Expo web: `http://localhost:8083`
 - MinIO console: `http://localhost:9001`
 
+The root `automation/` package orchestrates repeatable Goal 1 integration runs
+by seeding data, running `ops/smoke.sh`, and invoking the web and mobile
+Playwright suites against a configured backend.
+
 ## Issues found before fixes
 
 | Issue | Impact | Resolution |
@@ -27,6 +31,7 @@ Local entry points:
 | The Compose Vite proxy targeted its own container | Same-origin `/api` calls failed with connection refused | Compose uses `/api/v1` and proxies internally to `http://backend:8000` |
 | Asset downloads redirected to `http://minio:9000` | Screenshot previews failed because browsers cannot resolve Docker DNS | Authenticated asset bytes are streamed through the backend with private caching |
 | Mobile API routing had no integration coverage | CORS and device-host regressions were not detected | Added API URL unit tests and a real Expo-web Playwright workflow |
+| React Native Web warned for legacy `shadow*` style properties | Mobile web test output hid useful runtime diagnostics in repeated deprecation warnings | Shared shadows now use CSS `boxShadow` on web and retain native shadow/elevation properties on iOS and Android |
 
 ## Expected use cases and results
 
@@ -44,13 +49,15 @@ Local entry points:
 | Lifecycle | Delete an item, export account data, and delete an account | Pass |
 | Responsive UI | Desktop web at 1440x900 and mobile at 390x844 | Pass |
 | Native bundles | Export iOS, Android, and web bundles | Pass |
+| Automation | Seed, smoke, web Playwright, mobile Playwright, and optional Compose cleanup | Pass |
 
 ## Verification evidence
 
-- Backend: `27 passed`; Ruff and Black clean.
-- Frontend: production build passed; `3` Vitest tests passed.
+- Full automation runner: `npm --prefix automation run test:docker:cleanup` rebuilt Compose, validated services, seeded all personas, passed API smoke, passed both Playwright suites, and stopped the stack while preserving volumes.
+- Backend: `35 passed`; Ruff and Black clean.
+- Frontend: production build passed; `17` Vitest tests passed.
 - Frontend live Playwright workflow: `1 passed` against the real API.
-- Mobile: TypeScript and Expo lint clean; `8` Vitest tests passed.
+- Mobile: TypeScript and Expo lint clean; `61` Vitest tests passed.
 - Mobile Expo-web Playwright workflow: `1 passed` against the real API.
 - Expo export produced iOS, Android, and web bundles successfully.
 - Compose services reported healthy after rebuild.
@@ -62,7 +69,5 @@ Local entry points:
 - Run the generated native app on at least one physical iOS device and one
   physical Android device to validate OS share-sheet integration and real LAN
   connectivity.
-- Expo web currently prints upstream React Native Web deprecation warnings for
-  legacy shadow properties. They do not affect the tested workflows.
 - Third-party link extraction can fail for URLs that reject automated requests
   or return errors. Captures remain stored and processing can be retried.

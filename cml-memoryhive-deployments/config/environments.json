@@ -1,0 +1,134 @@
+{
+  "local": {
+    "namespace": "cml-memoryhive-local",
+    "expected_context": "minikube",
+    "domain": "memoryhive.local",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "selfsigned",
+    "temporal_address": "temporal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "IfNotPresent",
+    "default_profile": "full",
+    "replicas": {
+      "cml-memoryhive-backend": 1,
+      "cml-memoryhive-worker": 1,
+      "cml-memoryhive-temporal-worker": 1,
+      "cml-memoryhive-temporal-scheduler": 1,
+      "cml-memoryhive-frontend": 1
+    },
+    "storage": {
+      "postgres": "5Gi",
+      "minio": "10Gi"
+    },
+    "resources": {
+      "cml-memoryhive-backend": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "500m", "memory": "768Mi" }
+      },
+      "cml-memoryhive-worker": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "750m", "memory": "1Gi" }
+      },
+      "cml-memoryhive-temporal-worker": {
+        "requests": { "cpu": "100m", "memory": "256Mi" },
+        "limits": { "cpu": "750m", "memory": "1Gi" }
+      },
+      "cml-memoryhive-temporal-scheduler": {
+        "requests": { "cpu": "50m", "memory": "128Mi" },
+        "limits": { "cpu": "250m", "memory": "256Mi" }
+      },
+      "cml-memoryhive-frontend": {
+        "requests": { "cpu": "50m", "memory": "96Mi" },
+        "limits": { "cpu": "250m", "memory": "256Mi" }
+      }
+    }
+  },
+  "staging": {
+    "namespace": "cml-memoryhive-staging",
+    "expected_context": "cml-memoryhive-staging",
+    "domain": "staging.memoryhive.example.com",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "letsencrypt-staging",
+    "temporal_address": "temporal.example.internal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "Always",
+    "default_profile": "full",
+    "replicas": {
+      "cml-memoryhive-backend": 1,
+      "cml-memoryhive-worker": 1,
+      "cml-memoryhive-temporal-worker": 1,
+      "cml-memoryhive-temporal-scheduler": 1,
+      "cml-memoryhive-frontend": 1
+    },
+    "storage": {
+      "postgres": "20Gi",
+      "minio": "50Gi"
+    },
+    "resources": {
+      "cml-memoryhive-backend": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "1Gi" }
+      },
+      "cml-memoryhive-worker": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "2Gi" }
+      },
+      "cml-memoryhive-temporal-worker": {
+        "requests": { "cpu": "250m", "memory": "512Mi" },
+        "limits": { "cpu": "1", "memory": "2Gi" }
+      },
+      "cml-memoryhive-temporal-scheduler": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      },
+      "cml-memoryhive-frontend": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      }
+    }
+  },
+  "production": {
+    "namespace": "cml-memoryhive-production",
+    "expected_context": "cml-memoryhive-production",
+    "domain": "memoryhive.example.com",
+    "ingress_class_name": "nginx",
+    "cluster_issuer": "letsencrypt-production",
+    "temporal_address": "temporal.example.internal:7233",
+    "service_type": "ClusterIP",
+    "image_pull_policy": "IfNotPresent",
+    "default_profile": "full",
+    "replicas": {
+      "cml-memoryhive-backend": 2,
+      "cml-memoryhive-worker": 1,
+      "cml-memoryhive-temporal-worker": 1,
+      "cml-memoryhive-temporal-scheduler": 1,
+      "cml-memoryhive-frontend": 2
+    },
+    "storage": {
+      "postgres": "100Gi",
+      "minio": "250Gi"
+    },
+    "resources": {
+      "cml-memoryhive-backend": {
+        "requests": { "cpu": "500m", "memory": "768Mi" },
+        "limits": { "cpu": "2", "memory": "2Gi" }
+      },
+      "cml-memoryhive-worker": {
+        "requests": { "cpu": "500m", "memory": "1Gi" },
+        "limits": { "cpu": "2", "memory": "4Gi" }
+      },
+      "cml-memoryhive-temporal-worker": {
+        "requests": { "cpu": "500m", "memory": "1Gi" },
+        "limits": { "cpu": "2", "memory": "4Gi" }
+      },
+      "cml-memoryhive-temporal-scheduler": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      },
+      "cml-memoryhive-frontend": {
+        "requests": { "cpu": "100m", "memory": "128Mi" },
+        "limits": { "cpu": "500m", "memory": "512Mi" }
+      }
+    }
+  }
+}

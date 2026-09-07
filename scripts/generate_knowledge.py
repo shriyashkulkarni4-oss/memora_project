@@ -37,14 +37,14 @@ def package_scripts(path: Path) -> str:
 
 
 def backend_tools() -> str:
-    data = tomllib.loads((ROOT / "backend/pyproject.toml").read_text(encoding="utf-8"))
+    data = tomllib.loads((ROOT / "cml-memoryhive-backend/pyproject.toml").read_text(encoding="utf-8"))
     return f"Python `{data['project']['requires-python']}`, Black/Ruff line length `{data['tool']['black']['line-length']}`."
 
 
 def docs() -> list[KnowledgeDoc]:
-    frontend_scripts = package_scripts(ROOT / "frontend/package.json")
-    mobile_scripts = package_scripts(ROOT / "mobile/package.json")
-    automation_scripts = package_scripts(ROOT / "automation/package.json")
+    frontend_scripts = package_scripts(ROOT / "cml-memoryhive-frontend/package.json")
+    mobile_scripts = package_scripts(ROOT / "cml-memoryhive-mobile/package.json")
+    automation_scripts = package_scripts(ROOT / "cml-memoryhive-automation/package.json")
     backend_style = backend_tools()
 
     return [
@@ -69,30 +69,29 @@ def docs() -> list[KnowledgeDoc]:
                 (
                     "Validation",
                     [
-                        "Backend: `cd backend && ./.venv/bin/ruff check app tests && ./.venv/bin/black --check app tests && ./.venv/bin/pytest -q`.",
-                        "Frontend: `cd frontend && npm run lint && npm test && npm run build`.",
-                        "Mobile: `cd mobile && npm run typecheck && npm run lint && npm test`.",
+                        "Backend: `cd cml-memoryhive-backend && ./.venv/bin/python -m ruff check app tests && ./.venv/bin/python -m black --check app tests && ./.venv/bin/python -m pytest -q`.",
+                        "Frontend: `cd cml-memoryhive-frontend && npm run lint && npm test && npm run build`.",
+                        "Mobile: `cd cml-memoryhive-mobile && npm run typecheck && npm run lint && npm test`.",
                     ],
                 ),
                 (
                     "Project Map",
                     [
-                        "`backend/` API, worker, models, migrations, services, and pytest tests.",
-                        "`backend/app/temporal_pipeline/` Temporal workflow, activity, worker, and scheduler for item analysis.",
-                        "`frontend/` authenticated web app, public compliance pages, admin dashboard, and Playwright flows.",
-                        "`mobile/` Expo Router app, offline SQLite sync, mobile release config, and tests.",
-                        "`automation/` seed, smoke, Docker, and Playwright orchestration for integration runs.",
-                        "`build/` image build registry and image-version manifest tooling.",
-                        "`k8s/` environment/profile configs plus manifest generation and cluster operation commands.",
-                        "`health_checker/` local, Docker, and Kubernetes service health CLI.",
-                        "`ops/` Compose lifecycle, smoke, backup, restore, monitoring, and load tooling.",
+                        "`cml-memoryhive-backend/` API, worker, models, migrations, services, and pytest tests.",
+                        "`cml-memoryhive-backend/app/temporal_pipeline/` Temporal workflow, activity, worker, and scheduler for item analysis.",
+                        "`cml-memoryhive-frontend/` authenticated web app, public compliance pages, admin dashboard, and Playwright flows.",
+                        "`cml-memoryhive-mobile/` Expo Router app, offline SQLite sync, mobile release config, and tests.",
+                        "`cml-memoryhive-automation/` seed, smoke, Docker, and Playwright orchestration for integration runs.",
+                        "`cml-memoryhive-build/` owns image builds, generated Compose profiles, local-process orchestration, and health checks.",
+                        "`cml-memoryhive-deployments/` owns environment/profile configs, image pins, generated manifests, promotions, and cluster operations.",
+                        "`ops/` owns smoke, backup, restore, monitoring, and load tooling shared by the delivery projects.",
                         "`docs/` requirements, runbooks, traceability, and Goal 1 records.",
                     ],
                 ),
             ],
         ),
         KnowledgeDoc(
-            ROOT / "backend/Knowledge.md",
+            ROOT / "cml-memoryhive-backend/Knowledge.md",
             "Backend Knowledge",
             [
                 (
@@ -126,7 +125,7 @@ def docs() -> list[KnowledgeDoc]:
             ],
         ),
         KnowledgeDoc(
-            ROOT / "frontend/Knowledge.md",
+            ROOT / "cml-memoryhive-frontend/Knowledge.md",
             "Frontend Knowledge",
             [
                 (
@@ -156,7 +155,7 @@ def docs() -> list[KnowledgeDoc]:
             ],
         ),
         KnowledgeDoc(
-            ROOT / "mobile/Knowledge.md",
+            ROOT / "cml-memoryhive-mobile/Knowledge.md",
             "Mobile Knowledge",
             [
                 (
@@ -187,13 +186,13 @@ def docs() -> list[KnowledgeDoc]:
             ],
         ),
         KnowledgeDoc(
-            ROOT / "automation/Knowledge.md",
+            ROOT / "cml-memoryhive-automation/Knowledge.md",
             "Automation Knowledge",
             [
                 (
                     "Stack",
                     [
-                        "Node.js orchestration that reuses `seed_data.py`, `ops/dev-stack.sh`, `ops/smoke.sh`, and existing Playwright suites.",
+                        "Node.js orchestration that reuses `seed_data.py`, `cml-memoryhive-build/runtime/manage_services_docker.sh`, `ops/smoke.sh`, and existing Playwright suites.",
                         f"Available scripts: {automation_scripts}.",
                     ],
                 ),
@@ -207,8 +206,62 @@ def docs() -> list[KnowledgeDoc]:
                 (
                     "Rules",
                     [
-                        "Keep browser assertions in `frontend/e2e/` and `mobile/e2e/`; keep this package focused on orchestration.",
+                        "Keep browser assertions in `cml-memoryhive-frontend/e2e/` and `cml-memoryhive-mobile/e2e/`; keep this package focused on orchestration.",
                         "Use `--dry-run` before changing destructive cleanup behavior.",
+                    ],
+                ),
+            ],
+        ),
+        KnowledgeDoc(
+            ROOT / "cml-memoryhive-build/Knowledge.md",
+            "Memoryhive Build Knowledge",
+            [
+                (
+                    "Source of Truth",
+                    [
+                        "`service-registry.json` owns image, service, port, dependency, health, and profile metadata.",
+                        "`scripts/generate_runtime.py` deterministically generates all Compose profiles and health registries.",
+                    ],
+                ),
+                (
+                    "Commands",
+                    [
+                        "`make generate|validate|build|push|manifest` manages generated runtime files and images.",
+                        "`runtime/manage_services_docker.sh` and `runtime/manage_services_local.sh` own the two supported development modes.",
+                    ],
+                ),
+                (
+                    "Rules",
+                    [
+                        "Register service changes once in `service-registry.json` and regenerate derived files.",
+                        "Keep destructive Docker cleanup guarded by `CONFIRM_CLEAN=cml-memoryhive`.",
+                    ],
+                ),
+            ],
+        ),
+        KnowledgeDoc(
+            ROOT / "cml-memoryhive-deployments/Knowledge.md",
+            "Memoryhive Deployments Knowledge",
+            [
+                (
+                    "Source of Truth",
+                    [
+                        "`image-versions.json` is the only source for deployed image references.",
+                        "Environment and profile behavior lives in `config/`; non-secret manifests are rendered under `generated/`.",
+                    ],
+                ),
+                (
+                    "Commands",
+                    [
+                        "`make validate-all` renders and validates all twelve environment/profile combinations.",
+                        "`scripts/manage.py` exposes generate, validate, apply, upgrade, rollback, status, and guarded delete.",
+                    ],
+                ),
+                (
+                    "Rules",
+                    [
+                        "Never persist rendered Secret resources; apply secrets from environment values or an ignored env file.",
+                        "Require exact Kubernetes context matches and immutable image pins for cluster changes and promotions.",
                     ],
                 ),
             ],
@@ -221,23 +274,23 @@ def docs() -> list[KnowledgeDoc]:
                     "Stack",
                     [
                         "Docker Compose runs PostgreSQL, MinIO, Redis, backend, worker, and frontend.",
-                        "`ops/dev-stack.sh` wraps local lifecycle commands.",
+                        "`cml-memoryhive-build/runtime/manage_services_docker.sh` wraps local Docker lifecycle commands.",
                         "The `temporal` Compose profile adds Temporal server/UI plus analysis worker and scheduler.",
-                        "`build/` generates container image manifests and local/push build commands.",
-                        "`k8s/scripts/manage.py` renders manifests and wraps apply, upgrade, rollback, status, and delete.",
-                        "`health_checker/health_check.py` probes local, Docker, or Kubernetes service health.",
+                        "`cml-memoryhive-build/service-registry.json` is canonical for build, runtime, and health service metadata.",
+                        "`cml-memoryhive-deployments/scripts/manage.py` renders manifests and wraps apply, upgrade, rollback, status, and delete.",
+                        "`cml-memoryhive-build/health_checker/health_check.py` probes local, Docker, or Kubernetes service health.",
                     ],
                 ),
                 (
                     "Key Commands",
                     [
-                        "`ops/dev-stack.sh start|validate|load|smoke|stop` for local development.",
-                        "`ops/dev-stack.sh temporal` starts the local stack with Temporal analysis services.",
-                        "`make build-manifest` writes `build/output/image-versions.json`.",
+                        "`cml-memoryhive-build/runtime/manage_services_docker.sh start|validate|seed|smoke|stop --profile full` for Docker development.",
+                        "`cml-memoryhive-build/runtime/manage_services_local.sh start --profile full` for services-local development.",
+                        "`make build-manifest` writes `cml-memoryhive-build/build/output/image-versions.json`.",
                         "`make k8s-generate` and `make k8s-validate` render and check Kubernetes manifests.",
                         "`BACKUP_ROOT=/srv/memoryhive-backups ops/backup.sh` for production backup snapshots.",
                         "`ops/verify-backup.sh BACKUP_DIR` verifies checksums and restores into a temporary database.",
-                        "`CONFIRM_RESTORE=memoryhive ops/restore.sh BACKUP_DIR` performs destructive restore.",
+                        "`CONFIRM_RESTORE=cml-memoryhive ops/restore.sh BACKUP_DIR` performs destructive restore.",
                     ],
                 ),
                 (

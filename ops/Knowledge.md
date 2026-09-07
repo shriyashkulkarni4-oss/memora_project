@@ -5,21 +5,21 @@
 ## Stack
 
 - Docker Compose runs PostgreSQL, MinIO, Redis, backend, worker, and frontend.
-- `ops/dev-stack.sh` wraps local lifecycle commands.
+- `cml-memoryhive-build/runtime/manage_services_docker.sh` wraps local Docker lifecycle commands.
 - The `temporal` Compose profile adds Temporal server/UI plus analysis worker and scheduler.
-- `build/` generates container image manifests and local/push build commands.
-- `k8s/scripts/manage.py` renders manifests and wraps apply, upgrade, rollback, status, and delete.
-- `health_checker/health_check.py` probes local, Docker, or Kubernetes service health.
+- `cml-memoryhive-build/service-registry.json` is canonical for build, runtime, and health service metadata.
+- `cml-memoryhive-deployments/scripts/manage.py` renders manifests and wraps apply, upgrade, rollback, status, and delete.
+- `cml-memoryhive-build/health_checker/health_check.py` probes local, Docker, or Kubernetes service health.
 
 ## Key Commands
 
-- `ops/dev-stack.sh start|validate|load|smoke|stop` for local development.
-- `ops/dev-stack.sh temporal` starts the local stack with Temporal analysis services.
-- `make build-manifest` writes `build/output/image-versions.json`.
+- `cml-memoryhive-build/runtime/manage_services_docker.sh start|validate|seed|smoke|stop --profile full` for Docker development.
+- `cml-memoryhive-build/runtime/manage_services_local.sh start --profile full` for services-local development.
+- `make build-manifest` writes `cml-memoryhive-build/build/output/image-versions.json`.
 - `make k8s-generate` and `make k8s-validate` render and check Kubernetes manifests.
 - `BACKUP_ROOT=/srv/memoryhive-backups ops/backup.sh` for production backup snapshots.
 - `ops/verify-backup.sh BACKUP_DIR` verifies checksums and restores into a temporary database.
-- `CONFIRM_RESTORE=memoryhive ops/restore.sh BACKUP_DIR` performs destructive restore.
+- `CONFIRM_RESTORE=cml-memoryhive ops/restore.sh BACKUP_DIR` performs destructive restore.
 
 ## Rules
 

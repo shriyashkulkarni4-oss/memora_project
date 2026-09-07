@@ -26,48 +26,49 @@ Requirements: Docker Engine with Docker Compose v2 or newer.
 
 ```bash
 cp .env.example .env
-docker compose up --build
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile full
 ```
 
 Useful commands:
 
 ```bash
-# Start in the background
-docker compose up --build --detach
+# Regenerate and validate runtime profiles
+make runtime-generate
+make -C cml-memoryhive-build validate
 
 # Follow application logs
-docker compose logs --follow backend frontend
+cml-memoryhive-build/runtime/manage_services_docker.sh logs --profile full
 
 # Apply database migrations
-docker compose exec backend alembic upgrade head
+cml-memoryhive-build/runtime/manage_services_docker.sh migrate --profile full
 
 # Stop containers without deleting data
-docker compose down
+cml-memoryhive-build/runtime/manage_services_docker.sh stop --profile full
 ```
 
-The same local lifecycle is wrapped by `ops/dev-stack.sh`:
+The same local lifecycle is wrapped by `cml-memoryhive-build/runtime/manage_services_docker.sh`:
 
 ```bash
-ops/dev-stack.sh start
-ops/dev-stack.sh temporal
-ops/dev-stack.sh validate
-ops/dev-stack.sh load --persona engineer
-ops/dev-stack.sh smoke
-ops/dev-stack.sh stop
-CONFIRM_CLEAN=memoryhive ops/dev-stack.sh clean
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile full
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
+cml-memoryhive-build/runtime/manage_services_docker.sh validate --profile full
+cml-memoryhive-build/runtime/manage_services_docker.sh seed --persona engineer
+cml-memoryhive-build/runtime/manage_services_docker.sh smoke
+cml-memoryhive-build/runtime/manage_services_docker.sh stop --profile full
+CONFIRM_CLEAN=cml-memoryhive cml-memoryhive-build/runtime/manage_services_docker.sh clean --profile full
 ```
 
 Compose builds the `development` Docker stages. The backend uses Uvicorn reload, the frontend uses the Vite development server, and both source directories are bind-mounted.
 
 ## Automation
 
-Goal 1 integration orchestration lives in `automation/`. It loads demo data,
+Goal 1 integration orchestration lives in `cml-memoryhive-automation/`. It loads demo data,
 runs the API smoke test, and reuses the web/mobile Playwright suites:
 
 ```bash
-npm --prefix automation run doctor
-npm --prefix automation run test -- --skip-mobile
-npm --prefix automation run test:docker:cleanup
+npm --prefix cml-memoryhive-automation run doctor
+npm --prefix cml-memoryhive-automation run test -- --skip-mobile
+npm --prefix cml-memoryhive-automation run test:docker:cleanup
 ```
 
 Use `BASE_URL=http://localhost:8000` or `--base-url` to target another running
@@ -92,13 +93,13 @@ Start PostgreSQL, MinIO, and Redis-backed application services in Docker:
 
 ```bash
 cp .env.example .env
-docker compose up --detach db minio redis
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile infra
 ```
 
 Run the backend:
 
 ```bash
-cd backend
+cd cml-memoryhive-backend
 python3.11 -m venv .venv
 source .venv/bin/activate
 pip install --requirement requirements.txt
@@ -115,7 +116,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Run the frontend in another terminal:
 
 ```bash
-cd frontend
+cd cml-memoryhive-frontend
 npm ci
 npm run dev -- --host 0.0.0.0 --port 3000
 ```
@@ -125,11 +126,11 @@ npm run dev -- --host 0.0.0.0 --port 3000
 The final Dockerfile stages are production stages. They do not enable source reload or mount source directories.
 
 ```bash
-docker build --target production --tag memoryhive-backend:local backend
-docker build --target production --build-arg VITE_API_URL=/api/v1 --tag memoryhive-frontend:local frontend
+docker build --target production --tag cml-memoryhive-backend:local cml-memoryhive-backend
+docker build --target production --build-arg VITE_API_URL=/api/v1 --tag cml-memoryhive-frontend:local cml-memoryhive-frontend
 ```
 
-The frontend production image serves static files on container port `80`. Its Nginx configuration proxies `/api/v1/*` to the Compose/Docker network service named `backend` on port `8000`. Deployments that run the services on different networks must update that upstream or provide an equivalent ingress route.
+The frontend production image serves static files on container port `80`. Its Nginx configuration proxies `/api/v1/*` to `cml-memoryhive-backend` on port `8000`. Kubernetes routes the same paths through ingress.
 
 Production deployments must provide unique PostgreSQL, MinIO, JWT, and
 encryption secrets. Production configuration fails closed when development
@@ -141,8 +142,8 @@ credentials, localhost origins, or missing Redis are detected.
 cp .env.production.example .env.production
 chmod 600 .env.production
 # Set real secrets, domain, ACME email, and immutable image tags.
-docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml config --quiet
+docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml up -d
 BASE_URL=https://memoryhive.example.com ops/smoke.sh
 ```
 
@@ -157,16 +158,16 @@ The database-backed processing worker remains enabled by default. To test the
 durable Temporal pipeline locally, run:
 
 ```bash
-ops/dev-stack.sh temporal
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
 ```
 
-This starts Temporal server/UI plus `temporal-worker` and `temporal-scheduler`.
+This starts Temporal server/UI plus `cml-memoryhive-temporal-worker` and `cml-memoryhive-temporal-scheduler`.
 With `TEMPORAL_ENABLED=true`, new captures are marked for analysis and scheduled
 through Temporal. See [Temporal Processing Pipelines](docs/TEMPORAL_PIPELINES.md).
 
 ## Kubernetes build and deployment
 
-Memoryhive includes a build/deployment toolchain based on the Goal 1 pipeline
+Memoryhive includes a build and deployment toolchain based on the Goal 1 pipeline
 blueprints. Generate image metadata, render manifests, and validate a profile:
 
 ```bash
@@ -175,15 +176,17 @@ make k8s-generate K8S_ENV=local K8S_PROFILE=full
 make k8s-validate K8S_ENV=local K8S_PROFILE=full
 ```
 
-Tagged releases publish GHCR images with immutable `<version>-<short_sha>` tags
-and upload `build/output/image-versions.json`. Manual Kubernetes deploys use
-`.github/workflows/k8s-deploy.yml` and require a `KUBECONFIG_B64` secret for the
-target GitHub environment. See [Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md).
+Tagged releases publish GHCR images with immutable `<version>-<short_sha>` tags,
+upload the `cml-memoryhive-image-versions` artifact, and open a staging promotion
+PR. The protected production workflow copies the exact staging pins into a
+separate PR. Cluster operations use `.github/workflows/k8s-deploy.yml` and the
+target GitHub environment's kubeconfig and application secrets. See
+[Kubernetes Deployment](docs/KUBERNETES_DEPLOYMENT.md).
 
 ## Mobile development and release
 
 ```bash
-cd mobile
+cd cml-memoryhive-mobile
 npm ci
 npm run typecheck
 npm test
@@ -192,7 +195,7 @@ npx expo start
 
 The development client derives the API host from the web or Expo host and uses
 port `8000`. Set `EXPO_PUBLIC_API_URL` only to override that default. Native
-release profiles are defined in `mobile/eas.json`; store preparation and
+release profiles are defined in `cml-memoryhive-mobile/eas.json`; store preparation and
 physical-device checks are tracked in the release checklist.
 
 Public store-support routes are served by the web app at `/privacy`,
@@ -214,10 +217,10 @@ environment or an access-controlled production env file:
 and Data safety drafts match production enrichment and telemetry behavior.
 
 Store artwork and screenshot assets can be regenerated with
-`npm --prefix mobile run store:assets` and
-`npm --prefix mobile run store:screenshots`; build the submission packet with
-`npm --prefix mobile run store:submission`, then check readiness with
-`npm --prefix mobile run store:check`. CI runs the read-only
+`npm --prefix cml-memoryhive-mobile run store:assets` and
+`npm --prefix cml-memoryhive-mobile run store:screenshots`; build the submission packet with
+`npm --prefix cml-memoryhive-mobile run store:submission`, then check readiness with
+`npm --prefix cml-memoryhive-mobile run store:check`. CI runs the read-only
 `store:submission:check` before `store:check:ci`, failing for missing or stale
 generated packets and repository-owned defects while continuing to report
 external release blockers.
@@ -225,18 +228,18 @@ For final handoff, run
 `store:submission` and `store:check` with the same release environment so the
 packet URLs, support email, and reviewer account match the checked config. Once
 store-console and privacy forms are complete, record final evidence in
-`mobile/store-assets/store-console-evidence.json` from the example template
+`cml-memoryhive-mobile/store-assets/store-console-evidence.json` from the example template
 before running the strict check.
 Record EAS project, environment, signing, and submit setup evidence in
-`mobile/builds/eas-release-evidence.json` after EAS setup is complete.
+`cml-memoryhive-mobile/builds/eas-release-evidence.json` after EAS setup is complete.
 After setting the `EXPO_TOKEN` repository secret and committing the EAS
 `projectId`, the manual `Mobile EAS Build` GitHub workflow can queue production
 iOS, Android, or combined builds. It validates local release inputs, freezes
 existing credentials, never auto-submits, and uploads the EAS JSON request.
 
 ```bash
-npm --prefix mobile run store:submission -- --release-env-file .env.production
-npm --prefix mobile run store:check -- --release-env-file .env.production --strict
+npm --prefix cml-memoryhive-mobile run store:submission -- --release-env-file .env.production
+npm --prefix cml-memoryhive-mobile run store:check -- --release-env-file .env.production --strict
 ```
 
 ## Configuration
@@ -284,15 +287,15 @@ The canonical environment names are `JWT_SECRET_KEY` and `MINIO_BUCKET`. Legacy 
 
 ```text
 memoryhive/
-|-- backend/             FastAPI application, Alembic migrations, and tests
-|-- frontend/            React, TypeScript, Vite, and Nginx configuration
-|-- mobile/              Expo iOS, Android, and offline synchronization client
-|-- automation/          Seed, smoke, and Playwright integration orchestrator
-|-- docs/                Product requirements and project status
-|-- ops/                 Monitoring, smoke, backup, restore, and load tooling
-|-- docker-compose.yml   Local development stack
-|-- docker-compose.prod.yml Production stack with Caddy and Redis
-|-- .env.example         Local environment template
+|-- cml-memoryhive-backend/             FastAPI application, Alembic migrations, and tests
+|-- cml-memoryhive-frontend/            React, TypeScript, Vite, and Nginx configuration
+|-- cml-memoryhive-mobile/              Expo iOS, Android, and offline synchronization client
+|-- cml-memoryhive-automation/          Seed, smoke, and Playwright integration orchestrator
+|-- cml-memoryhive-build/              Image, runtime, and health tooling
+|-- cml-memoryhive-deployments/        Kubernetes rendering and lifecycle tooling
+|-- docs/                               Product requirements and project status
+|-- ops/                                Monitoring, smoke, backup, and restore tooling
+|-- .env.example                        Local environment template
 \\-- README.md
 ```
 

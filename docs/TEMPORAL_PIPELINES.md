@@ -34,7 +34,7 @@ The API includes these fields in item responses and item stats include
 Start the Temporal profile:
 
 ```bash
-ops/dev-stack.sh temporal
+cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
 ```
 
 Temporal service listens on `localhost:7233`; Temporal UI listens on
@@ -49,7 +49,7 @@ Temporal service listens on `localhost:7233`; Temporal UI listens on
 Run the scheduler once for debugging:
 
 ```bash
-cd backend
+cd cml-memoryhive-backend
 TEMPORAL_ENABLED=true TEMPORAL_ADDRESS=localhost:7233 ./.venv/bin/python -m app.temporal_pipeline.scheduler --once
 ```
 

@@ -14,19 +14,18 @@
 
 ## Validation
 
-- Backend: `cd backend && ./.venv/bin/ruff check app tests && ./.venv/bin/black --check app tests && ./.venv/bin/pytest -q`.
-- Frontend: `cd frontend && npm run lint && npm test && npm run build`.
-- Mobile: `cd mobile && npm run typecheck && npm run lint && npm test`.
+- Backend: `cd cml-memoryhive-backend && ./.venv/bin/python -m ruff check app tests && ./.venv/bin/python -m black --check app tests && ./.venv/bin/python -m pytest -q`.
+- Frontend: `cd cml-memoryhive-frontend && npm run lint && npm test && npm run build`.
+- Mobile: `cd cml-memoryhive-mobile && npm run typecheck && npm run lint && npm test`.
 
 ## Project Map
 
-- `backend/` API, worker, models, migrations, services, and pytest tests.
-- `backend/app/temporal_pipeline/` Temporal workflow, activity, worker, and scheduler for item analysis.
-- `frontend/` authenticated web app, public compliance pages, admin dashboard, and Playwright flows.
-- `mobile/` Expo Router app, offline SQLite sync, mobile release config, and tests.
-- `automation/` seed, smoke, Docker, and Playwright orchestration for integration runs.
-- `build/` image build registry and image-version manifest tooling.
-- `k8s/` environment/profile configs plus manifest generation and cluster operation commands.
-- `health_checker/` local, Docker, and Kubernetes service health CLI.
-- `ops/` Compose lifecycle, smoke, backup, restore, monitoring, and load tooling.
+- `cml-memoryhive-backend/` API, worker, models, migrations, services, and pytest tests.
+- `cml-memoryhive-backend/app/temporal_pipeline/` Temporal workflow, activity, worker, and scheduler for item analysis.
+- `cml-memoryhive-frontend/` authenticated web app, public compliance pages, admin dashboard, and Playwright flows.
+- `cml-memoryhive-mobile/` Expo Router app, offline SQLite sync, mobile release config, and tests.
+- `cml-memoryhive-automation/` seed, smoke, Docker, and Playwright orchestration for integration runs.
+- `cml-memoryhive-build/` owns image builds, generated Compose profiles, local-process orchestration, and health checks.
+- `cml-memoryhive-deployments/` owns environment/profile configs, image pins, generated manifests, promotions, and cluster operations.
+- `ops/` owns smoke, backup, restore, monitoring, and load tooling shared by the delivery projects.
 - `docs/` requirements, runbooks, traceability, and Goal 1 records.

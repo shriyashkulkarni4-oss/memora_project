@@ -1,0 +1,282 @@
+# Generated for cml-memoryhive; environment=production; profile=infra.
+# Source templates and image-versions.json are authoritative. No Secret values are persisted here.
+apiVersion: "v1"
+kind: "Namespace"
+metadata:
+  name: "cml-memoryhive-production"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+---
+apiVersion: "v1"
+kind: "ResourceQuota"
+metadata:
+  name: "cml-memoryhive-quota"
+  namespace: "cml-memoryhive-production"
+spec:
+  hard:
+    pods: "40"
+    requests.cpu: "8"
+    requests.memory: "16Gi"
+    limits.cpu: "16"
+    limits.memory: "32Gi"
+---
+apiVersion: "v1"
+kind: "LimitRange"
+metadata:
+  name: "cml-memoryhive-defaults"
+  namespace: "cml-memoryhive-production"
+spec:
+  limits:
+    - type: "Container"
+      defaultRequest:
+        cpu: "100m"
+        memory: "128Mi"
+      default:
+        cpu: "500m"
+        memory: "512Mi"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "db"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "db"
+  namespace: "cml-memoryhive-production"
+spec:
+  type: "ClusterIP"
+  selector:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "db"
+  ports:
+    - name: "tcp"
+      port: 5432
+      targetPort: 5432
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  name: "db"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "db"
+  namespace: "cml-memoryhive-production"
+spec:
+  serviceName: "db"
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "cml-memoryhive"
+      app.kubernetes.io/component: "db"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: "cml-memoryhive"
+        app.kubernetes.io/component: "db"
+    spec:
+      containers:
+        - name: "postgres"
+          image: "postgres:15-alpine"
+          ports:
+            - name: "postgres"
+              containerPort: 5432
+          env:
+            - name: "POSTGRES_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: "cml-memoryhive-infra-secrets"
+                  key: "POSTGRES_USER"
+            - name: "POSTGRES_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "cml-memoryhive-infra-secrets"
+                  key: "POSTGRES_PASSWORD"
+            - name: "POSTGRES_DB"
+              valueFrom:
+                secretKeyRef:
+                  name: "cml-memoryhive-infra-secrets"
+                  key: "POSTGRES_DB"
+          readinessProbe:
+            exec:
+              command:
+                - "sh"
+                - "-c"
+                - "pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\""
+            periodSeconds: 10
+          volumeMounts:
+            - name: "pgdata"
+              mountPath: "/var/lib/postgresql/data"
+  volumeClaimTemplates:
+    - metadata:
+        name: "pgdata"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "100Gi"
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "redis"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "redis"
+  namespace: "cml-memoryhive-production"
+spec:
+  type: "ClusterIP"
+  selector:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "redis"
+  ports:
+    - name: "tcp"
+      port: 6379
+      targetPort: 6379
+---
+apiVersion: "apps/v1"
+kind: "Deployment"
+metadata:
+  name: "redis"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "redis"
+  namespace: "cml-memoryhive-production"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "cml-memoryhive"
+      app.kubernetes.io/component: "redis"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: "cml-memoryhive"
+        app.kubernetes.io/component: "redis"
+    spec:
+      containers:
+        - name: "redis"
+          image: "redis:7-alpine"
+          command:
+            - "redis-server"
+            - "--save"
+            - "60"
+            - "1"
+            - "--loglevel"
+            - "warning"
+          ports:
+            - name: "redis"
+              containerPort: 6379
+          readinessProbe:
+            exec:
+              command:
+                - "redis-cli"
+                - "ping"
+            periodSeconds: 10
+          volumeMounts:
+            - name: "redisdata"
+              mountPath: "/data"
+      volumes:
+        - name: "redisdata"
+          emptyDir: {}
+---
+apiVersion: "v1"
+kind: "Service"
+metadata:
+  name: "minio"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "minio"
+  namespace: "cml-memoryhive-production"
+spec:
+  type: "ClusterIP"
+  selector:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "minio"
+  ports:
+    - name: "http"
+      port: 9000
+      targetPort: 9000
+---
+apiVersion: "apps/v1"
+kind: "StatefulSet"
+metadata:
+  name: "minio"
+  labels:
+    app.kubernetes.io/name: "cml-memoryhive"
+    app.kubernetes.io/component: "minio"
+  namespace: "cml-memoryhive-production"
+spec:
+  serviceName: "minio"
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "cml-memoryhive"
+      app.kubernetes.io/component: "minio"
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: "cml-memoryhive"
+        app.kubernetes.io/component: "minio"
+    spec:
+      containers:
+        - name: "minio"
+          image: "minio/minio:latest"
+          command:
+            - "minio"
+            - "server"
+            - "/data"
+          ports:
+            - name: "http"
+              containerPort: 9000
+          env:
+            - name: "MINIO_ROOT_USER"
+              valueFrom:
+                secretKeyRef:
+                  name: "cml-memoryhive-infra-secrets"
+                  key: "MINIO_ROOT_USER"
+            - name: "MINIO_ROOT_PASSWORD"
+              valueFrom:
+                secretKeyRef:
+                  name: "cml-memoryhive-infra-secrets"
+                  key: "MINIO_ROOT_PASSWORD"
+          readinessProbe:
+            httpGet:
+              path: "/minio/health/ready"
+              port: "http"
+            periodSeconds: 15
+          volumeMounts:
+            - name: "miniodata"
+              mountPath: "/data"
+  volumeClaimTemplates:
+    - metadata:
+        name: "miniodata"
+      spec:
+        accessModes:
+          - "ReadWriteOnce"
+        resources:
+          requests:
+            storage: "250Gi"
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "NetworkPolicy"
+metadata:
+  name: "cml-memoryhive-default-deny-ingress"
+  namespace: "cml-memoryhive-production"
+spec:
+  podSelector: {}
+  policyTypes:
+    - "Ingress"
+---
+apiVersion: "networking.k8s.io/v1"
+kind: "NetworkPolicy"
+metadata:
+  name: "cml-memoryhive-allow-same-namespace-ingress"
+  namespace: "cml-memoryhive-production"
+spec:
+  podSelector: {}
+  policyTypes:
+    - "Ingress"
+  ingress:
+    - from:
+        - podSelector: "{}"

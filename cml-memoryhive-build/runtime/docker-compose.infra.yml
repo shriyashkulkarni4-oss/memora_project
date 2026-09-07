@@ -1,0 +1,105 @@
+{
+  "name": "cml-memoryhive",
+  "services": {
+    "db": {
+      "container_name": "cml-memoryhive-db",
+      "image": "postgres:15-alpine",
+      "environment": {
+        "POSTGRES_USER": "${POSTGRES_USER:-memoryhive}",
+        "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:-memoryhive123}",
+        "POSTGRES_DB": "${POSTGRES_DB:-memoryhive}"
+      },
+      "ports": [
+        "${POSTGRES_PORT:-5432}:5432"
+      ],
+      "volumes": [
+        "pgdata:/var/lib/postgresql/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD-SHELL",
+          "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"
+        ],
+        "interval": "5s",
+        "timeout": "5s",
+        "retries": 10
+      },
+      "restart": "unless-stopped"
+    },
+    "redis": {
+      "container_name": "cml-memoryhive-redis",
+      "image": "redis:7-alpine",
+      "command": [
+        "redis-server",
+        "--save",
+        "60",
+        "1",
+        "--loglevel",
+        "warning"
+      ],
+      "ports": [
+        "${REDIS_PORT:-6379}:6379"
+      ],
+      "volumes": [
+        "redisdata:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "redis-cli",
+          "ping"
+        ],
+        "interval": "5s",
+        "timeout": "3s",
+        "retries": 10
+      },
+      "restart": "unless-stopped"
+    },
+    "minio": {
+      "container_name": "cml-memoryhive-minio",
+      "image": "minio/minio:latest",
+      "command": [
+        "server",
+        "/data",
+        "--console-address",
+        ":9001"
+      ],
+      "environment": {
+        "MINIO_ROOT_USER": "${MINIO_ROOT_USER:-minioadmin}",
+        "MINIO_ROOT_PASSWORD": "${MINIO_ROOT_PASSWORD:-minioadmin123}"
+      },
+      "ports": [
+        "${MINIO_API_PORT:-9000}:9000",
+        "${MINIO_CONSOLE_PORT:-9001}:9001"
+      ],
+      "volumes": [
+        "miniodata:/data"
+      ],
+      "healthcheck": {
+        "test": [
+          "CMD",
+          "curl",
+          "--fail",
+          "--silent",
+          "http://localhost:9000/minio/health/ready"
+        ],
+        "interval": "10s",
+        "timeout": "5s",
+        "retries": 10
+      },
+      "restart": "unless-stopped"
+    }
+  },
+  "volumes": {
+    "pgdata": {},
+    "redisdata": {},
+    "miniodata": {},
+    "temporal_pgdata": {},
+    "frontend_node_modules": {}
+  },
+  "networks": {
+    "default": {
+      "name": "cml-memoryhive-network"
+    }
+  }
+}

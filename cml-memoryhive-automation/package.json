@@ -1,0 +1,15 @@
+{
+  "name": "cml-memoryhive-automation",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "doctor": "node scripts/run.mjs --doctor",
+    "seed": "node scripts/run.mjs --seed-only",
+    "validate": "node scripts/run.mjs --skip-seed --skip-web --skip-mobile",
+    "test": "node scripts/run.mjs",
+    "test:docker": "node scripts/run.mjs --docker",
+    "test:docker:cleanup": "node scripts/run.mjs --docker --cleanup",
+    "dry-run": "node scripts/run.mjs --docker --dry-run"
+  }
+}

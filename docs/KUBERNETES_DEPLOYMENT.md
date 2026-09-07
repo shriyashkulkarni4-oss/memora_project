@@ -1,52 +1,55 @@
-# Kubernetes Deployment
+# Memoryhive Build and Kubernetes Deployment
 
-Memoryhive keeps build metadata and Kubernetes deployment assets in this repo:
+Memoryhive follows the split build and deployment project pattern:
 
-- `build/services.json` is the source of truth for container image names, build contexts, targets, and runtime image reuse.
-- `build/scripts/generate_image_manifest.py` writes `build/output/image-versions.json`, the CI handoff artifact for deployments.
-- `k8s/config/environments.json` defines namespaces, expected kubectl contexts, domains, replica counts, resources, and storage sizes.
-- `k8s/config/profiles.json` defines deployable service groups.
-- `k8s/image-versions.json` pins the images used by each environment until a release manifest is promoted.
-- `k8s/scripts/manage.py` renders manifests and wraps cluster operations.
+- `cml-memoryhive-build/service-registry.json` is canonical for images, runtime services, ports, dependencies, health checks, and profiles.
+- `cml-memoryhive-build/` builds/pushes images, generates local Compose profiles, runs local processes, and checks health.
+- `cml-memoryhive-deployments/image-versions.json` is the only source of deployed image references.
+- `cml-memoryhive-deployments/` renders non-secret manifests and owns cluster lifecycle commands.
 
-## Local Commands
+## Build and local runtime
 
 ```bash
-make build-manifest IMAGE_VERSION=local
+make runtime-generate
+make build-images IMAGE_VERSION=local
+make runtime-up PROFILE=full
+make health-local PROFILE=full
+make runtime-down PROFILE=full
+```
+
+For infra in Docker and hot-reloading services as host processes:
+
+```bash
+cml-memoryhive-build/runtime/manage_services_local.sh start --profile full
+cml-memoryhive-build/runtime/manage_services_local.sh status --profile full
+cml-memoryhive-build/runtime/manage_services_local.sh stop --profile full
+```
+
+## Generate and validate deployments
+
+The supported environments are `local`, `staging`, and `production`. Each can render `infra`, `app-only`, `full`, or `temporal`.
+
+```bash
+make -C cml-memoryhive-deployments validate-all
 make k8s-generate K8S_ENV=local K8S_PROFILE=full
-make k8s-validate K8S_ENV=local K8S_PROFILE=full
-python3 health_checker/health_check.py --mode local backend frontend
 ```
 
-Generated manifests are written to `k8s/generated/<environment>/<profile>/` and
-are intentionally ignored by Git. Inspect them before applying to a cluster.
+Tracked non-secret output is written to `cml-memoryhive-deployments/generated/<environment>/<profile>/cml-memoryhive.yaml`. Secret resources are never written there.
 
-## Cluster Commands
+## Cluster lifecycle
+
+Mutating commands require the exact Kubernetes context configured for the environment. Supply secrets through process environment values or an ignored environment file.
 
 ```bash
-python3 k8s/scripts/manage.py apply staging full
-python3 k8s/scripts/manage.py upgrade staging full
-python3 k8s/scripts/manage.py status staging full
-python3 k8s/scripts/manage.py rollback staging full backend
-CONFIRM_DELETE=memoryhive python3 k8s/scripts/manage.py delete staging full
+python3 cml-memoryhive-deployments/scripts/manage.py apply staging full --secret-env-file /secure/staging.env
+python3 cml-memoryhive-deployments/scripts/manage.py upgrade staging full --secret-env-file /secure/staging.env
+python3 cml-memoryhive-deployments/scripts/manage.py status staging full
+python3 cml-memoryhive-deployments/scripts/manage.py rollback staging full cml-memoryhive-backend
+CONFIRM_DELETE=cml-memoryhive python3 cml-memoryhive-deployments/scripts/manage.py delete staging full
 ```
 
-Mutating commands refuse to run unless the active kubectl context matches the
-environment's `expected_context`. Use `--skip-context-check` only for throwaway
-clusters or CI jobs where the context name is controlled elsewhere.
+`apply` and `upgrade` stream Secrets directly to `kubectl`. Staging and production reject missing values and known development placeholders. Upgrades compare deployed images with immutable pins and wait only for changed deployments.
 
-## Secrets
+## Promotion
 
-Rendered `Secret` manifests contain placeholders only. Replace them through the
-cluster's secret-management path before production use, or wire an operator such
-as External Secrets. Do not commit real database, JWT, MinIO, Redis, n8n, or
-encryption secrets.
-
-## Release Flow
-
-Tagged releases publish backend and frontend images to GHCR with three tags:
-`<version>-<short_sha>`, `<version>`, and `latest`. The immutable
-`<version>-<short_sha>` tag is also written to the image manifest artifact.
-Promote that manifest by copying the relevant image refs into
-`k8s/image-versions.json` or by having the deployment automation update the pin
-file in a follow-up release process.
+A tagged release builds both multi-architecture images with the build project's scripts, scans them, emits `cml-memoryhive-image-versions`, and opens a staging promotion PR. The protected `Promote Production` workflow copies the exact staging immutable tags into production and opens a separate PR. Neither workflow commits directly to the default branch.

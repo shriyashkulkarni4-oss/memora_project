@@ -1,0 +1,69 @@
+{
+  "profile": "full",
+  "services": {
+    "db": {
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "health": {
+        "type": "tcp"
+      },
+      "container": "cml-memoryhive-db",
+      "deployment": null
+    },
+    "redis": {
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 6379,
+      "health": {
+        "type": "tcp"
+      },
+      "container": "cml-memoryhive-redis",
+      "deployment": null
+    },
+    "minio": {
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 9000,
+      "health": {
+        "type": "http",
+        "path": "/minio/health/ready"
+      },
+      "container": "cml-memoryhive-minio",
+      "deployment": null
+    },
+    "cml-memoryhive-backend": {
+      "kind": "service",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "health": {
+        "type": "http",
+        "path": "/health/ready"
+      },
+      "container": "cml-memoryhive-backend",
+      "deployment": "cml-memoryhive-backend"
+    },
+    "cml-memoryhive-worker": {
+      "kind": "process",
+      "host": "127.0.0.1",
+      "port": 0,
+      "health": {
+        "type": "process",
+        "marker": "app.worker"
+      },
+      "container": "cml-memoryhive-worker",
+      "deployment": "cml-memoryhive-worker"
+    },
+    "cml-memoryhive-frontend": {
+      "kind": "frontend",
+      "host": "127.0.0.1",
+      "port": 3000,
+      "health": {
+        "type": "http",
+        "path": "/"
+      },
+      "container": "cml-memoryhive-frontend",
+      "deployment": "cml-memoryhive-frontend"
+    }
+  }
+}

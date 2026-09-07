@@ -2,7 +2,7 @@
 set -eu
 
 BACKUP_DIR=${1:?Usage: ops/verify-backup.sh BACKUP_DIR}
-COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.prod.yml}
+COMPOSE_FILE=${COMPOSE_FILE:-cml-memoryhive-build/runtime/docker-compose.production.yml}
 ENV_FILE=${ENV_FILE:-.env.production}
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 BACKUP_DIR=$(cd "$BACKUP_DIR" && pwd)

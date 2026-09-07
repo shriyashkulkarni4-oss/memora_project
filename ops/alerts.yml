@@ -2,7 +2,7 @@ groups:
   - name: memoryhive
     rules:
       - alert: MemoryhiveApiUnavailable
-        expr: up{job="memoryhive-api"} == 0
+        expr: up{job="cml-memoryhive-api"} == 0
         for: 2m
         labels: { severity: critical }
         annotations:

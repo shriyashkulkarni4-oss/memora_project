@@ -17,7 +17,7 @@ Local entry points:
 - Expo web: `http://localhost:8083`
 - MinIO console: `http://localhost:9001`
 
-The root `automation/` package orchestrates repeatable Goal 1 integration runs
+The root `cml-memoryhive-automation/` package orchestrates repeatable Goal 1 integration runs
 by seeding data, running `ops/smoke.sh`, and invoking the web and mobile
 Playwright suites against a configured backend.
 
@@ -53,7 +53,7 @@ Playwright suites against a configured backend.
 
 ## Verification evidence
 
-- Full automation runner: `npm --prefix automation run test:docker:cleanup` rebuilt Compose, validated services, seeded all personas, passed API smoke, passed both Playwright suites, and stopped the stack while preserving volumes.
+- Full automation runner: `npm --prefix cml-memoryhive-automation run test:docker:cleanup` rebuilt Compose, validated services, seeded all personas, passed API smoke, passed both Playwright suites, and stopped the stack while preserving volumes.
 - Backend: `35 passed`; Ruff and Black clean.
 - Frontend: production build passed; `17` Vitest tests passed.
 - Frontend live Playwright workflow: `1 passed` against the real API.

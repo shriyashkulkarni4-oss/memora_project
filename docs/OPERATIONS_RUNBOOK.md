@@ -13,9 +13,9 @@ Last updated: 2026-09-06
 4. Validate and start the stack:
 
 ```bash
-docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
-docker compose --env-file .env.production -f docker-compose.prod.yml pull
-docker compose --env-file .env.production -f docker-compose.prod.yml up -d
+docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml config --quiet
+docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml pull
+docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml up -d
 BASE_URL=https://memoryhive.example.com ops/smoke.sh
 ```
 
@@ -29,7 +29,7 @@ Forward Prometheus alerts to the organization's existing alert manager.
 - `/health/ready`: database readiness.
 - `/metrics`: internal Prometheus scrape endpoint.
 - `docker compose ... ps`: container health.
-- `docker compose ... logs --since 15m backend worker`: structured request and
+- `docker compose ... logs --since 15m cml-memoryhive-backend cml-memoryhive-worker`: structured request and
   processing logs.
 
 Investigate sustained 5xx errors, p95 latency above one second, a failed worker,
@@ -74,7 +74,7 @@ blank when backups are owned by an external scheduler.
 Full restore is destructive and briefly stops the API and worker:
 
 ```bash
-CONFIRM_RESTORE=memoryhive ops/restore.sh /srv/memoryhive-backups/20260905T120000Z
+CONFIRM_RESTORE=cml-memoryhive ops/restore.sh /srv/memoryhive-backups/20260905T120000Z
 BASE_URL=https://memoryhive.example.com ops/smoke.sh
 ```
 

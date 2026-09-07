@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-COMPOSE_FILE=${COMPOSE_FILE:-docker-compose.prod.yml}
+COMPOSE_FILE=${COMPOSE_FILE:-cml-memoryhive-build/runtime/docker-compose.production.yml}
 ENV_FILE=${ENV_FILE:-.env.production}
 BACKUP_ROOT=${BACKUP_ROOT:-backups}
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)

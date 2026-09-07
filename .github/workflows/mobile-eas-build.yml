@@ -23,7 +23,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: mobile
+        working-directory: cml-memoryhive-mobile
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_PLATFORM: ${{ inputs.platform }}
@@ -33,7 +33,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: mobile/package-lock.json
+          cache-dependency-path: cml-memoryhive-mobile/package-lock.json
       - run: npm ci
       - run: npm run eas:build:preflight
       - run: npm run store:submission:check
@@ -50,7 +50,7 @@ jobs:
       - name: Upload EAS build request
         uses: actions/upload-artifact@v4
         with:
-          name: memoryhive-eas-${{ inputs.platform }}-${{ github.run_number }}
-          path: mobile/builds/eas-build-request.json
+          name: cml-memoryhive-eas-${{ inputs.platform }}-${{ github.run_number }}
+          path: cml-memoryhive-mobile/builds/eas-build-request.json
           if-no-files-found: error
           retention-days: 30

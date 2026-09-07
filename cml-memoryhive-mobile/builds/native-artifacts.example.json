@@ -1,0 +1,25 @@
+{
+  "generated_at": "2026-09-06T00:00:00.000Z",
+  "ios": {
+    "profile": "production",
+    "eas_build_id": "replace-with-eas-ios-build-id",
+    "artifact_path": "cml-memoryhive-mobile/builds/memoryhive-ios-production.ipa",
+    "tested_devices": [
+      "iPhone 15 / iOS 18",
+      "iPad Air / iPadOS 18"
+    ],
+    "notes": "Validate login, capture, search, sync, export, account deletion, and store screenshots."
+  },
+  "android": {
+    "profile": "production",
+    "eas_build_id": "replace-with-eas-android-build-id",
+    "artifact_path": "cml-memoryhive-mobile/builds/memoryhive-android-production.aab",
+    "target_sdk_version": 36,
+    "record_audio_permission_present": false,
+    "tested_devices": [
+      "Pixel 8 / Android 16",
+      "Android tablet / Android 16"
+    ],
+    "notes": "Validate share intent, image picker, offline capture, reconnect sync, and account deletion."
+  }
+}

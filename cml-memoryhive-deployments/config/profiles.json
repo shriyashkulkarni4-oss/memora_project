@@ -1,0 +1,26 @@
+{
+  "full": {
+    "description": "PostgreSQL, Redis, MinIO, backend API, worker, frontend, ingress, and network policies.",
+    "services": ["db", "redis", "minio", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
+    "include_ingress": true,
+    "include_network_policies": true
+  },
+  "temporal": {
+    "description": "Full app plus Temporal analysis worker and scheduler. Expects TEMPORAL_ADDRESS to point at a reachable Temporal cluster.",
+    "services": ["db", "redis", "minio", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler"],
+    "include_ingress": true,
+    "include_network_policies": true
+  },
+  "app-only": {
+    "description": "Backend, worker, and frontend only. Use when database, Redis, and object storage are externally managed.",
+    "services": ["cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
+    "include_ingress": true,
+    "include_network_policies": true
+  },
+  "infra": {
+    "description": "Stateful dependencies only.",
+    "services": ["db", "redis", "minio"],
+    "include_ingress": false,
+    "include_network_policies": true
+  }
+}

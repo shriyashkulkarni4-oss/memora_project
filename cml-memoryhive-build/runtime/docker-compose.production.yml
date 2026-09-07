@@ -1,0 +1,197 @@
+name: cml-memoryhive-production
+
+x-backend-environment: &backend-environment
+  ENVIRONMENT: production
+  APP_DEBUG: "false"
+  DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:?Set POSTGRES_USER}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:?Set POSTGRES_DB}
+  REDIS_URL: redis://redis:6379/0
+  MINIO_ENDPOINT: minio:9000
+  MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+  MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+  MINIO_BUCKET: ${MINIO_BUCKET:?Set MINIO_BUCKET}
+  MINIO_SECURE: "false"
+  JWT_SECRET_KEY: ${JWT_SECRET_KEY:?Set JWT_SECRET_KEY}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:?Set ENCRYPTION_KEY}
+  ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-15}
+  REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS:-30}
+  CORS_ORIGINS: '${CORS_ORIGINS:?Set CORS_ORIGINS}'
+  ALLOWED_HOSTS: '${ALLOWED_HOSTS:?Set ALLOWED_HOSTS}'
+  RATE_LIMIT_PER_MINUTE: ${RATE_LIMIT_PER_MINUTE:-120}
+  AUTH_RATE_LIMIT_PER_MINUTE: ${AUTH_RATE_LIMIT_PER_MINUTE:-10}
+  N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL:-}
+  N8N_API_KEY: ${N8N_API_KEY:-}
+  OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-}
+  OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+  TEMPORAL_ENABLED: ${TEMPORAL_ENABLED:-false}
+  TEMPORAL_ADDRESS: ${TEMPORAL_ADDRESS:-temporal.example.internal:7233}
+  TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+  TEMPORAL_TASK_QUEUE: ${TEMPORAL_TASK_QUEUE:-memoryhive-analysis}
+  TEMPORAL_SCHEDULER_POLL_SECONDS: ${TEMPORAL_SCHEDULER_POLL_SECONDS:-10}
+  TEMPORAL_SCHEDULER_BATCH_SIZE: ${TEMPORAL_SCHEDULER_BATCH_SIZE:-25}
+
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  minio:
+    image: minio/minio:latest
+    command: server /data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?Set MINIO_ROOT_PASSWORD}
+    volumes:
+      - miniodata:/data
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "http://localhost:9000/minio/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cml-memoryhive-backend:
+    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
+    build:
+      context: ../../cml-memoryhive-backend
+      target: production
+    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=*"]
+    environment: *backend-environment
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_healthy }
+      minio: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--header", "Host: cml-memoryhive-backend", "http://localhost:8000/health/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cml-memoryhive-worker:
+    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
+    command: ["python", "-m", "app.worker"]
+    environment: *backend-environment
+    depends_on:
+      cml-memoryhive-backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cml-memoryhive-temporal-worker:
+    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
+    command: ["python", "-m", "app.temporal_pipeline.worker"]
+    environment:
+      <<: *backend-environment
+      TEMPORAL_ENABLED: "true"
+    depends_on:
+      cml-memoryhive-backend: { condition: service_healthy }
+    profiles: ["temporal"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cml-memoryhive-temporal-scheduler:
+    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
+    command: ["python", "-m", "app.temporal_pipeline.scheduler"]
+    environment:
+      <<: *backend-environment
+      TEMPORAL_ENABLED: "true"
+    depends_on:
+      cml-memoryhive-backend: { condition: service_healthy }
+    profiles: ["temporal"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  cml-memoryhive-frontend:
+    image: ${FRONTEND_IMAGE:-cml-memoryhive-frontend:latest}
+    build:
+      context: ../../cml-memoryhive-frontend
+      target: production
+      args:
+        VITE_API_URL: /api/v1
+        VITE_SUPPORT_EMAIL: ${VITE_SUPPORT_EMAIL:?Set VITE_SUPPORT_EMAIL}
+    depends_on:
+      cml-memoryhive-backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--output-document=/dev/null", "http://127.0.0.1/"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    read_only: true
+    tmpfs: [/var/cache/nginx, /var/run]
+    security_opt: ["no-new-privileges:true"]
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${HTTPS_PORT:-443}:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      cml-memoryhive-frontend: { condition: service_healthy }
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+  prometheus:
+    image: prom/prometheus:v3.5.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=15d
+    volumes:
+      - ../../ops/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ../../ops/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+    depends_on:
+      cml-memoryhive-backend: { condition: service_healthy }
+    profiles: ["observability"]
+    restart: unless-stopped
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:
+  caddy_data:
+  caddy_config:
+  prometheus_data:

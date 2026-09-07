@@ -1,0 +1,32 @@
+{
+  "local": {
+    "cml-memoryhive-backend": "cml-memoryhive-backend:local",
+    "cml-memoryhive-worker": "cml-memoryhive-backend:local",
+    "cml-memoryhive-temporal-worker": "cml-memoryhive-backend:local",
+    "cml-memoryhive-temporal-scheduler": "cml-memoryhive-backend:local",
+    "cml-memoryhive-frontend": "cml-memoryhive-frontend:local",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  },
+  "staging": {
+    "cml-memoryhive-backend": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-worker": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-temporal-worker": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-temporal-scheduler": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-frontend": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:v0.0.0-0000000",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  },
+  "production": {
+    "cml-memoryhive-backend": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-worker": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-temporal-worker": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-temporal-scheduler": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000",
+    "cml-memoryhive-frontend": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:v0.0.0-0000000",
+    "postgres": "postgres:15-alpine",
+    "redis": "redis:7-alpine",
+    "minio": "minio/minio:latest"
+  }
+}

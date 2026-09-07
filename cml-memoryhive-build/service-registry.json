@@ -1,0 +1,146 @@
+{
+  "schema_version": 1,
+  "app": "cml-memoryhive",
+  "registry": "ghcr.io",
+  "registry_namespace": "coding-monkey-labs-client-projects",
+  "platforms": ["linux/amd64", "linux/arm64"],
+  "images": [
+    {
+      "key": "cml-memoryhive-backend",
+      "context": "cml-memoryhive-backend",
+      "dockerfile": "Dockerfile",
+      "target": "production",
+      "build_args": {}
+    },
+    {
+      "key": "cml-memoryhive-frontend",
+      "context": "cml-memoryhive-frontend",
+      "dockerfile": "Dockerfile",
+      "target": "production",
+      "build_args": {
+        "VITE_API_URL": "/api/v1",
+        "VITE_SUPPORT_EMAIL": "$VITE_SUPPORT_EMAIL"
+      }
+    }
+  ],
+  "profiles": {
+    "infra": ["db", "redis", "minio"],
+    "app-only": ["cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
+    "full": ["db", "redis", "minio", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
+    "temporal": ["db", "redis", "minio", "temporal-db", "temporal", "temporal-ui", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler", "cml-memoryhive-frontend"]
+  },
+  "services": [
+    {
+      "key": "db",
+      "kind": "infra",
+      "port": 5432,
+      "host_port_env": "POSTGRES_PORT",
+      "host_port": 5432,
+      "image": "postgres:15-alpine",
+      "health": {"type": "tcp"},
+      "depends_on": []
+    },
+    {
+      "key": "redis",
+      "kind": "infra",
+      "port": 6379,
+      "host_port_env": "REDIS_PORT",
+      "host_port": 6379,
+      "image": "redis:7-alpine",
+      "health": {"type": "tcp"},
+      "depends_on": []
+    },
+    {
+      "key": "minio",
+      "kind": "infra",
+      "port": 9000,
+      "host_port_env": "MINIO_API_PORT",
+      "host_port": 9000,
+      "image": "minio/minio:latest",
+      "health": {"type": "http", "path": "/minio/health/ready"},
+      "depends_on": []
+    },
+    {
+      "key": "temporal-db",
+      "kind": "infra",
+      "port": 5432,
+      "image": "postgres:15-alpine",
+      "health": {"type": "process"},
+      "depends_on": []
+    },
+    {
+      "key": "temporal",
+      "kind": "infra",
+      "port": 7233,
+      "host_port_env": "TEMPORAL_PORT",
+      "host_port": 7233,
+      "image": "temporalio/auto-setup:latest",
+      "health": {"type": "tcp"},
+      "depends_on": ["temporal-db"]
+    },
+    {
+      "key": "temporal-ui",
+      "kind": "infra",
+      "port": 8080,
+      "host_port_env": "TEMPORAL_UI_PORT",
+      "host_port": 8088,
+      "image": "temporalio/ui:latest",
+      "health": {"type": "http", "path": "/"},
+      "depends_on": ["temporal"]
+    },
+    {
+      "key": "cml-memoryhive-backend",
+      "kind": "service",
+      "port": 8000,
+      "host_port_env": "BACKEND_PORT",
+      "host_port": 8000,
+      "image_key": "cml-memoryhive-backend",
+      "source": "cml-memoryhive-backend",
+      "command": ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "health": {"type": "http", "path": "/health/ready"},
+      "depends_on": ["db", "redis", "minio"]
+    },
+    {
+      "key": "cml-memoryhive-worker",
+      "kind": "process",
+      "port": 0,
+      "image_key": "cml-memoryhive-backend",
+      "source": "cml-memoryhive-backend",
+      "command": ["python", "-m", "app.worker"],
+      "health": {"type": "process", "marker": "app.worker"},
+      "depends_on": ["db", "minio"]
+    },
+    {
+      "key": "cml-memoryhive-temporal-worker",
+      "kind": "process",
+      "port": 0,
+      "image_key": "cml-memoryhive-backend",
+      "source": "cml-memoryhive-backend",
+      "command": ["python", "-m", "app.temporal_pipeline.worker"],
+      "health": {"type": "process", "marker": "app.temporal_pipeline.worker"},
+      "depends_on": ["db", "minio", "temporal"]
+    },
+    {
+      "key": "cml-memoryhive-temporal-scheduler",
+      "kind": "process",
+      "port": 0,
+      "image_key": "cml-memoryhive-backend",
+      "source": "cml-memoryhive-backend",
+      "command": ["python", "-m", "app.temporal_pipeline.scheduler"],
+      "health": {"type": "process", "marker": "app.temporal_pipeline.scheduler"},
+      "depends_on": ["db", "temporal"]
+    },
+    {
+      "key": "cml-memoryhive-frontend",
+      "kind": "frontend",
+      "port": 3000,
+      "host_port_env": "FRONTEND_PORT",
+      "host_port": 3000,
+      "image_key": "cml-memoryhive-frontend",
+      "source": "cml-memoryhive-frontend",
+      "command": ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"],
+      "health": {"type": "http", "path": "/"},
+      "depends_on": ["cml-memoryhive-backend"]
+    }
+  ]
+}

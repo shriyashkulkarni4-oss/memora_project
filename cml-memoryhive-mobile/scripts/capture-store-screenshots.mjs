@@ -67,7 +67,7 @@ function run(command, args, options = {}) {
 
 async function ensureDemoData() {
   console.log("Refreshing engineer demo data.");
-  await run("python3", ["seed_data.py", "--base-url", apiOrigin(), "--persona", "engineer"]);
+  await run("uv", ["run", "python", "seed_data.py", "--base-url", apiOrigin(), "--persona", "engineer"]);
   const seededTokens = await demoLogin();
   if (!seededTokens) {
     throw new Error(`Could not log in as ${demoEmail} after refreshing demo data.`);

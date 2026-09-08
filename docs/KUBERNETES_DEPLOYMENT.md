@@ -41,11 +41,11 @@ Tracked non-secret output is written to `cml-memoryhive-deployments/generated/<e
 Mutating commands require the exact Kubernetes context configured for the environment. Supply secrets through process environment values or an ignored environment file.
 
 ```bash
-python3 cml-memoryhive-deployments/scripts/manage.py apply staging full --secret-env-file /secure/staging.env
-python3 cml-memoryhive-deployments/scripts/manage.py upgrade staging full --secret-env-file /secure/staging.env
-python3 cml-memoryhive-deployments/scripts/manage.py status staging full
-python3 cml-memoryhive-deployments/scripts/manage.py rollback staging full cml-memoryhive-backend
-CONFIRM_DELETE=cml-memoryhive python3 cml-memoryhive-deployments/scripts/manage.py delete staging full
+uv run python cml-memoryhive-deployments/scripts/manage.py apply staging full --secret-env-file /secure/staging.env
+uv run python cml-memoryhive-deployments/scripts/manage.py upgrade staging full --secret-env-file /secure/staging.env
+uv run python cml-memoryhive-deployments/scripts/manage.py status staging full
+uv run python cml-memoryhive-deployments/scripts/manage.py rollback staging full cml-memoryhive-backend
+CONFIRM_DELETE=cml-memoryhive uv run python cml-memoryhive-deployments/scripts/manage.py delete staging full
 ```
 
 `apply` and `upgrade` stream Secrets directly to `kubectl`. Staging and production reject missing values and known development placeholders. Upgrades compare deployed images with immutable pins and wait only for changed deployments.

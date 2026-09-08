@@ -79,12 +79,28 @@ class BuildTests(unittest.TestCase):
     def test_generated_profiles_match_registry(self) -> None:
         subprocess.run([sys.executable, str(BUILD_ROOT / "scripts/generate_runtime.py")], check=True)
         config = runtime_generator.load_registry()
+        descriptors = {service["key"]: service for service in config["services"]}
         for profile, expected in config["profiles"].items():
             compose = json.loads((BUILD_ROOT / f"runtime/docker-compose.{profile}.yml").read_text())
             actual = set(compose["services"]) - {"migrate"}
             self.assertEqual(actual, set(expected))
+            for key in expected:
+                if "command" in descriptors[key]:
+                    self.assertEqual(compose["services"][key].get("command"), descriptors[key]["command"])
+                if descriptors[key].get("image_key"):
+                    expected_image = (
+                        f"{config['registry']}/{config['registry_namespace']}/"
+                        f"{descriptors[key]['image_key']}:local"
+                    )
+                    self.assertEqual(compose["services"][key].get("image"), expected_image)
             health = json.loads((BUILD_ROOT / f"health_checker/health-registry.{profile}.json").read_text())
             self.assertEqual(set(health["services"]), set(expected))
+
+    def test_backend_processes_are_uv_managed(self) -> None:
+        config = runtime_generator.load_registry()
+        for service in config["services"]:
+            if service.get("image_key") == "cml-memoryhive-backend":
+                self.assertEqual(service["command"][:3], ["uv", "run", "--frozen"])
 
 
 if __name__ == "__main__":

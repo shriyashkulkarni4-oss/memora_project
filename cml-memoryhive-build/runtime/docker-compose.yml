@@ -91,12 +91,16 @@
     },
     "cml-memoryhive-backend": {
       "container_name": "cml-memoryhive-backend",
+      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",
         "target": "development"
       },
       "command": [
+        "uv",
+        "run",
+        "--frozen",
         "uvicorn",
         "app.main:app",
         "--reload",
@@ -168,12 +172,16 @@
     },
     "cml-memoryhive-worker": {
       "container_name": "cml-memoryhive-worker",
+      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",
         "target": "development"
       },
       "command": [
+        "uv",
+        "run",
+        "--frozen",
         "python",
         "-m",
         "app.worker"
@@ -223,6 +231,9 @@
       "healthcheck": {
         "test": [
           "CMD",
+          "uv",
+          "run",
+          "--frozen",
           "python",
           "-c",
           "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -234,11 +245,22 @@
     },
     "cml-memoryhive-frontend": {
       "container_name": "cml-memoryhive-frontend",
+      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:local",
       "build": {
         "context": "../../cml-memoryhive-frontend",
         "dockerfile": "Dockerfile",
         "target": "development"
       },
+      "command": [
+        "npm",
+        "run",
+        "dev",
+        "--",
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "3000"
+      ],
       "environment": {
         "VITE_API_URL": "${VITE_API_URL:-/api/v1}",
         "VITE_SUPPORT_EMAIL": "${VITE_SUPPORT_EMAIL:-support@memoryhive.example.com}",
@@ -272,12 +294,16 @@
     },
     "migrate": {
       "container_name": "cml-memoryhive-migrate",
+      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",
         "target": "development"
       },
       "command": [
+        "uv",
+        "run",
+        "--frozen",
         "alembic",
         "upgrade",
         "head"

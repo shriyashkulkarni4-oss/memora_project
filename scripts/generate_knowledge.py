@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Generate deterministic Knowledge.md files for Memoryhive contributors."""
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def docs() -> list[KnowledgeDoc]:
                 (
                     "Validation",
                     [
-                        "Backend: `cd cml-memoryhive-backend && ./.venv/bin/python -m ruff check app tests && ./.venv/bin/python -m black --check app tests && ./.venv/bin/python -m pytest -q`.",
+                        "Backend: `cd cml-memoryhive-backend && uv sync --extra dev --locked && uv run ruff check app tests && uv run black --check app tests && uv run pytest -q`.",
                         "Frontend: `cd cml-memoryhive-frontend && npm run lint && npm test && npm run build`.",
                         "Mobile: `cd cml-memoryhive-mobile && npm run typecheck && npm run lint && npm test`.",
                     ],

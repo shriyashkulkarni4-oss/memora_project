@@ -7,6 +7,6 @@ For Goal 1, append implementation results to `docs/GOAL-1/CODEX-GOAL-1.MD` and d
 Regenerate Knowledge files after structural, command, or workflow changes:
 
 ```bash
-python3 scripts/generate_knowledge.py
-python3 scripts/generate_knowledge.py --check
+uv run python scripts/generate_knowledge.py
+uv run python scripts/generate_knowledge.py --check
 ```

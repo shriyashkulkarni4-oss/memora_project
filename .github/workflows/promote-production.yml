@@ -13,15 +13,16 @@ jobs:
     environment: production
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - run: uv sync --locked
       - name: Copy exact staging pins to production
         run: |
-          python3 cml-memoryhive-deployments/scripts/promote_images.py production
+          uv run python cml-memoryhive-deployments/scripts/promote_images.py production
           for profile in infra app-only full temporal; do
-            python3 cml-memoryhive-deployments/scripts/manage.py generate production "$profile"
+            uv run python cml-memoryhive-deployments/scripts/manage.py generate production "$profile"
           done
-          python3 -m unittest discover -s cml-memoryhive-deployments/tests -p 'test_*.py'
+          uv run python -m unittest discover -s cml-memoryhive-deployments/tests -p 'test_*.py'
       - uses: peter-evans/create-pull-request@v7
         with:
           branch: promotion/production-${{ github.run_id }}

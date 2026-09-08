@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Check registry-defined Memoryhive services in local, Docker, or Kubernetes mode."""
 
 from __future__ import annotations

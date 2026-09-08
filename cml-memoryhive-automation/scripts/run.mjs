@@ -115,7 +115,7 @@ async function doctor({ useDocker }) {
     "cml-memoryhive-mobile/package.json",
   ].forEach(requirePath);
   await run("node", ["--version"]);
-  await run("python3", ["--version"]);
+  await run("uv", ["--version"]);
   if (useDocker) {
     await run("docker", ["compose", "version"]);
   }
@@ -164,7 +164,9 @@ async function main() {
     }
 
     if (!hasFlag("--skip-seed")) {
-      await run("python3", [
+      await run("uv", [
+        "run",
+        "python",
         "seed_data.py",
         "--base-url",
         baseUrl,

@@ -17,7 +17,7 @@ ENV_FILE=${ENV_FILE:-$REPO_ROOT/.env}
 COMPOSE_FILE="$RUNTIME_ROOT/docker-compose.$PROFILE.yml"
 BASE_URL=${BASE_URL:-http://localhost:${BACKEND_PORT:-8000}}
 
-generate() { python3 "$BUILD_ROOT/scripts/generate_runtime.py"; }
+generate() { uv run python "$BUILD_ROOT/scripts/generate_runtime.py"; }
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
 ensure_env() {
   if [ ! -f "$ENV_FILE" ]; then
@@ -51,14 +51,14 @@ case "$COMMAND" in
   generate) generate ;;
   start)
     ensure_env; generate
-    python3 "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
+    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
     compose up --build --detach
     ;;
   stop) ensure_env; generate; compose down ;;
   restart)
     ensure_env; generate
     compose down --remove-orphans
-    python3 "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
+    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
     compose up --build --detach --remove-orphans
     ;;
   status) ensure_env; generate; compose ps ;;
@@ -68,7 +68,7 @@ case "$COMMAND" in
     ensure_env; generate
     compose exec -T redis redis-cli EVAL "for _,key in ipairs(redis.call('keys', ARGV[1])) do redis.call('del', key) end return 1" 0 'rate:*' >/dev/null
     ;;
-  seed) python3 seed_data.py --base-url "$BASE_URL" "$@" ;;
+  seed) uv run python seed_data.py --base-url "$BASE_URL" "$@" ;;
   smoke) BASE_URL="$BASE_URL" "$REPO_ROOT/ops/smoke.sh" ;;
   validate)
     ensure_env; generate; compose config --quiet

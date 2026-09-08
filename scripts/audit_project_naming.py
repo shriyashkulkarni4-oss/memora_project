@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Reject obsolete active project paths and first-party artifact names."""
 
 from __future__ import annotations
@@ -12,8 +12,10 @@ SKIP_NAMES = {"package-lock.json", "IMPLEMENTATION_PLAN.md", "audit_project_nami
 TEXT_SUFFIXES = {"", ".json", ".md", ".mjs", ".py", ".sh", ".toml", ".ts", ".tsx", ".yml", ".yaml"}
 PATTERNS = (
     re.compile(r"cml-memora"),
+    re.compile(r"\bdirectory:\s+/(backend|frontend|mobile|automation|build|k8s|health_checker)\b"),
     re.compile(r"\bworking-directory:\s+(backend|frontend|mobile|automation)\b"),
     re.compile(r"\bnpm --prefix (frontend|mobile|automation)\b"),
+    re.compile(r"\bscope=(backend|frontend|mobile|automation)\b"),
     re.compile(r"(?<!cml-)\bmemoryhive-(backend|frontend)(?=[:/])"),
 )
 OLD_PATH = re.compile(r"(?<![A-Za-z0-9_/-])(backend|frontend|mobile|automation|build|k8s|health_checker)/")

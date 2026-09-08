@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Build Memoryhive service images with the repository image naming convention."""
 
 from __future__ import annotations

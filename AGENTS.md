@@ -8,8 +8,8 @@ Memoryhive combines FastAPI, Vite/React, and Expo. Backend code lives in `cml-me
 
 - `cp .env.example .env && docker compose up --build`: start the local stack.
 - `make health-local`: check backend, frontend, and dependency health.
-- `cd cml-memoryhive-backend && pip install -e '.[dev]' && alembic upgrade head`: install backend dev tools and run migrations.
-- `cd cml-memoryhive-backend && ruff check app tests && black --check app tests && pytest -q`: lint, format-check, and test the API.
+- `cd cml-memoryhive-backend && uv sync --extra dev --locked && uv run alembic upgrade head`: install locked backend development dependencies and run migrations.
+- `cd cml-memoryhive-backend && uv run ruff check app tests && uv run black --check app tests && uv run pytest -q`: lint, format-check, and test the API.
 - `npm --prefix cml-memoryhive-frontend run dev|build|test|test:e2e`: run Vite, build, unit tests, or Playwright.
 - `npm --prefix cml-memoryhive-mobile run start|typecheck|lint|test|test:e2e:web`: run and validate Expo.
 - `npm --prefix cml-memoryhive-mobile run eas:build:preflight|store:assets|store:screenshots|store:submission|store:submission:check|store:check:ci`: validate EAS and store-release materials.
@@ -28,4 +28,4 @@ History mixes imperative subjects and Conventional Commit prefixes. Prefer `type
 
 ## Security & Agent-Specific Instructions
 
-Use `.env.example` and `.env.production.example` as templates. Never commit JWT, database, Redis, MinIO, Temporal, Expo, or store credentials. Before agent edits, read `Knowledge.md` plus the relevant area guide, such as `cml-memoryhive-backend/Knowledge.md`, `cml-memoryhive-frontend/Knowledge.md`, `cml-memoryhive-mobile/Knowledge.md`, or `ops/Knowledge.md`. After changing docs, commands, or layout, run `python3 scripts/generate_knowledge.py --check`.
+Use `.env.example` and `.env.production.example` as templates. Never commit JWT, database, Redis, MinIO, Temporal, Expo, or store credentials. Before agent edits, read `Knowledge.md` plus the relevant area guide, such as `cml-memoryhive-backend/Knowledge.md`, `cml-memoryhive-frontend/Knowledge.md`, `cml-memoryhive-mobile/Knowledge.md`, or `ops/Knowledge.md`. After changing docs, commands, or layout, run `uv run python scripts/generate_knowledge.py --check`.

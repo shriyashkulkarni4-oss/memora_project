@@ -5,6 +5,7 @@ K8S_ENV ?= local
 K8S_PROFILE ?= full
 IMAGE_VERSION ?= local
 IMAGE_SHA ?= $(shell git rev-parse HEAD)
+UV ?= uv
 
 build-images:
 	$(MAKE) -C cml-memoryhive-build build VERSION=$(IMAGE_VERSION) SHA=$(IMAGE_SHA)
@@ -25,7 +26,7 @@ runtime-local:
 	$(MAKE) -C cml-memoryhive-build local PROFILE=$(PROFILE)
 
 health-local:
-	python3 cml-memoryhive-build/health_checker/health_check.py --mode local --profile $(PROFILE)
+	$(UV) run python cml-memoryhive-build/health_checker/health_check.py --mode local --profile $(PROFILE)
 
 k8s-generate:
 	$(MAKE) -C cml-memoryhive-deployments generate ENV=$(K8S_ENV) PROFILE=$(K8S_PROFILE)
@@ -42,4 +43,4 @@ k8s-upgrade:
 goal-2-test:
 	$(MAKE) -C cml-memoryhive-build test
 	$(MAKE) -C cml-memoryhive-deployments test
-	python3 scripts/audit_project_naming.py
+	$(UV) run python scripts/audit_project_naming.py

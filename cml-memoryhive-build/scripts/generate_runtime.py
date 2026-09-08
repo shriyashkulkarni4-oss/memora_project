@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Generate Compose profiles and health registries from service-registry.json."""
 
 from __future__ import annotations
@@ -20,6 +20,14 @@ def load_registry() -> dict[str, Any]:
 
 def container_name(key: str) -> str:
     return key if key.startswith("cml-memoryhive-") else f"cml-memoryhive-{key}"
+
+
+def local_image(image_key: str) -> str:
+    registry = load_registry()
+    return (
+        f"{registry['registry'].rstrip('/')}/"
+        f"{registry['registry_namespace'].strip('/')}/{image_key}:local"
+    )
 
 
 def backend_environment(*, temporal: bool) -> dict[str, str]:
@@ -65,6 +73,7 @@ def depends_on(active: set[str], dependencies: list[str]) -> dict[str, Any]:
 
 
 def build_service(key: str, active: set[str]) -> dict[str, Any]:
+    descriptor = next(item for item in load_registry()["services"] if item["key"] == key)
     temporal_enabled = key.startswith("cml-memoryhive-temporal-")
     backend_env = backend_environment(temporal=temporal_enabled)
     source = "../../cml-memoryhive-backend"
@@ -139,7 +148,9 @@ def build_service(key: str, active: set[str]) -> dict[str, Any]:
     if key == "cml-memoryhive-frontend":
         return {
             "container_name": container_name(key),
+            "image": local_image(descriptor["image_key"]),
             "build": {"context": "../../cml-memoryhive-frontend", "dockerfile": "Dockerfile", "target": "development"},
+            "command": descriptor["command"],
             "environment": {"VITE_API_URL": "${VITE_API_URL:-/api/v1}", "VITE_SUPPORT_EMAIL": "${VITE_SUPPORT_EMAIL:-support@memoryhive.example.com}", "VITE_PROXY_TARGET": "http://cml-memoryhive-backend:8000"},
             "ports": ["${FRONTEND_PORT:-3000}:3000"],
             "depends_on": depends_on(active, ["cml-memoryhive-backend"]),
@@ -147,18 +158,13 @@ def build_service(key: str, active: set[str]) -> dict[str, Any]:
             "healthcheck": {"test": ["CMD", "wget", "--quiet", "--output-document=/dev/null", "http://127.0.0.1:3000/"], "interval": "10s", "timeout": "5s", "retries": 10},
             "restart": "unless-stopped",
         }
-    commands = {
-        "cml-memoryhive-backend": ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
-        "cml-memoryhive-worker": ["python", "-m", "app.worker"],
-        "cml-memoryhive-temporal-worker": ["python", "-m", "app.temporal_pipeline.worker"],
-        "cml-memoryhive-temporal-scheduler": ["python", "-m", "app.temporal_pipeline.scheduler"],
-    }
     service = {
         "container_name": container_name(key),
+        "image": local_image(descriptor["image_key"]),
         "build": {"context": source, "dockerfile": "Dockerfile", "target": "development"},
-        "command": commands[key],
+        "command": descriptor["command"],
         "environment": backend_env,
-        "depends_on": depends_on(active, next(item["depends_on"] for item in load_registry()["services"] if item["key"] == key)),
+        "depends_on": depends_on(active, descriptor["depends_on"]),
         "volumes": [f"{source}:/app"],
         "restart": "unless-stopped",
     }
@@ -166,8 +172,8 @@ def build_service(key: str, active: set[str]) -> dict[str, Any]:
         service["ports"] = ["${BACKEND_PORT:-8000}:8000"]
         service["healthcheck"] = {"test": ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/health/ready"], "interval": "10s", "timeout": "5s", "retries": 10}
     else:
-        marker = commands[key][-1]
-        service["healthcheck"] = {"test": ["CMD", "python", "-c", f"import pathlib,sys; sys.exit(0 if b'{marker}' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"], "interval": "15s", "timeout": "5s", "retries": 3}
+        marker = descriptor["health"]["marker"]
+        service["healthcheck"] = {"test": ["CMD", "uv", "run", "--frozen", "python", "-c", f"import pathlib,sys; sys.exit(0 if b'{marker}' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"], "interval": "15s", "timeout": "5s", "retries": 3}
     return service
 
 
@@ -177,8 +183,9 @@ def render_profile(registry: dict[str, Any], profile: str) -> dict[str, Any]:
     if "cml-memoryhive-backend" in active:
         services["migrate"] = {
             "container_name": "cml-memoryhive-migrate",
+            "image": local_image("cml-memoryhive-backend"),
             "build": {"context": "../../cml-memoryhive-backend", "dockerfile": "Dockerfile", "target": "development"},
-            "command": ["alembic", "upgrade", "head"],
+            "command": ["uv", "run", "--frozen", "alembic", "upgrade", "head"],
             "environment": backend_environment(temporal=False),
             "depends_on": depends_on(active, ["db"]),
             "volumes": ["../../cml-memoryhive-backend:/app"],

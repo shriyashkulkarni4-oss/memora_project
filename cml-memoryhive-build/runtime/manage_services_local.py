@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Run Memoryhive infrastructure in Docker and application services locally."""
 
 from __future__ import annotations
@@ -76,15 +76,7 @@ def ensure_port(service: dict[str, Any], env: dict[str, str]) -> None:
 
 def command_for(service: dict[str, Any]) -> tuple[list[str], Path]:
     cwd = REPO_ROOT / service["source"]
-    command = list(service["command"])
-    if service["kind"] != "frontend":
-        venv_bin = cwd / ".venv" / "bin"
-        candidate = venv_bin / command[0]
-        if candidate.exists():
-            command[0] = str(candidate)
-        elif command[0] == "python" and (venv_bin / "python").exists():
-            command[0] = str(venv_bin / "python")
-    return command, cwd
+    return list(service["command"]), cwd
 
 
 def compose(profile: str, *args: str, dry_run: bool) -> None:
@@ -108,7 +100,7 @@ def start(profile: str, dry_run: bool) -> None:
         env["TEMPORAL_ENABLED"] = "true"
         env["TEMPORAL_ADDRESS"] = "127.0.0.1:7233"
     backend = REPO_ROOT / "cml-memoryhive-backend"
-    migrate = [str(backend / ".venv" / "bin" / "alembic") if (backend / ".venv" / "bin" / "alembic").exists() else "alembic", "upgrade", "head"]
+    migrate = ["uv", "run", "--frozen", "alembic", "upgrade", "head"]
     if any(item["key"] == "cml-memoryhive-backend" for item in app_services(profile)):
         print("+", " ".join(migrate))
         if not dry_run:

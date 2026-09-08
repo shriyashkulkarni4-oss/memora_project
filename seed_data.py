@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Seed realistic, idempotent Memoryhive demo accounts through the public API."""
 
 from __future__ import annotations

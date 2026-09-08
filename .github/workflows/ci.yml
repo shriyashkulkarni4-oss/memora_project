@@ -14,12 +14,16 @@ jobs:
     defaults: { run: { working-directory: cml-memoryhive-backend } }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12", cache: pip, cache-dependency-path: cml-memoryhive-backend/pyproject.toml }
-      - run: pip install --editable '.[dev]'
-      - run: ruff check app tests
-      - run: black --check app tests
-      - run: pytest -q
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.2"
+          python-version: "3.12"
+          enable-cache: true
+          cache-dependency-glob: cml-memoryhive-backend/uv.lock
+      - run: uv sync --extra dev --locked
+      - run: uv run ruff check app tests
+      - run: uv run black --check app tests
+      - run: uv run pytest -q
 
   frontend:
     runs-on: ubuntu-latest
@@ -62,8 +66,8 @@ jobs:
           target: production
           push: false
           tags: cml-memoryhive-backend:ci
-          cache-from: type=gha,scope=backend
-          cache-to: type=gha,mode=max,scope=backend
+          cache-from: type=gha,scope=cml-memoryhive-backend
+          cache-to: type=gha,mode=max,scope=cml-memoryhive-backend
       - uses: docker/build-push-action@v6
         with:
           context: cml-memoryhive-frontend
@@ -73,22 +77,23 @@ jobs:
           build-args: |
             VITE_API_URL=/api/v1
             VITE_SUPPORT_EMAIL=support@memoryhive.example.com
-          cache-from: type=gha,scope=frontend
-          cache-to: type=gha,mode=max,scope=frontend
+          cache-from: type=gha,scope=cml-memoryhive-frontend
+          cache-to: type=gha,mode=max,scope=cml-memoryhive-frontend
 
   deployment-assets:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: python3 -m py_compile cml-memoryhive-build/build/scripts/*.py cml-memoryhive-deployments/scripts/*.py cml-memoryhive-build/health_checker/*.py
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - run: uv sync --locked
+      - run: uv run python -m py_compile cml-memoryhive-build/build/scripts/*.py cml-memoryhive-deployments/scripts/*.py cml-memoryhive-build/health_checker/*.py
       - run: node --check cml-memoryhive-automation/scripts/run.mjs
       - run: npm --prefix cml-memoryhive-automation run dry-run
-      - run: python3 scripts/generate_knowledge.py --check
-      - run: python3 cml-memoryhive-build/build/scripts/generate_image_manifest.py --version ci --sha ${{ github.sha }} --output /tmp/image-versions.json
-      - run: python3 cml-memoryhive-build/build/scripts/build_images.py --version ci --sha ${{ github.sha }} --dry-run
-      - run: python3 -m unittest discover -s cml-memoryhive-build/tests -p 'test_*.py'
-      - run: python3 -m unittest discover -s cml-memoryhive-deployments/tests -p 'test_*.py'
+      - run: uv run python scripts/generate_knowledge.py --check
+      - run: uv run python cml-memoryhive-build/build/scripts/generate_image_manifest.py --version ci --sha ${{ github.sha }} --output /tmp/image-versions.json
+      - run: uv run python cml-memoryhive-build/build/scripts/build_images.py --version ci --sha ${{ github.sha }} --dry-run
+      - run: uv run python -m unittest discover -s cml-memoryhive-build/tests -p 'test_*.py'
+      - run: uv run python -m unittest discover -s cml-memoryhive-deployments/tests -p 'test_*.py'
       - run: make -C cml-memoryhive-deployments validate-all
-      - run: python3 scripts/audit_project_naming.py
+      - run: uv run python scripts/audit_project_naming.py

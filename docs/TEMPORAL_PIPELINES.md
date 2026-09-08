@@ -50,7 +50,7 @@ Run the scheduler once for debugging:
 
 ```bash
 cd cml-memoryhive-backend
-TEMPORAL_ENABLED=true TEMPORAL_ADDRESS=localhost:7233 ./.venv/bin/python -m app.temporal_pipeline.scheduler --once
+TEMPORAL_ENABLED=true TEMPORAL_ADDRESS=localhost:7233 uv run python -m app.temporal_pipeline.scheduler --once
 ```
 
 ## Production Notes

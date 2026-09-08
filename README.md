@@ -4,6 +4,10 @@ Memoryhive is an offline-first personal library for capturing, processing, and
 finding links, screenshots, and text. The repository contains a React web app,
 an Expo iOS/Android app, a FastAPI API and worker, PostgreSQL, MinIO, and Redis.
 
+Python development and repository tooling use `uv` with committed lockfiles.
+Run `uv sync --locked` at the repository root for delivery tooling and
+`uv sync --project cml-memoryhive-backend --extra dev --locked` for the API.
+
 ## Service contract
 
 | Service | Development URL | Purpose |
@@ -22,7 +26,7 @@ Host ports can be changed in `.env`. Internal container ports and service names 
 
 ## Docker development
 
-Requirements: Docker Engine with Docker Compose v2 or newer.
+Requirements: `uv`, plus Docker Engine with Docker Compose v2 or newer.
 
 ```bash
 cp .env.example .env
@@ -79,12 +83,12 @@ backend. Add `--temporal` to exercise the Temporal Compose profile.
 With the development stack running, seed four realistic demo libraries:
 
 ```bash
-python3 seed_data.py
+uv run python seed_data.py
 ```
 
 The script creates software-engineer, graduate-student, e-commerce, and home
 lifestyle accounts. It is idempotent, so rerunning it does not duplicate items.
-Use `python3 seed_data.py --help` to select one persona, target another API URL,
+Use `uv run python seed_data.py --help` to select one persona, target another API URL,
 or preview the data with `--dry-run`.
 
 ## Local development
@@ -100,17 +104,15 @@ Run the backend:
 
 ```bash
 cd cml-memoryhive-backend
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install --requirement requirements.txt
+uv sync --extra dev --locked
 export DATABASE_URL=postgresql+asyncpg://memoryhive:memoryhive123@localhost:5432/memoryhive
 export MINIO_ENDPOINT=localhost:9000
 export MINIO_ACCESS_KEY=minioadmin
 export MINIO_SECRET_KEY=minioadmin123
 export MINIO_BUCKET=memoryhive-uploads
 export JWT_SECRET_KEY=dev-secret-key-change-before-production
-alembic upgrade head
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uv run alembic upgrade head
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
 Run the frontend in another terminal:

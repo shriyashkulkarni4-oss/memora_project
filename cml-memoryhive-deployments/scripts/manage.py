@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Render and operate Memoryhive Kubernetes manifests."""
 
 from __future__ import annotations
@@ -490,6 +490,10 @@ def app_deployment(
         container["livenessProbe"] = {
             "exec": {
                 "command": [
+                    "uv",
+                    "run",
+                    "--frozen",
+                    "--no-sync",
                     "python",
                     "-c",
                     "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)",
@@ -506,6 +510,10 @@ def app_deployment(
         container["livenessProbe"] = {
             "exec": {
                 "command": [
+                    "uv",
+                    "run",
+                    "--frozen",
+                    "--no-sync",
                     "python",
                     "-c",
                     f"import pathlib,sys; sys.exit(0 if b'{module}' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)",
@@ -527,7 +535,7 @@ def app_deployment(
                 "name": "migrate",
                 "image": image,
                 "imagePullPolicy": env["image_pull_policy"],
-                "command": ["sh", "-c", "alembic upgrade head"],
+                "command": ["uv", "run", "--frozen", "--no-sync", "alembic", "upgrade", "head"],
                 "envFrom": env_from(component),
             }
         ]
@@ -555,9 +563,20 @@ def app_resources(
                         images["cml-memoryhive-backend"],
                         env,
                         [
-                            "sh",
-                            "-c",
-                            "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=*",
+                            "uv",
+                            "run",
+                            "--frozen",
+                            "--no-sync",
+                            "uvicorn",
+                            "app.main:app",
+                            "--host",
+                            "0.0.0.0",
+                            "--port",
+                            "8000",
+                            "--workers",
+                            "2",
+                            "--proxy-headers",
+                            "--forwarded-allow-ips=*",
                         ],
                         8000,
                     ),
@@ -574,7 +593,7 @@ def app_resources(
                         "cml-memoryhive-worker",
                         images["cml-memoryhive-worker"],
                         env,
-                        ["python", "-m", "app.worker"],
+                        ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.worker"],
                         None,
                     )
                 ],
@@ -590,7 +609,7 @@ def app_resources(
                         "cml-memoryhive-temporal-worker",
                         images["cml-memoryhive-temporal-worker"],
                         env,
-                        ["python", "-m", "app.temporal_pipeline.worker"],
+                        ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.worker"],
                         None,
                     )
                 ],
@@ -606,7 +625,7 @@ def app_resources(
                         "cml-memoryhive-temporal-scheduler",
                         images["cml-memoryhive-temporal-scheduler"],
                         env,
-                        ["python", "-m", "app.temporal_pipeline.scheduler"],
+                        ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.scheduler"],
                         None,
                     )
                 ],

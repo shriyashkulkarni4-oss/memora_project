@@ -96,7 +96,7 @@
       "host_port": 8000,
       "image_key": "cml-memoryhive-backend",
       "source": "cml-memoryhive-backend",
-      "command": ["uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "command": ["uv", "run", "--frozen", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
       "health": {"type": "http", "path": "/health/ready"},
       "depends_on": ["db", "redis", "minio"]
     },
@@ -106,7 +106,7 @@
       "port": 0,
       "image_key": "cml-memoryhive-backend",
       "source": "cml-memoryhive-backend",
-      "command": ["python", "-m", "app.worker"],
+      "command": ["uv", "run", "--frozen", "python", "-m", "app.worker"],
       "health": {"type": "process", "marker": "app.worker"},
       "depends_on": ["db", "minio"]
     },
@@ -116,7 +116,7 @@
       "port": 0,
       "image_key": "cml-memoryhive-backend",
       "source": "cml-memoryhive-backend",
-      "command": ["python", "-m", "app.temporal_pipeline.worker"],
+      "command": ["uv", "run", "--frozen", "python", "-m", "app.temporal_pipeline.worker"],
       "health": {"type": "process", "marker": "app.temporal_pipeline.worker"},
       "depends_on": ["db", "minio", "temporal"]
     },
@@ -126,7 +126,7 @@
       "port": 0,
       "image_key": "cml-memoryhive-backend",
       "source": "cml-memoryhive-backend",
-      "command": ["python", "-m", "app.temporal_pipeline.scheduler"],
+      "command": ["uv", "run", "--frozen", "python", "-m", "app.temporal_pipeline.scheduler"],
       "health": {"type": "process", "marker": "app.temporal_pipeline.scheduler"},
       "depends_on": ["db", "temporal"]
     },

@@ -480,9 +480,20 @@ spec:
               cpu: "2"
               memory: "2Gi"
           command:
-            - "sh"
-            - "-c"
-            - "exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=*"
+            - "uv"
+            - "run"
+            - "--frozen"
+            - "--no-sync"
+            - "uvicorn"
+            - "app.main:app"
+            - "--host"
+            - "0.0.0.0"
+            - "--port"
+            - "8000"
+            - "--workers"
+            - "2"
+            - "--proxy-headers"
+            - "--forwarded-allow-ips=*"
           ports:
             - name: "http"
               containerPort: 8000
@@ -508,9 +519,13 @@ spec:
           image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           command:
-            - "sh"
-            - "-c"
-            - "alembic upgrade head"
+            - "uv"
+            - "run"
+            - "--frozen"
+            - "--no-sync"
+            - "alembic"
+            - "upgrade"
+            - "head"
           envFrom:
             - configMapRef:
                 name: "cml-memoryhive-backend-config"
@@ -556,12 +571,20 @@ spec:
               cpu: "2"
               memory: "4Gi"
           command:
+            - "uv"
+            - "run"
+            - "--frozen"
+            - "--no-sync"
             - "python"
             - "-m"
             - "app.worker"
           livenessProbe:
             exec:
               command:
+                - "uv"
+                - "run"
+                - "--frozen"
+                - "--no-sync"
                 - "python"
                 - "-c"
                 - "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -606,12 +629,20 @@ spec:
               cpu: "2"
               memory: "4Gi"
           command:
+            - "uv"
+            - "run"
+            - "--frozen"
+            - "--no-sync"
             - "python"
             - "-m"
             - "app.temporal_pipeline.worker"
           livenessProbe:
             exec:
               command:
+                - "uv"
+                - "run"
+                - "--frozen"
+                - "--no-sync"
                 - "python"
                 - "-c"
                 - "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -656,12 +687,20 @@ spec:
               cpu: "500m"
               memory: "512Mi"
           command:
+            - "uv"
+            - "run"
+            - "--frozen"
+            - "--no-sync"
             - "python"
             - "-m"
             - "app.temporal_pipeline.scheduler"
           livenessProbe:
             exec:
               command:
+                - "uv"
+                - "run"
+                - "--frozen"
+                - "--no-sync"
                 - "python"
                 - "-c"
                 - "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.scheduler' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"

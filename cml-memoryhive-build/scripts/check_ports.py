@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Fail clearly when a selected runtime profile's host ports are occupied."""
 
 from __future__ import annotations

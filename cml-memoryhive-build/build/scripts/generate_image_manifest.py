@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Generate the image-version handoff artifact consumed by deployments."""
 
 from __future__ import annotations

@@ -2,6 +2,8 @@
 
 Registry-driven image builds, local runtime orchestration, and health checking for Memoryhive.
 
+Install the repository tooling environment first with `uv sync --locked` from the repository root.
+
 `service-registry.json` is the canonical source for images, services, ports, dependencies, health contracts, and the `infra`, `app-only`, `full`, and `temporal` profiles.
 
 ```bash

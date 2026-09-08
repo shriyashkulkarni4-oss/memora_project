@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env -S uv run
 """Memoryhive Backend Runner
 
 Start the FastAPI application with uvicorn.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
 """Promote immutable build-manifest images into deployment environment pins."""
 
 from __future__ import annotations

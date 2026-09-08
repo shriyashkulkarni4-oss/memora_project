@@ -5,7 +5,8 @@ import { Presentation, PresentationFile } from "@oai/artifact-tool";
 
 const ROOT = "/Users/mahesh-kulkarni/projects/coding-monkey-labs-client-projects/cml-memoryhive/docs/Presentations";
 const SKILL_DIR = "/Users/mahesh-kulkarni/.codex/plugins/cache/openai-primary-runtime/presentations/26.904.11930/skills/presentations";
-const RUNTIME_PYTHON = "/Users/mahesh-kulkarni/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python3";
+// The presentation finalizer requires its plugin-owned interpreter and dependencies.
+const RUNTIME_PYTHON = "/Users/mahesh-kulkarni/.cache/codex-runtimes/codex-primary-runtime/dependencies/python/bin/python";
 const TMP_DIR = path.join(ROOT, ".build");
 const FINAL_DIR = path.join(ROOT, "final");
 const ASSET_DIR = path.join(ROOT, "assets");

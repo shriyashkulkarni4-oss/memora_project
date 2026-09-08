@@ -1,13 +1,16 @@
 version: 2
 updates:
   - package-ecosystem: pip
-    directory: /backend
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /cml-memoryhive-backend
     schedule: { interval: weekly }
   - package-ecosystem: npm
-    directory: /frontend
+    directory: /cml-memoryhive-frontend
     schedule: { interval: weekly }
   - package-ecosystem: npm
-    directory: /mobile
+    directory: /cml-memoryhive-mobile
     schedule: { interval: weekly }
   - package-ecosystem: docker
     directory: /

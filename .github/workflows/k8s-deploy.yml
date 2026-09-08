@@ -30,10 +30,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
-      - run: python3 -m py_compile cml-memoryhive-deployments/scripts/manage.py
-      - run: python3 cml-memoryhive-deployments/scripts/manage.py --output /tmp/cml-memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }}
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - run: uv sync --locked
+      - run: uv run python -m py_compile cml-memoryhive-deployments/scripts/manage.py
+      - run: uv run python cml-memoryhive-deployments/scripts/manage.py --output /tmp/cml-memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }}
       - uses: actions/upload-artifact@v4
         with:
           name: cml-memoryhive-k8s-${{ inputs.environment }}-${{ inputs.profile }}
@@ -46,8 +47,9 @@ jobs:
     environment: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - run: uv sync --locked
       - uses: azure/setup-kubectl@v4
       - name: Configure kubeconfig
         run: |
@@ -68,4 +70,4 @@ jobs:
           MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY }}
-        run: python3 cml-memoryhive-deployments/scripts/manage.py ${{ inputs.action }} ${{ inputs.environment }} ${{ inputs.profile }}
+        run: uv run python cml-memoryhive-deployments/scripts/manage.py ${{ inputs.action }} ${{ inputs.environment }} ${{ inputs.profile }}

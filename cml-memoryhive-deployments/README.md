@@ -2,6 +2,8 @@
 
 Template-driven Kubernetes generation and lifecycle management for Memoryhive.
 
+Install the repository tooling environment first with `uv sync --locked` from the repository root.
+
 ```bash
 make -C cml-memoryhive-deployments validate-all
 make -C cml-memoryhive-deployments apply ENV=local PROFILE=full SECRET_ENV_FILE=../.env

@@ -4,12 +4,13 @@
 Start the FastAPI application with uvicorn.
 
 Usage:
-    python run.py
-    python run.py --host 0.0.0.0 --port 8000
-    python run.py --reload  # for development
+    uv run python run.py
+    uv run python run.py --host 0.0.0.0 --port 8000
+    uv run python run.py --reload  # for development
 """
 
 import argparse
+
 import uvicorn
 
 

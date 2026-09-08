@@ -6,7 +6,7 @@ Memoryhive combines FastAPI, Vite/React, and Expo. Backend code lives in `cml-me
 
 ## Build, Test, and Development Commands
 
-- `cp .env.example .env && docker compose up --build`: start the local stack.
+- `cp .env.example .env && make runtime-up PROFILE=full`: start the local stack through the build project.
 - `make health-local`: check backend, frontend, and dependency health.
 - `cd cml-memoryhive-backend && uv sync --extra dev --locked && uv run alembic upgrade head`: install locked backend development dependencies and run migrations.
 - `cd cml-memoryhive-backend && uv run ruff check app tests && uv run black --check app tests && uv run pytest -q`: lint, format-check, and test the API.

@@ -30,7 +30,7 @@ Requirements: `uv`, plus Docker Engine with Docker Compose v2 or newer.
 
 ```bash
 cp .env.example .env
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile full
+make -C cml-memoryhive-build up PROFILE=full
 ```
 
 Useful commands:
@@ -41,25 +41,25 @@ make runtime-generate
 make -C cml-memoryhive-build validate
 
 # Follow application logs
-cml-memoryhive-build/runtime/manage_services_docker.sh logs --profile full
+make -C cml-memoryhive-build logs PROFILE=full
 
 # Apply database migrations
-cml-memoryhive-build/runtime/manage_services_docker.sh migrate --profile full
+make -C cml-memoryhive-build migrate PROFILE=full
 
 # Stop containers without deleting data
-cml-memoryhive-build/runtime/manage_services_docker.sh stop --profile full
+make -C cml-memoryhive-build down PROFILE=full
 ```
 
-The same local lifecycle is wrapped by `cml-memoryhive-build/runtime/manage_services_docker.sh`:
+The build project Makefile is the supported lifecycle entry point:
 
 ```bash
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile full
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
-cml-memoryhive-build/runtime/manage_services_docker.sh validate --profile full
-cml-memoryhive-build/runtime/manage_services_docker.sh seed --persona engineer
-cml-memoryhive-build/runtime/manage_services_docker.sh smoke
-cml-memoryhive-build/runtime/manage_services_docker.sh stop --profile full
-CONFIRM_CLEAN=cml-memoryhive cml-memoryhive-build/runtime/manage_services_docker.sh clean --profile full
+make -C cml-memoryhive-build up PROFILE=full
+make -C cml-memoryhive-build up PROFILE=temporal
+make -C cml-memoryhive-build runtime-validate PROFILE=full
+make -C cml-memoryhive-build seed PROFILE=full SEED_ARGS="--persona engineer"
+make -C cml-memoryhive-build smoke PROFILE=full
+make -C cml-memoryhive-build down PROFILE=full
+CONFIRM_CLEAN=cml-memoryhive make -C cml-memoryhive-build clean PROFILE=full
 ```
 
 Compose builds the `development` Docker stages. The backend uses Uvicorn reload, the frontend uses the Vite development server, and both source directories are bind-mounted.
@@ -93,11 +93,11 @@ or preview the data with `--dry-run`.
 
 ## Local development
 
-Start PostgreSQL, MinIO, and Redis-backed application services in Docker:
+Start PostgreSQL, MinIO, and Redis in Docker:
 
 ```bash
 cp .env.example .env
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile infra
+make -C cml-memoryhive-build up PROFILE=infra
 ```
 
 Run the backend:
@@ -128,8 +128,8 @@ npm run dev -- --host 0.0.0.0 --port 3000
 The final Dockerfile stages are production stages. They do not enable source reload or mount source directories.
 
 ```bash
-docker build --target production --tag cml-memoryhive-backend:local cml-memoryhive-backend
-docker build --target production --build-arg VITE_API_URL=/api/v1 --tag cml-memoryhive-frontend:local cml-memoryhive-frontend
+docker build --target production --tag ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local cml-memoryhive-backend
+docker build --target production --build-arg VITE_API_URL=/api/v1 --tag ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:local cml-memoryhive-frontend
 ```
 
 The frontend production image serves static files on container port `80`. Its Nginx configuration proxies `/api/v1/*` to `cml-memoryhive-backend` on port `8000`. Kubernetes routes the same paths through ingress.
@@ -160,7 +160,7 @@ The database-backed processing worker remains enabled by default. To test the
 durable Temporal pipeline locally, run:
 
 ```bash
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
+make -C cml-memoryhive-build up PROFILE=temporal
 ```
 
 This starts Temporal server/UI plus `cml-memoryhive-temporal-worker` and `cml-memoryhive-temporal-scheduler`.

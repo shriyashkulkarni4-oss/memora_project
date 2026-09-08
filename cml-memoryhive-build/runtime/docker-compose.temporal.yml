@@ -163,6 +163,7 @@
         "uv",
         "run",
         "--frozen",
+        "--no-sync",
         "uvicorn",
         "app.main:app",
         "--reload",
@@ -244,6 +245,7 @@
         "uv",
         "run",
         "--frozen",
+        "--no-sync",
         "python",
         "-m",
         "app.worker"
@@ -296,6 +298,7 @@
           "uv",
           "run",
           "--frozen",
+          "--no-sync",
           "python",
           "-c",
           "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -317,6 +320,7 @@
         "uv",
         "run",
         "--frozen",
+        "--no-sync",
         "python",
         "-m",
         "app.temporal_pipeline.worker"
@@ -372,6 +376,7 @@
           "uv",
           "run",
           "--frozen",
+          "--no-sync",
           "python",
           "-c",
           "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -393,6 +398,7 @@
         "uv",
         "run",
         "--frozen",
+        "--no-sync",
         "python",
         "-m",
         "app.temporal_pipeline.scheduler"
@@ -445,6 +451,7 @@
           "uv",
           "run",
           "--frozen",
+          "--no-sync",
           "python",
           "-c",
           "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.scheduler' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
@@ -515,6 +522,7 @@
         "uv",
         "run",
         "--frozen",
+        "--no-sync",
         "alembic",
         "upgrade",
         "head"

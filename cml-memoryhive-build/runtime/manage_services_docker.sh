@@ -16,6 +16,7 @@ case "$PROFILE" in infra|app-only|full|temporal) ;; *) echo "unknown profile: $P
 ENV_FILE=${ENV_FILE:-$REPO_ROOT/.env}
 COMPOSE_FILE="$RUNTIME_ROOT/docker-compose.$PROFILE.yml"
 BASE_URL=${BASE_URL:-http://localhost:${BACKEND_PORT:-8000}}
+START_TIMEOUT_SECONDS=${START_TIMEOUT_SECONDS:-180}
 
 generate() { uv run python "$BUILD_ROOT/scripts/generate_runtime.py"; }
 compose() { docker compose --env-file "$ENV_FILE" -f "$COMPOSE_FILE" "$@"; }
@@ -51,15 +52,15 @@ case "$COMMAND" in
   generate) generate ;;
   start)
     ensure_env; generate
-    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
-    compose up --build --detach
+    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE" --env-file "$ENV_FILE"
+    compose up --build --detach --wait --wait-timeout "$START_TIMEOUT_SECONDS"
     ;;
   stop) ensure_env; generate; compose down ;;
   restart)
     ensure_env; generate
     compose down --remove-orphans
-    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE"
-    compose up --build --detach --remove-orphans
+    uv run python "$BUILD_ROOT/scripts/check_ports.py" "$PROFILE" --env-file "$ENV_FILE"
+    compose up --build --detach --remove-orphans --wait --wait-timeout "$START_TIMEOUT_SECONDS"
     ;;
   status) ensure_env; generate; compose ps ;;
   logs) ensure_env; generate; compose logs --follow ;;

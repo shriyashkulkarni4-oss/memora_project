@@ -6,6 +6,8 @@ tmp/
 out-tsc/
 bazel-out/
 cml-memoryhive-build/build/output/
+cml-memoryhive-build/runtime/.logs/
+cml-memoryhive-build/runtime/.pids/
 cml-memoryhive-mobile/builds/*
 !cml-memoryhive-mobile/builds/
 !cml-memoryhive-mobile/builds/README.md

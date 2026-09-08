@@ -1,14 +1,14 @@
 # Generated for cml-memoryhive; environment=staging; profile=app-only.
 # Source templates and image-versions.json are authoritative. No Secret values are persisted here.
-apiVersion: "v1"
-kind: "Namespace"
+apiVersion: v1
+kind: Namespace
 metadata:
   name: "cml-memoryhive-staging"
   labels:
     app.kubernetes.io/name: "cml-memoryhive"
 ---
-apiVersion: "v1"
-kind: "ResourceQuota"
+apiVersion: v1
+kind: ResourceQuota
 metadata:
   name: "cml-memoryhive-quota"
   namespace: "cml-memoryhive-staging"
@@ -20,8 +20,8 @@ spec:
     limits.cpu: "16"
     limits.memory: "32Gi"
 ---
-apiVersion: "v1"
-kind: "LimitRange"
+apiVersion: v1
+kind: LimitRange
 metadata:
   name: "cml-memoryhive-defaults"
   namespace: "cml-memoryhive-staging"
@@ -35,8 +35,8 @@ spec:
         cpu: "500m"
         memory: "512Mi"
 ---
-apiVersion: "v1"
-kind: "ConfigMap"
+apiVersion: v1
+kind: ConfigMap
 metadata:
   name: "cml-memoryhive-backend-config"
   namespace: "cml-memoryhive-staging"
@@ -61,15 +61,15 @@ data:
   TEMPORAL_SCHEDULER_POLL_SECONDS: "10"
   TEMPORAL_SCHEDULER_BATCH_SIZE: "25"
 ---
-apiVersion: "v1"
-kind: "ServiceAccount"
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: "cml-memoryhive-backend"
   namespace: "cml-memoryhive-staging"
 automountServiceAccountToken: false
 ---
-apiVersion: "v1"
-kind: "ConfigMap"
+apiVersion: v1
+kind: ConfigMap
 metadata:
   name: "cml-memoryhive-frontend-config"
   namespace: "cml-memoryhive-staging"
@@ -94,15 +94,15 @@ data:
   TEMPORAL_SCHEDULER_POLL_SECONDS: "10"
   TEMPORAL_SCHEDULER_BATCH_SIZE: "25"
 ---
-apiVersion: "v1"
-kind: "ServiceAccount"
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: "cml-memoryhive-frontend"
   namespace: "cml-memoryhive-staging"
 automountServiceAccountToken: false
 ---
-apiVersion: "v1"
-kind: "ConfigMap"
+apiVersion: v1
+kind: ConfigMap
 metadata:
   name: "cml-memoryhive-worker-config"
   namespace: "cml-memoryhive-staging"
@@ -127,15 +127,15 @@ data:
   TEMPORAL_SCHEDULER_POLL_SECONDS: "10"
   TEMPORAL_SCHEDULER_BATCH_SIZE: "25"
 ---
-apiVersion: "v1"
-kind: "ServiceAccount"
+apiVersion: v1
+kind: ServiceAccount
 metadata:
   name: "cml-memoryhive-worker"
   namespace: "cml-memoryhive-staging"
 automountServiceAccountToken: false
 ---
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
   name: "cml-memoryhive-backend"
   labels:
@@ -152,8 +152,8 @@ spec:
       port: 8000
       targetPort: "http"
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: "cml-memoryhive-backend"
   labels:
@@ -243,8 +243,8 @@ spec:
             - secretRef:
                 name: "cml-memoryhive-backend-secrets"
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: "cml-memoryhive-worker"
   labels:
@@ -301,8 +301,8 @@ spec:
                 - "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"
             periodSeconds: 30
 ---
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
   name: "cml-memoryhive-frontend"
   labels:
@@ -319,8 +319,8 @@ spec:
       port: 80
       targetPort: "http"
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: "cml-memoryhive-frontend"
   labels:
@@ -371,8 +371,8 @@ spec:
               port: "http"
             periodSeconds: 30
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "Ingress"
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: "cml-memoryhive"
   namespace: "cml-memoryhive-staging"
@@ -410,31 +410,33 @@ spec:
                 port:
                   number: 80
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: "cml-memoryhive-default-deny-ingress"
   namespace: "cml-memoryhive-staging"
 spec:
-  podSelector: {}
+  podSelector:
+    {}
   policyTypes:
     - "Ingress"
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: "cml-memoryhive-allow-same-namespace-ingress"
   namespace: "cml-memoryhive-staging"
 spec:
-  podSelector: {}
+  podSelector:
+    {}
   policyTypes:
     - "Ingress"
   ingress:
     - from:
-        - podSelector: "{}"
+        - podSelector: {}
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: "cml-memoryhive-allow-ingress-controller"
   namespace: "cml-memoryhive-staging"

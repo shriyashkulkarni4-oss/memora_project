@@ -2,35 +2,50 @@
   "profile": "infra",
   "services": {
     "db": {
+      "key": "db",
       "kind": "infra",
       "host": "127.0.0.1",
       "port": 5432,
+      "host_port_env": "POSTGRES_PORT",
       "health": {
         "type": "tcp"
       },
       "container": "cml-memoryhive-db",
-      "deployment": null
+      "kubernetes": {
+        "kind": "statefulset",
+        "name": "db"
+      }
     },
     "redis": {
+      "key": "redis",
       "kind": "infra",
       "host": "127.0.0.1",
       "port": 6379,
+      "host_port_env": "REDIS_PORT",
       "health": {
         "type": "tcp"
       },
       "container": "cml-memoryhive-redis",
-      "deployment": null
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "redis"
+      }
     },
     "minio": {
+      "key": "minio",
       "kind": "infra",
       "host": "127.0.0.1",
       "port": 9000,
+      "host_port_env": "MINIO_API_PORT",
       "health": {
         "type": "http",
         "path": "/minio/health/ready"
       },
       "container": "cml-memoryhive-minio",
-      "deployment": null
+      "kubernetes": {
+        "kind": "statefulset",
+        "name": "minio"
+      }
     }
   }
 }

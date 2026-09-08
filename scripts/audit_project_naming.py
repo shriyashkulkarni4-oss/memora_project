@@ -8,7 +8,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKIP_PARTS = {".git", ".venv", ".expo", ".pytest_cache", "node_modules", "__pycache__", "GOAL-1", "archieves", "presentations"}
-SKIP_NAMES = {"package-lock.json", "IMPLEMENTATION_PLAN.md", "audit_project_naming.py"}
+SKIP_NAMES = {
+    "package-lock.json",
+    "IMPLEMENTATION_PLAN.md",
+    "PATH_MAPPING.md",
+    "audit_project_naming.py",
+}
 TEXT_SUFFIXES = {"", ".json", ".md", ".mjs", ".py", ".sh", ".toml", ".ts", ".tsx", ".yml", ".yaml"}
 PATTERNS = (
     re.compile(r"cml-memora"),
@@ -17,6 +22,7 @@ PATTERNS = (
     re.compile(r"\bnpm --prefix (frontend|mobile|automation)\b"),
     re.compile(r"\bscope=(backend|frontend|mobile|automation)\b"),
     re.compile(r"(?<!cml-)\bmemoryhive-(backend|frontend)(?=[:/])"),
+    re.compile(r"(?:--tag|tags:)\s+cml-memoryhive-(backend|frontend):"),
 )
 OLD_PATH = re.compile(r"(?<![A-Za-z0-9_/-])(backend|frontend|mobile|automation|build|k8s|health_checker)/")
 

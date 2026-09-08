@@ -35,6 +35,13 @@ def load_config() -> dict[str, Any]:
     return json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
 
+def require_dockerfile(image: dict[str, Any]) -> Path:
+    dockerfile = ROOT / image["context"] / image.get("dockerfile", "Dockerfile")
+    if not dockerfile.is_file():
+        raise SystemExit(f"Missing Dockerfile for {image['key']}: {dockerfile}")
+    return dockerfile
+
+
 def image_repository(registry: str, namespace: str, image_key: str) -> str:
     return f"{registry.rstrip('/')}/{namespace.strip('/')}/{image_key}".lower()
 
@@ -81,7 +88,9 @@ def build_command(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--service", default="all", help="image key from service-registry.json")
+    parser.add_argument(
+        "--service", default="all", help="image key from service-registry.json"
+    )
     parser.add_argument("--registry")
     parser.add_argument("--namespace")
     parser.add_argument("--version")
@@ -99,8 +108,10 @@ def main() -> int:
         or os.getenv("REGISTRY_NAMESPACE")
         or config["registry_namespace"]
     )
-    version = args.version or os.getenv("GITHUB_REF_NAME") or git_value(
-        "describe", "--tags", "--always"
+    version = (
+        args.version
+        or os.getenv("GITHUB_REF_NAME")
+        or git_value("describe", "--tags", "--always")
     )
     sha = args.sha or os.getenv("GITHUB_SHA") or git_value("rev-parse", "HEAD")
     if not version or not sha:
@@ -114,9 +125,7 @@ def main() -> int:
     if not images:
         raise SystemExit(f"No image named {args.service!r} in {CONFIG_PATH}")
     for image in images:
-        dockerfile = ROOT / image["context"] / image.get("dockerfile", "Dockerfile")
-        if not dockerfile.exists():
-            raise SystemExit(f"Missing Dockerfile for {image['key']}: {dockerfile}")
+        require_dockerfile(image)
         cmd = build_command(
             image,
             registry=registry,

@@ -76,11 +76,11 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   cml-memoryhive-backend:
-    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
+    image: ${BACKEND_IMAGE:?Set immutable BACKEND_IMAGE}
     build:
       context: ../../cml-memoryhive-backend
       target: production
-    command: ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=*"]
+    command: ["sh", "-c", "uv run --frozen --no-sync alembic upgrade head && exec uv run --frozen --no-sync uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2 --proxy-headers --forwarded-allow-ips=*"]
     environment: *backend-environment
     depends_on:
       db: { condition: service_healthy }
@@ -96,13 +96,13 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   cml-memoryhive-worker:
-    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
-    command: ["python", "-m", "app.worker"]
+    image: ${BACKEND_IMAGE:?Set immutable BACKEND_IMAGE}
+    command: ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.worker"]
     environment: *backend-environment
     depends_on:
       cml-memoryhive-backend: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
+      test: ["CMD", "uv", "run", "--frozen", "--no-sync", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
       interval: 15s
       timeout: 5s
       retries: 3
@@ -110,31 +110,41 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   cml-memoryhive-temporal-worker:
-    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
-    command: ["python", "-m", "app.temporal_pipeline.worker"]
+    image: ${BACKEND_IMAGE:?Set immutable BACKEND_IMAGE}
+    command: ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.worker"]
     environment:
       <<: *backend-environment
       TEMPORAL_ENABLED: "true"
     depends_on:
       cml-memoryhive-backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "uv", "run", "--frozen", "--no-sync", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.worker' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     profiles: ["temporal"]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
 
   cml-memoryhive-temporal-scheduler:
-    image: ${BACKEND_IMAGE:-cml-memoryhive-backend:latest}
-    command: ["python", "-m", "app.temporal_pipeline.scheduler"]
+    image: ${BACKEND_IMAGE:?Set immutable BACKEND_IMAGE}
+    command: ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.scheduler"]
     environment:
       <<: *backend-environment
       TEMPORAL_ENABLED: "true"
     depends_on:
       cml-memoryhive-backend: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "uv", "run", "--frozen", "--no-sync", "python", "-c", "import pathlib,sys; sys.exit(0 if b'app.temporal_pipeline.scheduler' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
     profiles: ["temporal"]
     restart: unless-stopped
     security_opt: ["no-new-privileges:true"]
 
   cml-memoryhive-frontend:
-    image: ${FRONTEND_IMAGE:-cml-memoryhive-frontend:latest}
+    image: ${FRONTEND_IMAGE:?Set immutable FRONTEND_IMAGE}
     build:
       context: ../../cml-memoryhive-frontend
       target: production

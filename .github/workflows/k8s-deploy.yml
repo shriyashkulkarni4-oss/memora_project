@@ -33,8 +33,9 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
       - run: uv sync --locked
+      - uses: azure/setup-kubectl@v4
       - run: uv run python -m py_compile cml-memoryhive-deployments/scripts/manage.py
-      - run: uv run python cml-memoryhive-deployments/scripts/manage.py --output /tmp/cml-memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }}
+      - run: uv run python cml-memoryhive-deployments/scripts/manage.py --output /tmp/cml-memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }} --kubectl-dry-run
       - uses: actions/upload-artifact@v4
         with:
           name: cml-memoryhive-k8s-${{ inputs.environment }}-${{ inputs.profile }}

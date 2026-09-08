@@ -16,15 +16,18 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
       - run: uv sync --locked
+      - uses: azure/setup-kubectl@v4
       - name: Copy exact staging pins to production
         run: |
           uv run python cml-memoryhive-deployments/scripts/promote_images.py production
           for profile in infra app-only full temporal; do
             uv run python cml-memoryhive-deployments/scripts/manage.py generate production "$profile"
+            uv run python cml-memoryhive-deployments/scripts/manage.py validate production "$profile" --deployment-ready --kubectl-dry-run
           done
           uv run python -m unittest discover -s cml-memoryhive-deployments/tests -p 'test_*.py'
       - uses: peter-evans/create-pull-request@v7
         with:
+          base: main
           branch: promotion/production-${{ github.run_id }}
           delete-branch: true
           commit-message: "chore: promote staging images to production [skip ci]"

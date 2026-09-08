@@ -14,16 +14,135 @@ RUNTIME_ROOT = BUILD_ROOT / "runtime"
 HEALTH_ROOT = BUILD_ROOT / "health_checker"
 
 
+def validate_registry(registry: dict[str, Any]) -> None:
+    required = {
+        "schema_version",
+        "app",
+        "registry",
+        "registry_namespace",
+        "platforms",
+        "images",
+        "profiles",
+        "services",
+    }
+    missing = required - registry.keys()
+    if missing:
+        raise ValueError(f"Service registry is missing fields: {sorted(missing)}")
+    if registry["schema_version"] != 1 or registry["app"] != "cml-memoryhive":
+        raise ValueError("Service registry has an unsupported schema or app identity")
+    if not isinstance(registry["platforms"], list) or not registry["platforms"]:
+        raise ValueError("Service registry platforms must be a non-empty list")
+    if not isinstance(registry["images"], list) or not registry["images"]:
+        raise ValueError("Service registry images must be a non-empty list")
+    image_keys = [image.get("key") for image in registry["images"]]
+    if None in image_keys or len(image_keys) != len(set(image_keys)):
+        raise ValueError("Service registry image keys must be present and unique")
+    for image in registry["images"]:
+        missing_image = {
+            "key",
+            "context",
+            "dockerfile",
+            "target",
+            "runtime_target",
+        } - image.keys()
+        if missing_image:
+            raise ValueError(
+                f"Image {image.get('key')!r} is missing fields: {sorted(missing_image)}"
+            )
+
+    if not isinstance(registry["services"], list) or not registry["services"]:
+        raise ValueError("Service registry services must be a non-empty list")
+    service_keys = [service.get("key") for service in registry["services"]]
+    if None in service_keys or len(service_keys) != len(set(service_keys)):
+        raise ValueError("Service registry service keys must be present and unique")
+    known_services = set(service_keys)
+    ports: list[int] = []
+    graph: dict[str, set[str]] = {}
+    for service in registry["services"]:
+        key = service["key"]
+        missing_service = {"kind", "port", "health", "depends_on"} - service.keys()
+        if missing_service:
+            raise ValueError(
+                f"Service {key!r} is missing fields: {sorted(missing_service)}"
+            )
+        if service["kind"] not in {"infra", "service", "process", "frontend"}:
+            raise ValueError(f"Service {key!r} has an invalid kind")
+        health = service["health"]
+        if not isinstance(health, dict) or health.get("type") not in {
+            "http",
+            "tcp",
+            "process",
+        }:
+            raise ValueError(f"Service {key!r} has an invalid health probe")
+        dependencies = service["depends_on"]
+        if not isinstance(dependencies, list) or set(dependencies) - known_services:
+            raise ValueError(f"Service {key!r} has unknown dependencies")
+        graph[key] = set(dependencies)
+        if service.get("host_port"):
+            ports.append(int(service["host_port"]))
+        for extra in service.get("additional_ports", []):
+            if not {"name", "port", "host_port", "host_port_env"} <= extra.keys():
+                raise ValueError(f"Service {key!r} has an invalid additional port")
+            ports.append(int(extra["host_port"]))
+        if service.get("image_key") not in {None, *image_keys}:
+            raise ValueError(f"Service {key!r} has an unknown image mapping")
+        if (
+            service["kind"] != "infra"
+            and not {
+                "image_key",
+                "source",
+                "command",
+            }
+            <= service.keys()
+        ):
+            raise ValueError(f"Service {key!r} lacks local runtime/image fields")
+        workload = service.get("kubernetes")
+        if workload and (
+            workload.get("kind") not in {"deployment", "statefulset"}
+            or not workload.get("name")
+        ):
+            raise ValueError(f"Service {key!r} has an invalid Kubernetes workload")
+    if len(ports) != len(set(ports)):
+        raise ValueError("Service registry host ports must be unique")
+
+    if set(registry["profiles"]) != {"infra", "app-only", "full", "temporal"}:
+        raise ValueError("Service registry must define the four supported profiles")
+    for profile, members in registry["profiles"].items():
+        if (
+            not isinstance(members, list)
+            or not members
+            or set(members) - known_services
+        ):
+            raise ValueError(f"Profile {profile!r} has invalid service membership")
+
+    pending = dict(graph)
+    while pending:
+        ready = {
+            key
+            for key, dependencies in pending.items()
+            if not dependencies & pending.keys()
+        }
+        if not ready:
+            raise ValueError("Service registry dependency graph contains a cycle")
+        pending = {
+            key: dependencies - ready
+            for key, dependencies in pending.items()
+            if key not in ready
+        }
+
+
 def load_registry() -> dict[str, Any]:
-    return json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    registry = json.loads(REGISTRY_PATH.read_text(encoding="utf-8"))
+    validate_registry(registry)
+    return registry
 
 
 def container_name(key: str) -> str:
     return key if key.startswith("cml-memoryhive-") else f"cml-memoryhive-{key}"
 
 
-def local_image(image_key: str) -> str:
-    registry = load_registry()
+def local_image(image_key: str, registry: dict[str, Any] | None = None) -> str:
+    registry = registry or load_registry()
     return (
         f"{registry['registry'].rstrip('/')}/"
         f"{registry['registry_namespace'].strip('/')}/{image_key}:local"
@@ -46,7 +165,7 @@ def backend_environment(*, temporal: bool) -> dict[str, str]:
         "ACCESS_TOKEN_EXPIRE_MINUTES": "${ACCESS_TOKEN_EXPIRE_MINUTES:-1440}",
         "REFRESH_TOKEN_EXPIRE_DAYS": "${REFRESH_TOKEN_EXPIRE_DAYS:-30}",
         "ENCRYPTION_KEY": "${ENCRYPTION_KEY:-dev-encryption-key-32-bytes-long!}",
-        "CORS_ORIGINS": "${CORS_ORIGINS:-[\"http://localhost:3000\"]}",
+        "CORS_ORIGINS": '${CORS_ORIGINS:-["http://localhost:3000"]}',
         "TEMPORAL_ENABLED": "true" if temporal else "false",
         "TEMPORAL_ADDRESS": "${TEMPORAL_ADDRESS:-temporal:7233}",
         "TEMPORAL_NAMESPACE": "${TEMPORAL_NAMESPACE:-default}",
@@ -63,33 +182,63 @@ def backend_environment(*, temporal: bool) -> dict[str, str]:
 def depends_on(active: set[str], dependencies: list[str]) -> dict[str, Any]:
     return {
         dependency: {
-            "condition": "service_healthy"
-            if dependency in {"db", "redis", "minio", "temporal-db"}
-            else "service_started"
+            "condition": (
+                "service_healthy"
+                if dependency in {"db", "redis", "minio", "temporal-db"}
+                else "service_started"
+            )
         }
         for dependency in dependencies
         if dependency in active
     }
 
 
-def build_service(key: str, active: set[str]) -> dict[str, Any]:
-    descriptor = next(item for item in load_registry()["services"] if item["key"] == key)
+def published_ports(descriptor: dict[str, Any]) -> list[str]:
+    ports = []
+    if descriptor.get("host_port"):
+        ports.append(
+            f"${{{descriptor['host_port_env']}:-{descriptor['host_port']}}}:"
+            f"{descriptor['port']}"
+        )
+    for port in descriptor.get("additional_ports", []):
+        ports.append(
+            f"${{{port['host_port_env']}:-{port['host_port']}}}:{port['port']}"
+        )
+    return ports
+
+
+def build_service(
+    key: str, active: set[str], registry: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    registry = registry or load_registry()
+    descriptor = next(item for item in registry["services"] if item["key"] == key)
+    image_descriptor = next(
+        (
+            item
+            for item in registry["images"]
+            if item["key"] == descriptor.get("image_key")
+        ),
+        None,
+    )
     temporal_enabled = key.startswith("cml-memoryhive-temporal-")
     backend_env = backend_environment(temporal=temporal_enabled)
-    source = "../../cml-memoryhive-backend"
+    source = f"../../{descriptor.get('source', '')}"
     if key == "db":
         return {
             "container_name": container_name(key),
-            "image": "postgres:15-alpine",
+            "image": descriptor["image"],
             "environment": {
                 "POSTGRES_USER": "${POSTGRES_USER:-memoryhive}",
                 "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:-memoryhive123}",
                 "POSTGRES_DB": "${POSTGRES_DB:-memoryhive}",
             },
-            "ports": ["${POSTGRES_PORT:-5432}:5432"],
+            "ports": published_ports(descriptor),
             "volumes": ["pgdata:/var/lib/postgresql/data"],
             "healthcheck": {
-                "test": ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"],
+                "test": [
+                    "CMD-SHELL",
+                    "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}",
+                ],
                 "interval": "5s",
                 "timeout": "5s",
                 "retries": 10,
@@ -99,69 +248,134 @@ def build_service(key: str, active: set[str]) -> dict[str, Any]:
     if key == "redis":
         return {
             "container_name": container_name(key),
-            "image": "redis:7-alpine",
+            "image": descriptor["image"],
             "command": ["redis-server", "--save", "60", "1", "--loglevel", "warning"],
-            "ports": ["${REDIS_PORT:-6379}:6379"],
+            "ports": published_ports(descriptor),
             "volumes": ["redisdata:/data"],
-            "healthcheck": {"test": ["CMD", "redis-cli", "ping"], "interval": "5s", "timeout": "3s", "retries": 10},
+            "healthcheck": {
+                "test": ["CMD", "redis-cli", "ping"],
+                "interval": "5s",
+                "timeout": "3s",
+                "retries": 10,
+            },
             "restart": "unless-stopped",
         }
     if key == "minio":
         return {
             "container_name": container_name(key),
-            "image": "minio/minio:latest",
+            "image": descriptor["image"],
             "command": ["server", "/data", "--console-address", ":9001"],
-            "environment": {"MINIO_ROOT_USER": "${MINIO_ROOT_USER:-minioadmin}", "MINIO_ROOT_PASSWORD": "${MINIO_ROOT_PASSWORD:-minioadmin123}"},
-            "ports": ["${MINIO_API_PORT:-9000}:9000", "${MINIO_CONSOLE_PORT:-9001}:9001"],
+            "environment": {
+                "MINIO_ROOT_USER": "${MINIO_ROOT_USER:-minioadmin}",
+                "MINIO_ROOT_PASSWORD": "${MINIO_ROOT_PASSWORD:-minioadmin123}",
+            },
+            "ports": published_ports(descriptor),
             "volumes": ["miniodata:/data"],
-            "healthcheck": {"test": ["CMD", "curl", "--fail", "--silent", "http://localhost:9000/minio/health/ready"], "interval": "10s", "timeout": "5s", "retries": 10},
+            "healthcheck": {
+                "test": [
+                    "CMD",
+                    "curl",
+                    "--fail",
+                    "--silent",
+                    "http://localhost:9000/minio/health/ready",
+                ],
+                "interval": "10s",
+                "timeout": "5s",
+                "retries": 10,
+            },
             "restart": "unless-stopped",
         }
     if key == "temporal-db":
         return {
             "container_name": container_name(key),
-            "image": "postgres:15-alpine",
-            "environment": {"POSTGRES_USER": "temporal", "POSTGRES_PASSWORD": "temporal"},
+            "image": descriptor["image"],
+            "environment": {
+                "POSTGRES_USER": "temporal",
+                "POSTGRES_PASSWORD": "temporal",
+            },
             "volumes": ["temporal_pgdata:/var/lib/postgresql/data"],
-            "healthcheck": {"test": ["CMD-SHELL", "pg_isready -U temporal"], "interval": "5s", "timeout": "5s", "retries": 20},
+            "healthcheck": {
+                "test": ["CMD-SHELL", "pg_isready -U temporal"],
+                "interval": "5s",
+                "timeout": "5s",
+                "retries": 20,
+            },
             "restart": "unless-stopped",
         }
     if key == "temporal":
         return {
             "container_name": container_name(key),
-            "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-latest}",
-            "environment": {"DB": "postgres12", "DB_PORT": "5432", "POSTGRES_USER": "temporal", "POSTGRES_PWD": "temporal", "POSTGRES_SEEDS": "temporal-db", "DYNAMIC_CONFIG_FILE_PATH": "config/dynamicconfig/development-sql.yaml"},
-            "ports": ["${TEMPORAL_PORT:-7233}:7233"],
-            "volumes": ["../../ops/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro"],
+            "image": descriptor["image"],
+            "environment": {
+                "DB": "postgres12",
+                "DB_PORT": "5432",
+                "POSTGRES_USER": "temporal",
+                "POSTGRES_PWD": "temporal",
+                "POSTGRES_SEEDS": "temporal-db",
+                "DYNAMIC_CONFIG_FILE_PATH": "config/dynamicconfig/development-sql.yaml",
+            },
+            "ports": published_ports(descriptor),
+            "volumes": [
+                "../../ops/temporal/dynamicconfig:/etc/temporal/config/dynamicconfig:ro"
+            ],
             "depends_on": depends_on(active, ["temporal-db"]),
             "restart": "unless-stopped",
         }
     if key == "temporal-ui":
         return {
             "container_name": container_name(key),
-            "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-latest}",
-            "environment": {"TEMPORAL_ADDRESS": "temporal:7233", "TEMPORAL_CORS_ORIGINS": "http://localhost:${FRONTEND_PORT:-3000}"},
-            "ports": ["${TEMPORAL_UI_PORT:-8088}:8080"],
+            "image": descriptor["image"],
+            "environment": {
+                "TEMPORAL_ADDRESS": "temporal:7233",
+                "TEMPORAL_CORS_ORIGINS": "http://localhost:${FRONTEND_PORT:-3000}",
+            },
+            "ports": published_ports(descriptor),
             "depends_on": depends_on(active, ["temporal"]),
             "restart": "unless-stopped",
         }
     if key == "cml-memoryhive-frontend":
         return {
             "container_name": container_name(key),
-            "image": local_image(descriptor["image_key"]),
-            "build": {"context": "../../cml-memoryhive-frontend", "dockerfile": "Dockerfile", "target": "development"},
+            "image": local_image(descriptor["image_key"], registry),
+            "build": {
+                "context": f"../../{descriptor['source']}",
+                "dockerfile": image_descriptor["dockerfile"],
+                "target": image_descriptor["runtime_target"],
+            },
             "command": descriptor["command"],
-            "environment": {"VITE_API_URL": "${VITE_API_URL:-/api/v1}", "VITE_SUPPORT_EMAIL": "${VITE_SUPPORT_EMAIL:-support@memoryhive.example.com}", "VITE_PROXY_TARGET": "http://cml-memoryhive-backend:8000"},
-            "ports": ["${FRONTEND_PORT:-3000}:3000"],
+            "environment": {
+                "VITE_API_URL": "${VITE_API_URL:-/api/v1}",
+                "VITE_SUPPORT_EMAIL": "${VITE_SUPPORT_EMAIL:-support@memoryhive.example.com}",
+                "VITE_PROXY_TARGET": "http://cml-memoryhive-backend:8000",
+            },
+            "ports": published_ports(descriptor),
             "depends_on": depends_on(active, ["cml-memoryhive-backend"]),
-            "volumes": ["../../cml-memoryhive-frontend:/app", "frontend_node_modules:/app/node_modules"],
-            "healthcheck": {"test": ["CMD", "wget", "--quiet", "--output-document=/dev/null", "http://127.0.0.1:3000/"], "interval": "10s", "timeout": "5s", "retries": 10},
+            "volumes": [
+                f"../../{descriptor['source']}:/app",
+                "frontend_node_modules:/app/node_modules",
+            ],
+            "healthcheck": {
+                "test": [
+                    "CMD",
+                    "wget",
+                    "--quiet",
+                    "--output-document=/dev/null",
+                    "http://127.0.0.1:3000/",
+                ],
+                "interval": "10s",
+                "timeout": "5s",
+                "retries": 10,
+            },
             "restart": "unless-stopped",
         }
     service = {
         "container_name": container_name(key),
-        "image": local_image(descriptor["image_key"]),
-        "build": {"context": source, "dockerfile": "Dockerfile", "target": "development"},
+        "image": local_image(descriptor["image_key"], registry),
+        "build": {
+            "context": source,
+            "dockerfile": image_descriptor["dockerfile"],
+            "target": image_descriptor["runtime_target"],
+        },
         "command": descriptor["command"],
         "environment": backend_env,
         "depends_on": depends_on(active, descriptor["depends_on"]),
@@ -169,35 +383,97 @@ def build_service(key: str, active: set[str]) -> dict[str, Any]:
         "restart": "unless-stopped",
     }
     if key == "cml-memoryhive-backend":
-        service["ports"] = ["${BACKEND_PORT:-8000}:8000"]
-        service["healthcheck"] = {"test": ["CMD", "curl", "--fail", "--silent", "http://localhost:8000/health/ready"], "interval": "10s", "timeout": "5s", "retries": 10}
+        service["ports"] = published_ports(descriptor)
+        service["healthcheck"] = {
+            "test": [
+                "CMD",
+                "curl",
+                "--fail",
+                "--silent",
+                "http://localhost:8000/health/ready",
+            ],
+            "interval": "10s",
+            "timeout": "5s",
+            "retries": 10,
+        }
     else:
         marker = descriptor["health"]["marker"]
-        service["healthcheck"] = {"test": ["CMD", "uv", "run", "--frozen", "python", "-c", f"import pathlib,sys; sys.exit(0 if b'{marker}' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)"], "interval": "15s", "timeout": "5s", "retries": 3}
+        service["healthcheck"] = {
+            "test": [
+                "CMD",
+                "uv",
+                "run",
+                "--frozen",
+                "--no-sync",
+                "python",
+                "-c",
+                f"import pathlib,sys; sys.exit(0 if b'{marker}' in pathlib.Path('/proc/1/cmdline').read_bytes() else 1)",
+            ],
+            "interval": "15s",
+            "timeout": "5s",
+            "retries": 3,
+        }
     return service
 
 
 def render_profile(registry: dict[str, Any], profile: str) -> dict[str, Any]:
     active = set(registry["profiles"][profile])
-    services = {key: build_service(key, active) for key in registry["profiles"][profile]}
+    services = {
+        key: build_service(key, active, registry)
+        for key in registry["profiles"][profile]
+    }
     if "cml-memoryhive-backend" in active:
+        backend = next(
+            service
+            for service in registry["services"]
+            if service["key"] == "cml-memoryhive-backend"
+        )
+        backend_image = next(
+            image
+            for image in registry["images"]
+            if image["key"] == backend["image_key"]
+        )
+        backend_source = f"../../{backend['source']}"
         services["migrate"] = {
             "container_name": "cml-memoryhive-migrate",
-            "image": local_image("cml-memoryhive-backend"),
-            "build": {"context": "../../cml-memoryhive-backend", "dockerfile": "Dockerfile", "target": "development"},
-            "command": ["uv", "run", "--frozen", "alembic", "upgrade", "head"],
+            "image": local_image(backend["image_key"], registry),
+            "build": {
+                "context": backend_source,
+                "dockerfile": backend_image["dockerfile"],
+                "target": backend_image["runtime_target"],
+            },
+            "command": [
+                "uv",
+                "run",
+                "--frozen",
+                "--no-sync",
+                "alembic",
+                "upgrade",
+                "head",
+            ],
             "environment": backend_environment(temporal=False),
             "depends_on": depends_on(active, ["db"]),
-            "volumes": ["../../cml-memoryhive-backend:/app"],
+            "volumes": [f"{backend_source}:/app"],
             "restart": "no",
         }
         for key in active:
             if key.startswith("cml-memoryhive-") and key != "cml-memoryhive-frontend":
-                services[key].setdefault("depends_on", {})["migrate"] = {"condition": "service_completed_successfully"}
+                services[key].setdefault("depends_on", {})["migrate"] = {
+                    "condition": "service_completed_successfully"
+                }
     return {
         "name": "cml-memoryhive",
         "services": services,
-        "volumes": {name: {} for name in ("pgdata", "redisdata", "miniodata", "temporal_pgdata", "frontend_node_modules")},
+        "volumes": {
+            name: {}
+            for name in (
+                "pgdata",
+                "redisdata",
+                "miniodata",
+                "temporal_pgdata",
+                "frontend_node_modules",
+            )
+        },
         "networks": {"default": {"name": "cml-memoryhive-network"}},
     }
 
@@ -209,23 +485,33 @@ def main() -> int:
     services_by_key = {service["key"]: service for service in registry["services"]}
     for profile in registry["profiles"]:
         compose_path = RUNTIME_ROOT / f"docker-compose.{profile}.yml"
-        compose_path.write_text(json.dumps(render_profile(registry, profile), indent=2) + "\n", encoding="utf-8")
+        compose_path.write_text(
+            json.dumps(render_profile(registry, profile), indent=2) + "\n",
+            encoding="utf-8",
+        )
         health = {
             "profile": profile,
             "services": {
                 key: {
+                    "key": key,
                     "kind": services_by_key[key]["kind"],
                     "host": "127.0.0.1",
                     "port": services_by_key[key].get("host_port", 0),
+                    "host_port_env": services_by_key[key].get("host_port_env"),
                     "health": services_by_key[key]["health"],
                     "container": container_name(key),
-                    "deployment": key if key.startswith("cml-memoryhive-") else None,
+                    "kubernetes": services_by_key[key].get("kubernetes"),
                 }
                 for key in registry["profiles"][profile]
             },
         }
-        (HEALTH_ROOT / f"health-registry.{profile}.json").write_text(json.dumps(health, indent=2) + "\n", encoding="utf-8")
-    (RUNTIME_ROOT / "docker-compose.yml").write_text((RUNTIME_ROOT / "docker-compose.full.yml").read_text(encoding="utf-8"), encoding="utf-8")
+        (HEALTH_ROOT / f"health-registry.{profile}.json").write_text(
+            json.dumps(health, indent=2) + "\n", encoding="utf-8"
+        )
+    (RUNTIME_ROOT / "docker-compose.yml").write_text(
+        (RUNTIME_ROOT / "docker-compose.full.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
     return 0
 
 

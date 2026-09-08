@@ -20,9 +20,9 @@ make runtime-down PROFILE=full
 For infra in Docker and hot-reloading services as host processes:
 
 ```bash
-cml-memoryhive-build/runtime/manage_services_local.sh start --profile full
-cml-memoryhive-build/runtime/manage_services_local.sh status --profile full
-cml-memoryhive-build/runtime/manage_services_local.sh stop --profile full
+make -C cml-memoryhive-build local PROFILE=full
+make -C cml-memoryhive-build local-status PROFILE=full
+make -C cml-memoryhive-build local-stop PROFILE=full
 ```
 
 ## Generate and validate deployments
@@ -41,11 +41,11 @@ Tracked non-secret output is written to `cml-memoryhive-deployments/generated/<e
 Mutating commands require the exact Kubernetes context configured for the environment. Supply secrets through process environment values or an ignored environment file.
 
 ```bash
-uv run python cml-memoryhive-deployments/scripts/manage.py apply staging full --secret-env-file /secure/staging.env
-uv run python cml-memoryhive-deployments/scripts/manage.py upgrade staging full --secret-env-file /secure/staging.env
-uv run python cml-memoryhive-deployments/scripts/manage.py status staging full
-uv run python cml-memoryhive-deployments/scripts/manage.py rollback staging full cml-memoryhive-backend
-CONFIRM_DELETE=cml-memoryhive uv run python cml-memoryhive-deployments/scripts/manage.py delete staging full
+make -C cml-memoryhive-deployments apply ENV=staging PROFILE=full SECRET_ENV_FILE=/secure/staging.env
+make -C cml-memoryhive-deployments upgrade ENV=staging PROFILE=full SECRET_ENV_FILE=/secure/staging.env
+make -C cml-memoryhive-deployments status ENV=staging PROFILE=full
+make -C cml-memoryhive-deployments rollback ENV=staging PROFILE=full DEPLOYMENT=cml-memoryhive-backend
+CONFIRM_DELETE=cml-memoryhive make -C cml-memoryhive-deployments delete ENV=staging PROFILE=full
 ```
 
 `apply` and `upgrade` stream Secrets directly to `kubectl`. Staging and production reject missing values and known development placeholders. Upgrades compare deployed images with immutable pins and wait only for changed deployments.

@@ -2,37 +2,52 @@
   "profile": "app-only",
   "services": {
     "cml-memoryhive-backend": {
+      "key": "cml-memoryhive-backend",
       "kind": "service",
       "host": "127.0.0.1",
       "port": 8000,
+      "host_port_env": "BACKEND_PORT",
       "health": {
         "type": "http",
         "path": "/health/ready"
       },
       "container": "cml-memoryhive-backend",
-      "deployment": "cml-memoryhive-backend"
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-backend"
+      }
     },
     "cml-memoryhive-worker": {
+      "key": "cml-memoryhive-worker",
       "kind": "process",
       "host": "127.0.0.1",
       "port": 0,
+      "host_port_env": null,
       "health": {
         "type": "process",
         "marker": "app.worker"
       },
       "container": "cml-memoryhive-worker",
-      "deployment": "cml-memoryhive-worker"
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-worker"
+      }
     },
     "cml-memoryhive-frontend": {
+      "key": "cml-memoryhive-frontend",
       "kind": "frontend",
       "host": "127.0.0.1",
       "port": 3000,
+      "host_port_env": "FRONTEND_PORT",
       "health": {
         "type": "http",
         "path": "/"
       },
       "container": "cml-memoryhive-frontend",
-      "deployment": "cml-memoryhive-frontend"
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-frontend"
+      }
     }
   }
 }

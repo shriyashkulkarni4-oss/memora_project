@@ -1,4 +1,4 @@
-.PHONY: generate validate validate-all apply upgrade status rollback delete test
+.PHONY: generate validate validate-all readiness-all apply upgrade status rollback delete test
 
 ENV ?= local
 PROFILE ?= full
@@ -10,10 +10,13 @@ generate:
 	$(UV) run python scripts/manage.py generate $(ENV) $(PROFILE)
 
 validate:
-	$(UV) run python scripts/manage.py validate $(ENV) $(PROFILE)
+	$(UV) run python scripts/manage.py validate $(ENV) $(PROFILE) --kubectl-dry-run
 
 validate-all:
-	@for env in local staging production; do for profile in infra app-only full temporal; do $(UV) run python scripts/manage.py validate $$env $$profile; done; done
+	@for env in local staging production; do for profile in infra app-only full temporal; do $(UV) run python scripts/manage.py validate $$env $$profile --kubectl-dry-run; done; done
+
+readiness-all:
+	@for env in staging production; do for profile in infra app-only full temporal; do $(UV) run python scripts/manage.py validate $$env $$profile --deployment-ready; done; done
 
 apply:
 	$(UV) run python scripts/manage.py apply $(ENV) $(PROFILE) $(SECRET_ARG)

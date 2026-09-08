@@ -34,7 +34,7 @@ The API includes these fields in item responses and item stats include
 Start the Temporal profile:
 
 ```bash
-cml-memoryhive-build/runtime/manage_services_docker.sh start --profile temporal
+make -C cml-memoryhive-build up PROFILE=temporal
 ```
 
 Temporal service listens on `localhost:7233`; Temporal UI listens on
@@ -43,8 +43,8 @@ Temporal service listens on `localhost:7233`; Temporal UI listens on
 - `temporal-db`
 - `temporal`
 - `temporal-ui`
-- `temporal-worker`
-- `temporal-scheduler`
+- `cml-memoryhive-temporal-worker`
+- `cml-memoryhive-temporal-scheduler`
 
 Run the scheduler once for debugging:
 
@@ -57,5 +57,6 @@ TEMPORAL_ENABLED=true TEMPORAL_ADDRESS=localhost:7233 uv run python -m app.tempo
 
 Production Compose does not start a Temporal server. Point `TEMPORAL_ADDRESS` at
 Temporal Cloud or an internally operated Temporal cluster, then enable the
-`temporal` profile for `temporal-worker` and `temporal-scheduler`. Keep Temporal
+`temporal` profile for `cml-memoryhive-temporal-worker` and
+`cml-memoryhive-temporal-scheduler`. Keep Temporal
 network access private and treat its UI as an operator-only surface.

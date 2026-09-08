@@ -10,6 +10,7 @@
       "context": "cml-memoryhive-backend",
       "dockerfile": "Dockerfile",
       "target": "production",
+      "runtime_target": "development",
       "build_args": {}
     },
     {
@@ -17,6 +18,7 @@
       "context": "cml-memoryhive-frontend",
       "dockerfile": "Dockerfile",
       "target": "production",
+      "runtime_target": "development",
       "build_args": {
         "VITE_API_URL": "/api/v1",
         "VITE_SUPPORT_EMAIL": "$VITE_SUPPORT_EMAIL"
@@ -37,6 +39,7 @@
       "host_port_env": "POSTGRES_PORT",
       "host_port": 5432,
       "image": "postgres:15-alpine",
+      "kubernetes": {"kind": "statefulset", "name": "db"},
       "health": {"type": "tcp"},
       "depends_on": []
     },
@@ -47,6 +50,7 @@
       "host_port_env": "REDIS_PORT",
       "host_port": 6379,
       "image": "redis:7-alpine",
+      "kubernetes": {"kind": "deployment", "name": "redis"},
       "health": {"type": "tcp"},
       "depends_on": []
     },
@@ -56,7 +60,16 @@
       "port": 9000,
       "host_port_env": "MINIO_API_PORT",
       "host_port": 9000,
+      "additional_ports": [
+        {
+          "name": "console",
+          "port": 9001,
+          "host_port_env": "MINIO_CONSOLE_PORT",
+          "host_port": 9001
+        }
+      ],
       "image": "minio/minio:latest",
+      "kubernetes": {"kind": "statefulset", "name": "minio"},
       "health": {"type": "http", "path": "/minio/health/ready"},
       "depends_on": []
     },
@@ -74,7 +87,7 @@
       "port": 7233,
       "host_port_env": "TEMPORAL_PORT",
       "host_port": 7233,
-      "image": "temporalio/auto-setup:latest",
+      "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-latest}",
       "health": {"type": "tcp"},
       "depends_on": ["temporal-db"]
     },
@@ -84,7 +97,7 @@
       "port": 8080,
       "host_port_env": "TEMPORAL_UI_PORT",
       "host_port": 8088,
-      "image": "temporalio/ui:latest",
+      "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-latest}",
       "health": {"type": "http", "path": "/"},
       "depends_on": ["temporal"]
     },
@@ -95,8 +108,9 @@
       "host_port_env": "BACKEND_PORT",
       "host_port": 8000,
       "image_key": "cml-memoryhive-backend",
+      "kubernetes": {"kind": "deployment", "name": "cml-memoryhive-backend"},
       "source": "cml-memoryhive-backend",
-      "command": ["uv", "run", "--frozen", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
+      "command": ["uv", "run", "--frozen", "--no-sync", "uvicorn", "app.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"],
       "health": {"type": "http", "path": "/health/ready"},
       "depends_on": ["db", "redis", "minio"]
     },
@@ -105,8 +119,9 @@
       "kind": "process",
       "port": 0,
       "image_key": "cml-memoryhive-backend",
+      "kubernetes": {"kind": "deployment", "name": "cml-memoryhive-worker"},
       "source": "cml-memoryhive-backend",
-      "command": ["uv", "run", "--frozen", "python", "-m", "app.worker"],
+      "command": ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.worker"],
       "health": {"type": "process", "marker": "app.worker"},
       "depends_on": ["db", "minio"]
     },
@@ -115,8 +130,9 @@
       "kind": "process",
       "port": 0,
       "image_key": "cml-memoryhive-backend",
+      "kubernetes": {"kind": "deployment", "name": "cml-memoryhive-temporal-worker"},
       "source": "cml-memoryhive-backend",
-      "command": ["uv", "run", "--frozen", "python", "-m", "app.temporal_pipeline.worker"],
+      "command": ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.worker"],
       "health": {"type": "process", "marker": "app.temporal_pipeline.worker"},
       "depends_on": ["db", "minio", "temporal"]
     },
@@ -125,8 +141,9 @@
       "kind": "process",
       "port": 0,
       "image_key": "cml-memoryhive-backend",
+      "kubernetes": {"kind": "deployment", "name": "cml-memoryhive-temporal-scheduler"},
       "source": "cml-memoryhive-backend",
-      "command": ["uv", "run", "--frozen", "python", "-m", "app.temporal_pipeline.scheduler"],
+      "command": ["uv", "run", "--frozen", "--no-sync", "python", "-m", "app.temporal_pipeline.scheduler"],
       "health": {"type": "process", "marker": "app.temporal_pipeline.scheduler"},
       "depends_on": ["db", "temporal"]
     },
@@ -137,6 +154,7 @@
       "host_port_env": "FRONTEND_PORT",
       "host_port": 3000,
       "image_key": "cml-memoryhive-frontend",
+      "kubernetes": {"kind": "deployment", "name": "cml-memoryhive-frontend"},
       "source": "cml-memoryhive-frontend",
       "command": ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"],
       "health": {"type": "http", "path": "/"},

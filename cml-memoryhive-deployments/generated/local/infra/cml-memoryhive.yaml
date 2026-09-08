@@ -1,14 +1,14 @@
 # Generated for cml-memoryhive; environment=local; profile=infra.
 # Source templates and image-versions.json are authoritative. No Secret values are persisted here.
-apiVersion: "v1"
-kind: "Namespace"
+apiVersion: v1
+kind: Namespace
 metadata:
   name: "cml-memoryhive-local"
   labels:
     app.kubernetes.io/name: "cml-memoryhive"
 ---
-apiVersion: "v1"
-kind: "ResourceQuota"
+apiVersion: v1
+kind: ResourceQuota
 metadata:
   name: "cml-memoryhive-quota"
   namespace: "cml-memoryhive-local"
@@ -20,8 +20,8 @@ spec:
     limits.cpu: "16"
     limits.memory: "32Gi"
 ---
-apiVersion: "v1"
-kind: "LimitRange"
+apiVersion: v1
+kind: LimitRange
 metadata:
   name: "cml-memoryhive-defaults"
   namespace: "cml-memoryhive-local"
@@ -35,8 +35,8 @@ spec:
         cpu: "500m"
         memory: "512Mi"
 ---
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
   name: "db"
   labels:
@@ -53,8 +53,8 @@ spec:
       port: 5432
       targetPort: 5432
 ---
-apiVersion: "apps/v1"
-kind: "StatefulSet"
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: "db"
   labels:
@@ -116,8 +116,8 @@ spec:
           requests:
             storage: "5Gi"
 ---
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
   name: "redis"
   labels:
@@ -134,8 +134,8 @@ spec:
       port: 6379
       targetPort: 6379
 ---
-apiVersion: "apps/v1"
-kind: "Deployment"
+apiVersion: apps/v1
+kind: Deployment
 metadata:
   name: "redis"
   labels:
@@ -180,8 +180,8 @@ spec:
         - name: "redisdata"
           emptyDir: {}
 ---
-apiVersion: "v1"
-kind: "Service"
+apiVersion: v1
+kind: Service
 metadata:
   name: "minio"
   labels:
@@ -198,8 +198,8 @@ spec:
       port: 9000
       targetPort: 9000
 ---
-apiVersion: "apps/v1"
-kind: "StatefulSet"
+apiVersion: apps/v1
+kind: StatefulSet
 metadata:
   name: "minio"
   labels:
@@ -258,25 +258,27 @@ spec:
           requests:
             storage: "10Gi"
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: "cml-memoryhive-default-deny-ingress"
   namespace: "cml-memoryhive-local"
 spec:
-  podSelector: {}
+  podSelector:
+    {}
   policyTypes:
     - "Ingress"
 ---
-apiVersion: "networking.k8s.io/v1"
-kind: "NetworkPolicy"
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
 metadata:
   name: "cml-memoryhive-allow-same-namespace-ingress"
   namespace: "cml-memoryhive-local"
 spec:
-  podSelector: {}
+  podSelector:
+    {}
   policyTypes:
     - "Ingress"
   ingress:
     - from:
-        - podSelector: "{}"
+        - podSelector: {}

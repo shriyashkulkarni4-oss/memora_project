@@ -65,7 +65,7 @@ jobs:
           context: cml-memoryhive-backend
           target: production
           push: false
-          tags: cml-memoryhive-backend:ci
+          tags: ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:ci
           cache-from: type=gha,scope=cml-memoryhive-backend
           cache-to: type=gha,mode=max,scope=cml-memoryhive-backend
       - uses: docker/build-push-action@v6
@@ -73,7 +73,7 @@ jobs:
           context: cml-memoryhive-frontend
           target: production
           push: false
-          tags: cml-memoryhive-frontend:ci
+          tags: ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:ci
           build-args: |
             VITE_API_URL=/api/v1
             VITE_SUPPORT_EMAIL=support@memoryhive.example.com
@@ -87,6 +87,7 @@ jobs:
       - uses: astral-sh/setup-uv@v6
         with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
       - run: uv sync --locked
+      - uses: azure/setup-kubectl@v4
       - run: uv run python -m py_compile cml-memoryhive-build/build/scripts/*.py cml-memoryhive-deployments/scripts/*.py cml-memoryhive-build/health_checker/*.py
       - run: node --check cml-memoryhive-automation/scripts/run.mjs
       - run: npm --prefix cml-memoryhive-automation run dry-run

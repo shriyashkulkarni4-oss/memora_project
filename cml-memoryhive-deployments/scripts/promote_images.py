@@ -18,17 +18,29 @@ OWNED = (
     "cml-memoryhive-temporal-scheduler",
     "cml-memoryhive-frontend",
 )
-IMMUTABLE = re.compile(r"^ghcr\.io/coding-monkey-labs-client-projects/cml-memoryhive-(?:backend|frontend):[^:]+-[0-9a-f]{7}$")
+IMMUTABLE = re.compile(
+    r"^ghcr\.io/coding-monkey-labs-client-projects/"
+    r"cml-memoryhive-(?:backend|frontend):[^:]+-(?P<sha>[0-9a-f]{7})$"
+)
+
+
+def is_immutable(image: str) -> bool:
+    match = IMMUTABLE.fullmatch(image)
+    return bool(match and match.group("sha") != "0000000")
 
 
 def read(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def promote(environment: str, pins: dict[str, Any], manifest: dict[str, Any] | None) -> bool:
+def promote(
+    environment: str, pins: dict[str, Any], manifest: dict[str, Any] | None
+) -> bool:
     if environment == "staging":
         if not manifest or manifest.get("app") != "cml-memoryhive":
-            raise ValueError("Staging promotion requires a cml-memoryhive build manifest")
+            raise ValueError(
+                "Staging promotion requires a cml-memoryhive build manifest"
+            )
         source = manifest.get("runtime", {})
     elif environment == "production":
         source = pins["staging"]
@@ -38,8 +50,10 @@ def promote(environment: str, pins: dict[str, Any], manifest: dict[str, Any] | N
     changed = False
     for key in OWNED:
         image = source.get(key)
-        if not image or not IMMUTABLE.fullmatch(image):
-            raise ValueError(f"{key} is not pinned to a valid immutable image: {image!r}")
+        if not image or not is_immutable(image):
+            raise ValueError(
+                f"{key} is not pinned to a valid immutable image: {image!r}"
+            )
         if target.get(key) != image:
             target[key] = image
             changed = True
@@ -58,7 +72,9 @@ def main() -> int:
     manifest = read(args.manifest) if args.manifest else None
     changed = promote(args.environment, pins, manifest)
     if changed:
-        args.image_versions.write_text(json.dumps(pins, indent=2) + "\n", encoding="utf-8")
+        args.image_versions.write_text(
+            json.dumps(pins, indent=2) + "\n", encoding="utf-8"
+        )
         print(f"updated {args.environment} image pins")
     else:
         print(f"{args.environment} image pins already current")

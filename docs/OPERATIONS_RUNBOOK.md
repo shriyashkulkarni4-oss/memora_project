@@ -16,7 +16,7 @@ Last updated: 2026-09-06
 docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml config --quiet
 docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml pull
 docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml up -d
-BASE_URL=https://memoryhive.example.com ops/smoke.sh
+BASE_URL=https://www.memoryhive.in ops/smoke.sh
 ```
 
 Caddy terminates TLS and renews certificates. The API migration runs before its
@@ -75,7 +75,7 @@ Full restore is destructive and briefly stops the API and worker:
 
 ```bash
 CONFIRM_RESTORE=cml-memoryhive ops/restore.sh /srv/memoryhive-backups/20260905T120000Z
-BASE_URL=https://memoryhive.example.com ops/smoke.sh
+BASE_URL=https://www.memoryhive.in ops/smoke.sh
 ```
 
 ## Incident and rollback

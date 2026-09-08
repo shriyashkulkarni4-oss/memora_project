@@ -173,21 +173,21 @@ Simulator. Store membership is not required for a simulator artifact.
 
 ## Environment Configuration
 
-At the last verification, EAS reported no plain-text or sensitive variables in
-the `development`, `preview`, or `production` environments. Native builds can
-compile without them, but a physical device will not reach a useful backend
-using the app's localhost fallback.
+The `preview` and `production` EAS environments use the canonical public
+Memoryhive origin. The `development` environment intentionally retains the
+local host-discovery behavior.
 
 Configure these variables for the target EAS environment:
 
 ```text
-EXPO_PUBLIC_API_URL=https://YOUR-TEST-DOMAIN/api/v1
-EXPO_PUBLIC_PRIVACY_POLICY_URL=https://YOUR-TEST-DOMAIN/privacy
-EXPO_PUBLIC_SUPPORT_URL=https://YOUR-TEST-DOMAIN/support
+EXPO_PUBLIC_API_URL=https://www.memoryhive.in/api/v1
+EXPO_PUBLIC_PRIVACY_POLICY_URL=https://www.memoryhive.in/privacy
+EXPO_PUBLIC_SUPPORT_URL=https://www.memoryhive.in/support
 ```
 
-For shared Android-device and iOS-Simulator testing, use a reachable public
-HTTPS test deployment. Do not use `localhost` for a physical Android device.
+This single public origin works for the website, Android devices, and iOS
+Simulator builds after Kubernetes ingress and valid TLS are deployed. Do not
+use `localhost` for a physical Android device.
 
 ## Validation Commands
 

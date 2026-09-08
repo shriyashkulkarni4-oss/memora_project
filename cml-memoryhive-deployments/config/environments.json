@@ -90,7 +90,7 @@
   "production": {
     "namespace": "cml-memoryhive-production",
     "expected_context": "cml-memoryhive-production",
-    "domain": "memoryhive.example.com",
+    "domain": "www.memoryhive.in",
     "ingress_class_name": "nginx",
     "cluster_issuer": "letsencrypt-production",
     "temporal_address": "temporal.example.internal:7233",

@@ -1,7 +1,7 @@
 import { envFileValue } from "./store-env.mjs";
 
 export const productionEnvTemplatePath = ".env.production.example";
-export const fallbackWebOrigin = "https://memoryhive.example.com";
+export const fallbackWebOrigin = "https://www.memoryhive.in";
 export const fallbackApiUrl = `${fallbackWebOrigin}/api/v1`;
 
 export const productionUrlSpecs = [

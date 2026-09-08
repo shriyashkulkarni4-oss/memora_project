@@ -77,6 +77,38 @@ class RenderTests(unittest.TestCase):
                     if profiles[profile]["include_network_policies"]:
                         self.assertIn("NetworkPolicy", kinds)
 
+    def test_production_uses_canonical_public_origin_and_api_route(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            rendered = manage.render("production", "full", Path(temporary))
+            documents = list(
+                yaml.safe_load_all((rendered / "cml-memoryhive.yaml").read_text())
+            )
+
+        ingress = next(document for document in documents if document["kind"] == "Ingress")
+        rule = ingress["spec"]["rules"][0]
+        self.assertEqual(rule["host"], "www.memoryhive.in")
+        self.assertEqual(ingress["spec"]["tls"][0]["hosts"], ["www.memoryhive.in"])
+        routes = {
+            route["path"]: route["backend"]["service"]["name"]
+            for route in rule["http"]["paths"]
+        }
+        self.assertEqual(routes["/api/v1"], "cml-memoryhive-backend")
+        self.assertEqual(routes["/"], "cml-memoryhive-frontend")
+
+        backend_config = next(
+            document
+            for document in documents
+            if document["kind"] == "ConfigMap"
+            and document["metadata"]["name"] == "cml-memoryhive-backend-config"
+        )
+        self.assertEqual(
+            backend_config["data"]["CORS_ORIGINS"],
+            '["https://www.memoryhive.in"]',
+        )
+        self.assertEqual(
+            backend_config["data"]["ALLOWED_HOSTS"], '["www.memoryhive.in"]'
+        )
+
     def test_template_allowlist_rejects_unknown_identifiers(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             old = manage.TEMPLATES

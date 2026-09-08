@@ -47,8 +47,8 @@ data:
   MINIO_SECURE: "false"
   ACCESS_TOKEN_EXPIRE_MINUTES: "15"
   REFRESH_TOKEN_EXPIRE_DAYS: "30"
-  CORS_ORIGINS: "[\"https://memoryhive.example.com\"]"
-  ALLOWED_HOSTS: "[\"memoryhive.example.com\"]"
+  CORS_ORIGINS: "[\"https://www.memoryhive.in\"]"
+  ALLOWED_HOSTS: "[\"www.memoryhive.in\"]"
   RATE_LIMIT_PER_MINUTE: "120"
   AUTH_RATE_LIMIT_PER_MINUTE: "10"
   BACKUP_ROOT: "/backups"
@@ -80,8 +80,8 @@ data:
   MINIO_SECURE: "false"
   ACCESS_TOKEN_EXPIRE_MINUTES: "15"
   REFRESH_TOKEN_EXPIRE_DAYS: "30"
-  CORS_ORIGINS: "[\"https://memoryhive.example.com\"]"
-  ALLOWED_HOSTS: "[\"memoryhive.example.com\"]"
+  CORS_ORIGINS: "[\"https://www.memoryhive.in\"]"
+  ALLOWED_HOSTS: "[\"www.memoryhive.in\"]"
   RATE_LIMIT_PER_MINUTE: "120"
   AUTH_RATE_LIMIT_PER_MINUTE: "10"
   BACKUP_ROOT: "/backups"
@@ -113,8 +113,8 @@ data:
   MINIO_SECURE: "false"
   ACCESS_TOKEN_EXPIRE_MINUTES: "15"
   REFRESH_TOKEN_EXPIRE_DAYS: "30"
-  CORS_ORIGINS: "[\"https://memoryhive.example.com\"]"
-  ALLOWED_HOSTS: "[\"memoryhive.example.com\"]"
+  CORS_ORIGINS: "[\"https://www.memoryhive.in\"]"
+  ALLOWED_HOSTS: "[\"www.memoryhive.in\"]"
   RATE_LIMIT_PER_MINUTE: "120"
   AUTH_RATE_LIMIT_PER_MINUTE: "10"
   BACKUP_ROOT: "/backups"
@@ -146,8 +146,8 @@ data:
   MINIO_SECURE: "false"
   ACCESS_TOKEN_EXPIRE_MINUTES: "15"
   REFRESH_TOKEN_EXPIRE_DAYS: "30"
-  CORS_ORIGINS: "[\"https://memoryhive.example.com\"]"
-  ALLOWED_HOSTS: "[\"memoryhive.example.com\"]"
+  CORS_ORIGINS: "[\"https://www.memoryhive.in\"]"
+  ALLOWED_HOSTS: "[\"www.memoryhive.in\"]"
   RATE_LIMIT_PER_MINUTE: "120"
   AUTH_RATE_LIMIT_PER_MINUTE: "10"
   BACKUP_ROOT: "/backups"
@@ -179,8 +179,8 @@ data:
   MINIO_SECURE: "false"
   ACCESS_TOKEN_EXPIRE_MINUTES: "15"
   REFRESH_TOKEN_EXPIRE_DAYS: "30"
-  CORS_ORIGINS: "[\"https://memoryhive.example.com\"]"
-  ALLOWED_HOSTS: "[\"memoryhive.example.com\"]"
+  CORS_ORIGINS: "[\"https://www.memoryhive.in\"]"
+  ALLOWED_HOSTS: "[\"www.memoryhive.in\"]"
   RATE_LIMIT_PER_MINUTE: "120"
   AUTH_RATE_LIMIT_PER_MINUTE: "10"
   BACKUP_ROOT: "/backups"
@@ -503,7 +503,7 @@ spec:
               port: "http"
               httpHeaders:
                 - name: "Host"
-                  value: "memoryhive.example.com"
+                  value: "www.memoryhive.in"
             periodSeconds: 10
             failureThreshold: 6
           livenessProbe:
@@ -512,7 +512,7 @@ spec:
               port: "http"
               httpHeaders:
                 - name: "Host"
-                  value: "memoryhive.example.com"
+                  value: "www.memoryhive.in"
             periodSeconds: 30
       initContainers:
         - name: "migrate"
@@ -787,10 +787,10 @@ spec:
   ingressClassName: "nginx"
   tls:
     - hosts:
-        - "memoryhive.example.com"
+        - "www.memoryhive.in"
       secretName: "cml-memoryhive-tls"
   rules:
-    - host: "memoryhive.example.com"
+    - host: "www.memoryhive.in"
       http:
         paths:
           - path: "/api/v1"

@@ -11,9 +11,9 @@ Status: draft handoff generated from `npm run store:submission`.
 | iOS bundle ID | `com.codingmonkeylabs.memoryhive` |
 | Android package | `com.codingmonkeylabs.memoryhive` |
 | Category | Productivity |
-| Privacy URL | https://memoryhive.example.com/privacy |
-| Support URL | https://memoryhive.example.com/support |
-| Account deletion URL | https://memoryhive.example.com/account/delete |
+| Privacy URL | https://www.memoryhive.in/privacy |
+| Support URL | https://www.memoryhive.in/support |
+| Account deletion URL | https://www.memoryhive.in/account/delete |
 | Support email | support@memoryhive.example.com |
 
 ## Store Copy

@@ -146,7 +146,7 @@ chmod 600 .env.production
 # Set real secrets, domain, ACME email, and immutable image tags.
 docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml config --quiet
 docker compose --env-file .env.production -f cml-memoryhive-build/runtime/docker-compose.production.yml up -d
-BASE_URL=https://memoryhive.example.com ops/smoke.sh
+BASE_URL=https://www.memoryhive.in ops/smoke.sh
 ```
 
 Caddy provides TLS and secure edge headers. The API adds request IDs,
@@ -199,6 +199,10 @@ The development client derives the API host from the web or Expo host and uses
 port `8000`. Set `EXPO_PUBLIC_API_URL` only to override that default. Native
 release profiles are defined in `cml-memoryhive-mobile/eas.json`; store preparation and
 physical-device checks are tracked in the release checklist.
+
+Production uses one public origin for both clients. The frontend calls the
+same-origin `/api/v1` path, while native EAS builds receive the absolute
+`https://www.memoryhive.in/api/v1` endpoint through their EAS environment.
 
 Public store-support routes are served by the web app at `/privacy`,
 `/account/delete`, and `/support`; deploy them on the production domain before

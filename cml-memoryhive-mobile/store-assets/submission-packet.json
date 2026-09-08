@@ -13,10 +13,10 @@
     "category": "Productivity"
   },
   "urls": {
-    "api_url": "https://memoryhive.example.com/api/v1",
-    "support_url": "https://memoryhive.example.com/support",
-    "privacy_policy_url": "https://memoryhive.example.com/privacy",
-    "account_deletion_url": "https://memoryhive.example.com/account/delete"
+    "api_url": "https://www.memoryhive.in/api/v1",
+    "support_url": "https://www.memoryhive.in/support",
+    "privacy_policy_url": "https://www.memoryhive.in/privacy",
+    "account_deletion_url": "https://www.memoryhive.in/account/delete"
   },
   "contacts": {
     "support_email": "support@memoryhive.example.com"
@@ -91,8 +91,8 @@
   "app_store": {
     "subtitle": "Capture. Tag. Find.",
     "promotional_text": "Save what matters, organize it with tags, and find it again across web and mobile.",
-    "privacy_policy_url": "https://memoryhive.example.com/privacy",
-    "support_url": "https://memoryhive.example.com/support",
+    "privacy_policy_url": "https://www.memoryhive.in/privacy",
+    "support_url": "https://www.memoryhive.in/support",
     "review_account": {
       "email": "reviewer@memoryhive.example.com",
       "password": "Do not commit. Generate a temporary password and enter it directly in App Store Connect.",
@@ -129,8 +129,8 @@
   "google_play": {
     "short_description": "Capture links, screenshots, and notes into a searchable offline-first library.",
     "full_description": "Memoryhive is a personal capture and recall app for links, screenshots, and text notes. Save items from your device, add tags and notes, search locally while offline, and sync when you reconnect.\n\nKey features:\n- Capture links, screenshots, and text notes.\n- Search by query, item type, status, and tag.\n- Edit titles, notes, and tags after capture.\n- Favorite, archive, restore, and delete items with confirmation.\n- Keep a local offline library and sync changes later.\n- Export account data and delete your account from Settings.",
-    "privacy_policy_url": "https://memoryhive.example.com/privacy",
-    "account_deletion_url": "https://memoryhive.example.com/account/delete",
+    "privacy_policy_url": "https://www.memoryhive.in/privacy",
+    "account_deletion_url": "https://www.memoryhive.in/account/delete",
     "review_account": {
       "email": "reviewer@memoryhive.example.com",
       "password": "Do not commit. Generate a temporary password and enter it directly in Play Console.",

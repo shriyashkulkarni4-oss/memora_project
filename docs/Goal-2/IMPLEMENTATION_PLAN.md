@@ -18,7 +18,7 @@ This approved plan was persisted before implementation changes began.
 - Retain `docs/`, `ops/`, and `scripts/` as shared repository support rather than standalone projects.
 - Rename Python/npm package metadata to `cml-memoryhive-backend`, `cml-memoryhive-frontend`, `cml-memoryhive-mobile`, and `cml-memoryhive-automation`. Preserve the customer-facing Memoryhive name and existing mobile bundle/application IDs.
 - Prefix first-party runtime identities:
-  - Images: `ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend` and `ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend`.
+  - Images: `docker.io/maheshk172/cml-memoryhive-backend` and `docker.io/maheshk172/cml-memoryhive-frontend`.
   - Workloads/services: `cml-memoryhive-backend`, `cml-memoryhive-worker`, `cml-memoryhive-temporal-worker`, `cml-memoryhive-temporal-scheduler`, and `cml-memoryhive-frontend`.
   - Compose project, Kubernetes namespaces/resources, CI artifacts, generated manifests, and confirmation tokens use `cml-memoryhive`.
   - Keep third-party dependency names concise: `db`, `redis`, `minio`, `temporal`, and `temporal-db`.

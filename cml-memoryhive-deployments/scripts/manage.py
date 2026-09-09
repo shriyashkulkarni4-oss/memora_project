@@ -40,7 +40,7 @@ RESOURCE_TEMPLATES = {
     "StatefulSet": "stateful-set.yaml.tpl",
 }
 OWNED_IMAGE = re.compile(
-    r"^ghcr\.io/coding-monkey-labs-client-projects/"
+    r"^docker\.io/maheshk172/"
     r"cml-memoryhive-(?:backend|frontend):[^:]+-(?P<sha>[0-9a-f]{7})$"
 )
 

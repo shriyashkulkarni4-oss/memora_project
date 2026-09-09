@@ -1,0 +1,168 @@
+#
+# Reusable Workflow: Update Deployment Manifests
+# Updates image-versions.json and regenerates k8s manifests after build.
+#
+
+name: Update Deployment Manifests
+
+on:
+  workflow_call:
+    inputs:
+      version:
+        description: "Image version/tag to update"
+        required: true
+        type: string
+      deployment_dir:
+        description: "Deployment directory path (relative to repo root)"
+        required: true
+        type: string
+      environment:
+        description: >-
+          Target environment(s) to bump (comma-separated).
+          Manifests are rendered by the provided command after pins are updated.
+        required: false
+        type: string
+        default: "staging"
+      registry:
+        description: "Image registry to pin images to"
+        required: false
+        type: string
+        default: "docker.io"
+      namespace:
+        description: "Image namespace/user on the registry"
+        required: false
+        type: string
+        default: "maheshk172"
+      images:
+        description: >-
+          JSON object of logical image keys to update
+          (e.g. {"backend":"cml-memoryhive-backend","frontend":"cml-memoryhive-frontend"})
+        required: true
+        type: string
+      generate_manifests:
+        description: "Whether to run manifest generation after updating pins"
+        required: false
+        type: boolean
+        default: true
+      manifest_command:
+        description: "Command to generate manifests"
+        required: false
+        type: string
+        default: ""
+
+    secrets:
+      GH_TOKEN:
+        description: "GitHub token for committing changes"
+        required: false
+
+jobs:
+  update-manifests:
+    name: Update Manifests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_TOKEN || secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Set up Python tooling
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.7.2"
+
+      - name: Install project dependencies
+        run: uv sync --locked
+
+      - name: Update image-versions.json
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          version = "${{ inputs.version }}"
+          deployment_dir = "${{ inputs.deployment_dir }}"
+          environments = "${{ inputs.environment }}".split(",")
+          registry = "${{ inputs.registry }}"
+          namespace = "${{ inputs.namespace }}"
+          images = json.loads('${{ inputs.images }}')
+
+          version_file = Path(deployment_dir) / "image-versions.json"
+          if not version_file.is_file():
+              raise SystemExit(f"Version file not found: {version_file}")
+
+          payload = json.loads(version_file.read_text(encoding="utf-8"))
+          for env_name in [e.strip() for e in environments if e.strip()]:
+              target = payload.get(env_name)
+              if not isinstance(target, dict):
+                  raise SystemExit(f"Unknown environment in payload: {env_name}")
+              for _, image_name in images.items():
+                  if image_name not in target:
+                      raise SystemExit(
+                          f"Image key '{image_name}' not found in environment '{env_name}'"
+                      )
+                  target[image_name] = (
+                      f"{registry.rstrip('/')}/{namespace.strip('/')}/{image_name}:{version}"
+                  )
+
+          version_file.write_text(
+              json.dumps(payload, indent=2) + os.linesep, encoding="utf-8"
+          )
+          print(f"Updated {version_file} for {', '.join(e.strip() for e in environments if e.strip())}")
+          PY
+
+      - name: Generate manifests
+        if: inputs.generate_manifests == true
+        run: |
+          set -euo pipefail
+          cd "${{ inputs.deployment_dir }}"
+          if [ -n "${{ inputs.manifest_command }}" ]; then
+            echo "Running manifest command: ${{ inputs.manifest_command }}"
+            eval "${{ inputs.manifest_command }}"
+          else
+            if [ -f "./deploy.sh" ]; then
+              echo "Generating manifests via deploy.sh"
+              ./deploy.sh generate
+            elif [ -f "./Makefile" ]; then
+              echo "Generating manifests via Makefile"
+              make generate-manifests || true
+            else
+              echo "No manifest generation command configured."
+            fi
+          fi
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if git diff --quiet; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No manifest/pin changes to commit."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Changes detected:"
+            git status --short
+          fi
+
+      - name: Commit and push changes
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add "${{ inputs.deployment_dir }}/image-versions.json"
+          git add "${{ inputs.deployment_dir }}/generated/" 2>/dev/null || true
+          git add "${{ inputs.deployment_dir }}/k8s/" 2>/dev/null || true
+          git commit -m "chore(deploy): update image pins to ${{ inputs.version }} [skip ci]"
+          git push
+
+      - name: Summary
+        run: |
+          echo "## Deployment Manifest Update" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version:** ${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Deployment dir:** ${{ inputs.deployment_dir }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Environment(s):** ${{ inputs.environment }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Changes committed:** ${{ steps.changes.outputs.has_changes }}" >> "$GITHUB_STEP_SUMMARY"

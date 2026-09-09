@@ -65,7 +65,7 @@ jobs:
           context: cml-memoryhive-backend
           target: production
           push: false
-          tags: ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:ci
+          tags: docker.io/maheshk172/cml-memoryhive-backend:ci
           cache-from: type=gha,scope=cml-memoryhive-backend
           cache-to: type=gha,mode=max,scope=cml-memoryhive-backend
       - uses: docker/build-push-action@v6
@@ -73,7 +73,7 @@ jobs:
           context: cml-memoryhive-frontend
           target: production
           push: false
-          tags: ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:ci
+          tags: docker.io/maheshk172/cml-memoryhive-frontend:ci
           build-args: |
             VITE_API_URL=/api/v1
             VITE_SUPPORT_EMAIL=support@memoryhive.example.com

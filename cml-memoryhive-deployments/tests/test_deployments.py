@@ -512,8 +512,8 @@ class RenderTests(unittest.TestCase):
 class PromotionTests(unittest.TestCase):
     def setUp(self) -> None:
         self.pins = json.loads((DEPLOYMENTS / "image-versions.json").read_text())
-        immutable_backend = "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v2.0.0-abcdef0"
-        immutable_frontend = "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:v2.0.0-abcdef0"
+        immutable_backend = "docker.io/maheshk172/cml-memoryhive-backend:v2.0.0-abcdef0"
+        immutable_frontend = "docker.io/maheshk172/cml-memoryhive-frontend:v2.0.0-abcdef0"
         self.manifest = {
             "app": "cml-memoryhive",
             "runtime": {
@@ -539,14 +539,14 @@ class PromotionTests(unittest.TestCase):
     def test_rejects_floating_tags(self) -> None:
         self.manifest["runtime"][
             "cml-memoryhive-backend"
-        ] = "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:latest"
+        ] = "docker.io/maheshk172/cml-memoryhive-backend:latest"
         with self.assertRaises(ValueError):
             promotions.promote("staging", self.pins, self.manifest)
 
     def test_rejects_all_zero_placeholder_sha(self) -> None:
         self.manifest["runtime"][
             "cml-memoryhive-backend"
-        ] = "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+        ] = "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
         with self.assertRaises(ValueError):
             promotions.promote("staging", self.pins, self.manifest)
 

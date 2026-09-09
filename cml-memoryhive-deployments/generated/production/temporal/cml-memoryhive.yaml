@@ -465,7 +465,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-backend"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:
@@ -516,7 +516,7 @@ spec:
             periodSeconds: 30
       initContainers:
         - name: "migrate"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           command:
             - "uv"
@@ -556,7 +556,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-worker"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:
@@ -614,7 +614,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-temporal-worker"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:
@@ -672,7 +672,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-temporal-scheduler"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:
@@ -748,7 +748,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-frontend"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-frontend:v0.0.0-0000000"
           imagePullPolicy: "IfNotPresent"
           envFrom:
             - configMapRef:

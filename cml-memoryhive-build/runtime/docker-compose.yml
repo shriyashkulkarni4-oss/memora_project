@@ -91,7 +91,7 @@
     },
     "cml-memoryhive-backend": {
       "container_name": "cml-memoryhive-backend",
-      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
+      "image": "docker.io/maheshk172/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",
@@ -173,7 +173,7 @@
     },
     "cml-memoryhive-worker": {
       "container_name": "cml-memoryhive-worker",
-      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
+      "image": "docker.io/maheshk172/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",
@@ -248,7 +248,7 @@
     },
     "cml-memoryhive-frontend": {
       "container_name": "cml-memoryhive-frontend",
-      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:local",
+      "image": "docker.io/maheshk172/cml-memoryhive-frontend:local",
       "build": {
         "context": "../../cml-memoryhive-frontend",
         "dockerfile": "Dockerfile",
@@ -297,7 +297,7 @@
     },
     "migrate": {
       "container_name": "cml-memoryhive-migrate",
-      "image": "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:local",
+      "image": "docker.io/maheshk172/cml-memoryhive-backend:local",
       "build": {
         "context": "../../cml-memoryhive-backend",
         "dockerfile": "Dockerfile",

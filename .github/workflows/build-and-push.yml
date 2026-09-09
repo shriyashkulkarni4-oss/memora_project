@@ -1,0 +1,174 @@
+name: Build & Push Memoryhive Images
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      services:
+        description: 'Services to build (comma-separated, leave empty for all)'
+        required: false
+        type: string
+      platforms:
+        description: 'Target platforms'
+        required: false
+        default: 'linux/amd64,linux/arm64'
+        type: string
+
+env:
+  DOCKER_REGISTRY: docker.io
+  DOCKER_NAMESPACE: maheshk172
+  PLATFORMS: ${{ inputs.platforms || 'linux/amd64,linux/arm64' }}
+
+jobs:
+  prepare:
+    name: Prepare Build Matrix
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.set-matrix.outputs.services }}
+      version: ${{ steps.set-version.outputs.version }}
+      tag: ${{ steps.set-version.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build matrix
+        id: set-matrix
+        run: |
+          if [ -n "${{ inputs.services }}" ]; then
+            SERVICES=$(echo "${{ inputs.services }}" | jq -R -s -c 'split(",") | map(gsub("^\\s+|\\s+$";""))')
+          else
+            SERVICES='["cml-memoryhive-backend", "cml-memoryhive-frontend"]'
+          fi
+          echo "services=$SERVICES" >> "$GITHUB_OUTPUT"
+          echo "Services to build: $SERVICES"
+
+      - name: Generate version tag
+        id: set-version
+        run: |
+          BASE_VERSION=$(date +%Y.%m.%d-%H%M)
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          TAG="${BASE_VERSION}-${COMMIT_SHA}"
+
+          echo "version=$BASE_VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Generated tag: $TAG"
+
+  build-and-push:
+    name: Build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.prepare.outputs.services) }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Determine build config
+        id: build-config
+        run: |
+          SERVICE="${{ matrix.service }}"
+          SUPPORT_EMAIL="${{ vars.VITE_SUPPORT_EMAIL }}"
+          if [ -z "$SUPPORT_EMAIL" ]; then
+            SUPPORT_EMAIL='support@memoryhive.example.com'
+          fi
+
+          if [ "$SERVICE" = "cml-memoryhive-backend" ]; then
+            echo "context=./cml-memoryhive-backend" >> "$GITHUB_OUTPUT"
+            echo "file=./cml-memoryhive-backend/Dockerfile" >> "$GITHUB_OUTPUT"
+            echo "build_args=" >> "$GITHUB_OUTPUT"
+          elif [ "$SERVICE" = "cml-memoryhive-frontend" ]; then
+            echo "context=./cml-memoryhive-frontend" >> "$GITHUB_OUTPUT"
+            echo "file=./cml-memoryhive-frontend/Dockerfile" >> "$GITHUB_OUTPUT"
+            echo "build_args<<EOF" >> "$GITHUB_OUTPUT"
+            echo "VITE_API_URL=/api/v1" >> "$GITHUB_OUTPUT"
+            echo "VITE_SUPPORT_EMAIL=$SUPPORT_EMAIL" >> "$GITHUB_OUTPUT"
+            echo "EOF" >> "$GITHUB_OUTPUT"
+          else
+            echo "Unknown service: $SERVICE" >&2
+            exit 1
+          fi
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}/${{ matrix.service }}
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.tag }}
+            type=raw,value=latest
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ steps.build-config.outputs.context }}
+          file: ${{ steps.build-config.outputs.file }}
+          target: production
+          platforms: ${{ env.PLATFORMS }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
+          build-args: |
+            ${{ steps.build-config.outputs.build_args }}
+
+      - name: Image digest
+        run: echo "Image built and pushed with digest ${{ steps.meta.outputs.json }}"
+
+  update-deployment-manifests:
+    name: Update Deployment Manifests
+    needs: [prepare, build-and-push]
+    uses: ./.github/workflows/update-deployment-manifests.yml
+    permissions:
+      contents: write
+    with:
+      version: ${{ needs.prepare.outputs.tag }}
+      deployment_dir: 'cml-memoryhive-deployments'
+      environment: 'staging'
+      registry: 'docker.io'
+      namespace: 'maheshk172'
+      images: >
+        {"backend":"cml-memoryhive-backend","worker":"cml-memoryhive-worker","temporal-worker":"cml-memoryhive-temporal-worker","temporal-scheduler":"cml-memoryhive-temporal-scheduler","frontend":"cml-memoryhive-frontend"}
+      generate_manifests: true
+      manifest_command: |
+        for profile in infra app-only full temporal; do
+          uv run python cml-memoryhive-deployments/scripts/manage.py generate staging "$profile"
+          uv run python cml-memoryhive-deployments/scripts/manage.py validate staging "$profile" --deployment-ready --kubectl-dry-run
+        done
+    secrets:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [prepare, build-and-push, update-deployment-manifests]
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Memoryhive Build & Push Summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Version**: ${{ needs.prepare.outputs.tag }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Registry**: ${{ env.DOCKER_REGISTRY }}/${{ env.DOCKER_NAMESPACE }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "**Platforms**: ${{ env.PLATFORMS }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Built Services" >> "$GITHUB_STEP_SUMMARY"
+          echo '${{ needs.prepare.outputs.services }}' | jq -r '.[] | "- " + .' >> "$GITHUB_STEP_SUMMARY"

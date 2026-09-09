@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "app": "cml-memoryhive",
-  "registry": "ghcr.io",
-  "registry_namespace": "coding-monkey-labs-client-projects",
+  "registry": "docker.io",
+  "registry_namespace": "maheshk172",
   "platforms": ["linux/amd64", "linux/arm64"],
   "images": [
     {

@@ -173,8 +173,8 @@ class BuildTests(unittest.TestCase):
         }
         local = build_images.build_command(
             image,
-            registry="ghcr.io",
-            namespace="coding-monkey-labs-client-projects",
+            registry="docker.io",
+            namespace="maheshk172",
             version="v1.2.3",
             sha="abcdef012345",
             platforms="linux/amd64,linux/arm64",
@@ -183,8 +183,8 @@ class BuildTests(unittest.TestCase):
         )
         pushed = build_images.build_command(
             image,
-            registry="ghcr.io",
-            namespace="coding-monkey-labs-client-projects",
+            registry="docker.io",
+            namespace="maheshk172",
             version="v1.2.3",
             sha="abcdef012345",
             platforms="linux/amd64,linux/arm64",
@@ -192,7 +192,7 @@ class BuildTests(unittest.TestCase):
             load=False,
         )
         self.assertIn(
-            "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v1.2.3-abcdef0",
+            "docker.io/maheshk172/cml-memoryhive-backend:v1.2.3-abcdef0",
             local,
         )
         self.assertEqual(local[-2:], ["linux/amd64", "--load"])
@@ -363,8 +363,7 @@ class BuildTests(unittest.TestCase):
         ):
             self.assertRegex(
                 production_example[key],
-                rf"^ghcr\.io/coding-monkey-labs-client-projects/"
-                rf"cml-memoryhive-{project}:v[^:]+-[0-9a-f]{{7}}$",
+                rf"^docker\.io/maheshk172/cml-memoryhive-{project}:v[^:]+-[0-9a-f]{{7}}$",
             )
 
 

@@ -176,7 +176,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-backend"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "Always"
           envFrom:
             - configMapRef:
@@ -227,7 +227,7 @@ spec:
             periodSeconds: 30
       initContainers:
         - name: "migrate"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "Always"
           command:
             - "uv"
@@ -267,7 +267,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-worker"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-backend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-backend:v0.0.0-0000000"
           imagePullPolicy: "Always"
           envFrom:
             - configMapRef:
@@ -343,7 +343,7 @@ spec:
       automountServiceAccountToken: false
       containers:
         - name: "cml-memoryhive-frontend"
-          image: "ghcr.io/coding-monkey-labs-client-projects/cml-memoryhive-frontend:v0.0.0-0000000"
+          image: "docker.io/maheshk172/cml-memoryhive-frontend:v0.0.0-0000000"
           imagePullPolicy: "Always"
           envFrom:
             - configMapRef:

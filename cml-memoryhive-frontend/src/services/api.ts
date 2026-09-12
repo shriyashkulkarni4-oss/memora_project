@@ -165,7 +165,7 @@ function upload<T>(endpoint: string, form: FormData, onProgress?: (percent: numb
         return;
       }
       type UploadBody = T & { detail?: string; error?: { message?: string; code?: string } };
-      let body: UploadBody | null = null;
+      let body: UploadBody | null;
       try {
         body = xhr.responseText ? JSON.parse(xhr.responseText) as UploadBody : null;
       } catch {

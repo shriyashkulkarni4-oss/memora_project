@@ -4,8 +4,8 @@
 
 ## Stack
 
-- Expo SDK 54, Expo Router, React Native, SecureStore, SQLite, NetInfo, FileSystem, Sharing, Vitest, and Playwright web preview.
-- Available scripts: `npm run android`, `npm run eas:build:preflight`, `npm run ios`, `npm run lint`, `npm run postinstall`, `npm run start`, `npm run store:assets`, `npm run store:check`, `npm run store:check:ci`, `npm run store:screenshots`, `npm run store:submission`, `npm run store:submission:check`, `npm run test`, `npm run test:e2e:web`, `npm run typecheck`, `npm run web`.
+- Expo SDK 57, Expo Router, React Native, SecureStore, SQLite, NetInfo, FileSystem, Sharing, Vitest, and Playwright web preview.
+- Available scripts: `npm run android`, `npm run eas:build:preflight`, `npm run export:web`, `npm run ios`, `npm run lint`, `npm run postinstall`, `npm run start`, `npm run store:assets`, `npm run store:check`, `npm run store:check:ci`, `npm run store:screenshots`, `npm run store:submission`, `npm run store:submission:check`, `npm run test`, `npm run test:e2e:web`, `npm run typecheck`, `npm run web`.
 
 ## Key Paths
 

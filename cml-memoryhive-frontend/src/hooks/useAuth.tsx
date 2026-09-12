@@ -13,29 +13,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+const demoUser: User = {
+  id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
+  email: 'mahesh@example.com',
+  name: 'Mahesh',
+  role: 'admin',
+  is_active: true,
+  created_at: '2026-08-01T00:00:00Z',
+  updated_at: '2026-08-01T00:00:00Z',
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(() => demoMode ? demoUser : null);
+  const [isLoading, setIsLoading] = useState(() => !demoMode && hasSession());
 
   useEffect(() => {
     const expire = () => setUser(null);
     window.addEventListener('memoryhive:session-expired', expire);
-    if (demoMode) {
-      setUser({
-        id: '01a4dc43-39a8-4f09-b2f1-71a0a8b0fbde',
-        email: 'mahesh@example.com',
-        name: 'Mahesh',
-        role: 'admin',
-        is_active: true,
-        created_at: '2026-08-01T00:00:00Z',
-        updated_at: '2026-08-01T00:00:00Z',
-      });
-      setIsLoading(false);
-    } else if (hasSession()) {
+    if (!demoMode && hasSession()) {
       authApi.restore().then(setUser).catch(() => setUser(null)).finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
     }
     return () => window.removeEventListener('memoryhive:session-expired', expire);
   }, []);

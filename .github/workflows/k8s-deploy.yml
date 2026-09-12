@@ -29,14 +29,14 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with: { version: "0.12.13", python-version: "3.14", enable-cache: true }
       - run: uv sync --locked
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
       - run: uv run python -m py_compile cml-memoryhive-deployments/scripts/manage.py
       - run: uv run python cml-memoryhive-deployments/scripts/manage.py --output /tmp/cml-memoryhive-k8s validate ${{ inputs.environment }} ${{ inputs.profile }} --kubectl-dry-run
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: cml-memoryhive-k8s-${{ inputs.environment }}-${{ inputs.profile }}
           path: /tmp/cml-memoryhive-k8s/${{ inputs.environment }}/${{ inputs.profile }}/cml-memoryhive.yaml
@@ -47,11 +47,11 @@ jobs:
     needs: render
     environment: ${{ inputs.environment }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
-        with: { version: "0.7.2", python-version: "3.12", enable-cache: true }
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with: { version: "0.12.13", python-version: "3.14", enable-cache: true }
       - run: uv sync --locked
-      - uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v5
       - name: Configure kubeconfig
         run: |
           mkdir -p "$HOME/.kube"

@@ -38,7 +38,7 @@
       "port": 5432,
       "host_port_env": "POSTGRES_PORT",
       "host_port": 5432,
-      "image": "postgres:15-alpine",
+      "image": "postgres:15.19-alpine",
       "kubernetes": {"kind": "statefulset", "name": "db"},
       "health": {"type": "tcp"},
       "depends_on": []
@@ -49,7 +49,7 @@
       "port": 6379,
       "host_port_env": "REDIS_PORT",
       "host_port": 6379,
-      "image": "redis:7-alpine",
+      "image": "redis:7.4.11-alpine",
       "kubernetes": {"kind": "deployment", "name": "redis"},
       "health": {"type": "tcp"},
       "depends_on": []
@@ -68,7 +68,7 @@
           "host_port": 9001
         }
       ],
-      "image": "minio/minio:latest",
+      "image": "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z",
       "kubernetes": {"kind": "statefulset", "name": "minio"},
       "health": {"type": "http", "path": "/minio/health/ready"},
       "depends_on": []
@@ -77,7 +77,7 @@
       "key": "temporal-db",
       "kind": "infra",
       "port": 5432,
-      "image": "postgres:15-alpine",
+      "image": "postgres:15.19-alpine",
       "health": {"type": "process"},
       "depends_on": []
     },
@@ -87,7 +87,7 @@
       "port": 7233,
       "host_port_env": "TEMPORAL_PORT",
       "host_port": 7233,
-      "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-latest}",
+      "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-1.29.7}",
       "health": {"type": "tcp"},
       "depends_on": ["temporal-db"]
     },
@@ -97,7 +97,7 @@
       "port": 8080,
       "host_port_env": "TEMPORAL_UI_PORT",
       "host_port": 8088,
-      "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-latest}",
+      "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-2.54.1}",
       "health": {"type": "http", "path": "/"},
       "depends_on": ["temporal"]
     },

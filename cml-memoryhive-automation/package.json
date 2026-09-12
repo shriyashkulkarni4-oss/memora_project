@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "doctor": "node scripts/run.mjs --doctor",
     "seed": "node scripts/run.mjs --seed-only",

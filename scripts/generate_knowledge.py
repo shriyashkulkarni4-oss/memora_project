@@ -161,7 +161,7 @@ def docs() -> list[KnowledgeDoc]:
                 (
                     "Stack",
                     [
-                        "Expo SDK 54, Expo Router, React Native, SecureStore, SQLite, NetInfo, FileSystem, Sharing, Vitest, and Playwright web preview.",
+                        "Expo SDK 57, Expo Router, React Native, SecureStore, SQLite, NetInfo, FileSystem, Sharing, Vitest, and Playwright web preview.",
                         f"Available scripts: {mobile_scripts}.",
                     ],
                 ),

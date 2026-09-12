@@ -1,6 +1,6 @@
 import NetInfo from "@react-native-community/netinfo";
 import { router } from "expo-router";
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { createContext, use, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { View } from "react-native";
 
 import { accountApi, authApi, categoriesApi, syncApi, tagsApi } from "./api";
@@ -61,7 +61,7 @@ export function AppStateProvider({ children }: React.PropsWithChildren) {
   const [tags, setTags] = useState<ManagedTag[]>([]);
   const [syncState, setSyncState] = useState<SyncState>("idle");
   const [syncMessage, setSyncMessage] = useState("Up to date");
-  const lastActivity = useRef(Date.now());
+  const lastActivity = useRef<number | null>(null);
 
   const markActive = useCallback(() => {
     lastActivity.current = Date.now();
@@ -152,7 +152,9 @@ export function AppStateProvider({ children }: React.PropsWithChildren) {
 
   useEffect(() => {
     if (!user) return undefined;
+    lastActivity.current = Date.now();
     const timer = setInterval(() => {
+      if (lastActivity.current === null) return;
       const idleFor = Date.now() - lastActivity.current;
       if (idleFor >= IDLE_LOGOUT_MS) {
         void forceLogout("Signed out after 10 minutes of inactivity.");
@@ -267,16 +269,16 @@ export function AppStateProvider({ children }: React.PropsWithChildren) {
   ]);
 
   return (
-    <AppContext.Provider value={value}>
+    <AppContext value={value}>
       <View onTouchStart={markActive} style={{ flex: 1 }}>
         {children}
       </View>
-    </AppContext.Provider>
+    </AppContext>
   );
 }
 
 export function useAppState() {
-  const value = useContext(AppContext);
+  const value = use(AppContext);
   if (!value) throw new Error("useAppState must be used within AppStateProvider");
   return value;
 }

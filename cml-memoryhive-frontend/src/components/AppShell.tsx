@@ -63,15 +63,17 @@ export default function AppShell() {
     return () => window.removeEventListener('memoryhive:session-expired', onExpired);
   }, [signOut]);
 
-  const lastActivity = useRef(Date.now());
+  const lastActivity = useRef<number | null>(null);
   useEffect(() => {
     if (!user) return undefined;
+    lastActivity.current = Date.now();
     const markActive = () => {
       lastActivity.current = Date.now();
     };
     const events = ['pointerdown', 'keydown', 'touchstart', 'scroll'];
     events.forEach((event) => window.addEventListener(event, markActive, { passive: true }));
     const timer = window.setInterval(() => {
+      if (lastActivity.current === null) return;
       const idleFor = Date.now() - lastActivity.current;
       if (idleFor >= IDLE_LOGOUT_MS) {
         void signOut('Signed out after 10 minutes of inactivity.', true);

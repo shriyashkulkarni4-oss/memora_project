@@ -1,9 +1,10 @@
-FROM python:3.12-slim AS base
+FROM python:3.14-slim AS base
 
-COPY --from=ghcr.io/astral-sh/uv:0.7.2 /uv /uvx /bin/
+COPY --from=ghcr.io/astral-sh/uv:0.12.13 /uv /uvx /bin/
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
+    UV_NO_CACHE=1 \
     UV_PROJECT_ENVIRONMENT=/opt/venv \
     PATH="/opt/venv/bin:$PATH"
 
@@ -19,6 +20,7 @@ RUN uv sync --frozen --no-dev --no-install-project
 RUN useradd --create-home --uid 10001 appuser
 COPY --chown=appuser:appuser . .
 RUN uv sync --frozen --no-dev
+RUN /usr/local/bin/python -m pip uninstall --yes pip
 
 USER appuser
 

@@ -26,7 +26,7 @@ runtime-local:
 	$(MAKE) -C cml-memoryhive-build local PROFILE=$(PROFILE)
 
 health-local:
-	$(MAKE) -C cml-memoryhive-build health-local PROFILE=$(PROFILE)
+	$(MAKE) -C cml-memoryhive-build health PROFILE=$(PROFILE)
 
 k8s-generate:
 	$(MAKE) -C cml-memoryhive-deployments generate ENV=$(K8S_ENV) PROFILE=$(K8S_PROFILE)

@@ -3,7 +3,7 @@
   "services": {
     "db": {
       "container_name": "cml-memoryhive-db",
-      "image": "postgres:15-alpine",
+      "image": "postgres:15.19-alpine",
       "environment": {
         "POSTGRES_USER": "${POSTGRES_USER:-memoryhive}",
         "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:-memoryhive123}",
@@ -28,7 +28,7 @@
     },
     "redis": {
       "container_name": "cml-memoryhive-redis",
-      "image": "redis:7-alpine",
+      "image": "redis:7.4.11-alpine",
       "command": [
         "redis-server",
         "--save",
@@ -57,7 +57,7 @@
     },
     "minio": {
       "container_name": "cml-memoryhive-minio",
-      "image": "minio/minio:latest",
+      "image": "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z",
       "command": [
         "server",
         "/data",
@@ -91,7 +91,7 @@
     },
     "temporal-db": {
       "container_name": "cml-memoryhive-temporal-db",
-      "image": "postgres:15-alpine",
+      "image": "postgres:15.19-alpine",
       "environment": {
         "POSTGRES_USER": "temporal",
         "POSTGRES_PASSWORD": "temporal"
@@ -112,7 +112,7 @@
     },
     "temporal": {
       "container_name": "cml-memoryhive-temporal",
-      "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-latest}",
+      "image": "temporalio/auto-setup:${TEMPORAL_VERSION:-1.29.7}",
       "environment": {
         "DB": "postgres12",
         "DB_PORT": "5432",
@@ -136,7 +136,7 @@
     },
     "temporal-ui": {
       "container_name": "cml-memoryhive-temporal-ui",
-      "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-latest}",
+      "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-2.54.1}",
       "environment": {
         "TEMPORAL_ADDRESS": "temporal:7233",
         "TEMPORAL_CORS_ORIGINS": "http://localhost:${FRONTEND_PORT:-3000}"

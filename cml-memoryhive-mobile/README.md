@@ -4,6 +4,8 @@ Offline-first Expo client for the canonical Memoryhive `/api/v1` service.
 
 ## Local development
 
+Use Node.js 22.13 or newer with Expo SDK 57.
+
 ```bash
 npm ci
 npm start
@@ -74,6 +76,7 @@ connection because they use the canonical backend account endpoints.
 npm run typecheck
 npm run lint
 npm test
+npm run export:web
 npm run test:e2e:web
 npm run eas:build:preflight
 npm run store:assets

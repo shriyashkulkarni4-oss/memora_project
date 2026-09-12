@@ -2,26 +2,27 @@
 name = "cml-memoryhive-backend"
 version = "0.1.0"
 description = "Memoryhive API backend for personal capture and recall"
+readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "alembic==1.19.1",
+    "alembic==1.20.0",
     "asyncpg==0.31.0",
-    "bcrypt==4.3.0",
-    "boto3==1.43.87",
+    "bcrypt==5.0.0",
+    "boto3==1.43.93",
     "email-validator==2.3.0",
     "fastapi==0.141.1",
-    "greenlet==3.3.2",
+    "greenlet==3.5.5",
     "httpx==0.28.1",
     "langdetect==1.0.9",
     "Pillow==12.3.0",
-    "prometheus-client==0.23.1",
+    "prometheus-client==0.26.0",
     "pydantic==2.13.5",
     "pydantic-settings==2.15.0",
     "python-dotenv==1.2.3",
-    "python-jose[cryptography]==3.5.0",
+    "PyJWT[crypto]==2.14.0",
     "python-multipart==0.0.32",
     "pytesseract==0.3.13",
-    "redis==7.1.1",
+    "redis==8.1.0",
     "sqlalchemy[asyncio]==2.0.52",
     "temporalio==1.32.0",
     "uvicorn[standard]==0.52.4",
@@ -30,11 +31,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "aiosqlite==0.22.1",
-    "black==25.12.0",
+    "black==26.5.1",
     "httpx==0.28.1",
-    "pytest==8.4.2",
+    "pytest==9.1.1",
     "pytest-asyncio==1.4.0",
-    "ruff==0.16.6",
+    "ruff==0.16.7",
 ]
 
 [build-system]

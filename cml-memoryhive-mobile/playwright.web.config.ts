@@ -16,9 +16,9 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: `EXPO_PUBLIC_API_URL=${apiUrl} npx expo start --web --port 8083`,
+    command: `EXPO_PUBLIC_API_URL=${apiUrl} npm run export:web && npx serve dist --listen 8083 --no-clipboard`,
     url: "http://127.0.0.1:8083",
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
 });

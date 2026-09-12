@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
+from jwt import InvalidTokenError
 
 from app.config import get_settings
 
@@ -84,7 +85,7 @@ def decode_access_token(token: str) -> dict[str, Any] | None:
             return None
 
         return payload
-    except JWTError:
+    except InvalidTokenError:
         return None
 
 

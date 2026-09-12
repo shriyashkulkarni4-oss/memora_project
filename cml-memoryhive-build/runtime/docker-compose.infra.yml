@@ -3,7 +3,7 @@
   "services": {
     "db": {
       "container_name": "cml-memoryhive-db",
-      "image": "postgres:15-alpine",
+      "image": "postgres:15.19-alpine",
       "environment": {
         "POSTGRES_USER": "${POSTGRES_USER:-memoryhive}",
         "POSTGRES_PASSWORD": "${POSTGRES_PASSWORD:-memoryhive123}",
@@ -28,7 +28,7 @@
     },
     "redis": {
       "container_name": "cml-memoryhive-redis",
-      "image": "redis:7-alpine",
+      "image": "redis:7.4.11-alpine",
       "command": [
         "redis-server",
         "--save",
@@ -57,7 +57,7 @@
     },
     "minio": {
       "container_name": "cml-memoryhive-minio",
-      "image": "minio/minio:latest",
+      "image": "quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z",
       "command": [
         "server",
         "/data",

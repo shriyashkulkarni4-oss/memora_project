@@ -22,14 +22,6 @@ export default function ItemDetail() {
   const [pendingTagInput, setPendingTagInput] = useState("");
   const pressInSave = useRef(false);
   useEffect(() => { void get(id).then(setItem); }, [get, id]);
-  useEffect(() => {
-    if (!item || editing) return;
-    setTitle(item.title ?? "");
-    setNotes(item.notes ?? "");
-    setCategoryId(item.category_id);
-    setTags(item.tags.map((tag) => tag.name));
-    setPendingTagInput("");
-  }, [editing, item]);
   const processingActive = Boolean(item && ["pending", "processing"].includes(item.processing_status));
   useEffect(() => {
     if (!processingActive) return;
@@ -63,6 +55,19 @@ export default function ItemDetail() {
   }
 
   const category = categories.find((candidate) => candidate.id === item.category_id);
+
+  function toggleEditing() {
+    if (editing) {
+      setEditing(false);
+      return;
+    }
+    setTitle(item?.title ?? "");
+    setNotes(item?.notes ?? "");
+    setCategoryId(item?.category_id ?? null);
+    setTags(item?.tags.map((tag) => tag.name) ?? []);
+    setPendingTagInput("");
+    setEditing(true);
+  }
 
   function saveFromPressIn() {
     pressInSave.current = true;
@@ -116,7 +121,7 @@ export default function ItemDetail() {
         <Pressable accessibilityLabel={item.is_favorite ? "Remove favorite" : "Add favorite"} onPress={confirmFavorite} style={styles.iconButton}><Ionicons color={item.is_favorite ? colors.warning : colors.textMuted} name={item.is_favorite ? "star" : "star-outline"} size={23} /></Pressable>
       </View>
       <View style={styles.actions}>
-        <PrimaryButton icon="create-outline" label={editing ? "Cancel edit" : "Edit item"} onPress={() => setEditing((value) => !value)} />
+        <PrimaryButton icon="create-outline" label={editing ? "Cancel edit" : "Edit item"} onPress={toggleEditing} />
         <PrimaryButton icon={item.is_archived ? "return-up-back-outline" : "archive-outline"} label={item.is_archived ? "Restore item" : "Archive item"} onPress={confirmArchive} />
       </View>
       {editing ? (

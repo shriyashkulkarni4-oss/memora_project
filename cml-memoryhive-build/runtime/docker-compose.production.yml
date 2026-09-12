@@ -31,7 +31,7 @@ x-backend-environment: &backend-environment
 
 services:
   db:
-    image: postgres:15-alpine
+    image: postgres:15.19-alpine
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
@@ -47,7 +47,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.11-alpine
     command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
     volumes:
       - redisdata:/data
@@ -60,7 +60,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   minio:
-    image: minio/minio:latest
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:?Set MINIO_ROOT_USER}
@@ -164,7 +164,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   caddy:
-    image: caddy:2-alpine
+    image: caddy:2.11.4-alpine
     environment:
       APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
       ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL}
@@ -182,7 +182,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   prometheus:
-    image: prom/prometheus:v3.5.0
+    image: prom/prometheus:v3.14.0
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=15d

@@ -140,7 +140,10 @@ export default function AdminPage() {
     }
   }, [demoDashboard, demoProcessingJobs, user]);
 
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const confirmAction = async () => {
     if (!action) return;

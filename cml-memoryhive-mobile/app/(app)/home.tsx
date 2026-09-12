@@ -35,10 +35,13 @@ export default function Home() {
 
   useEffect(() => { void refresh("", true); }, [refresh]);
   useEffect(() => {
-    if (params.tag) setTags((current) => uniqueTags([...current, params.tag!]));
-    if (params.category) setCategoryId(params.category);
-    if (params.summary && params.summary in summaryLabels) setSummary(params.summary);
-    if (params.type) setType(params.type);
+    const timer = setTimeout(() => {
+      if (params.tag) setTags((current) => uniqueTags([...current, params.tag!]));
+      if (params.category) setCategoryId(params.category);
+      if (params.summary && params.summary in summaryLabels) setSummary(params.summary);
+      if (params.type) setType(params.type);
+    }, 0);
+    return () => clearTimeout(timer);
   }, [params.category, params.summary, params.tag, params.type]);
 
   const visibleItems = useMemo(() => filterItems(items, { summary, type, categoryId, tags }), [categoryId, items, summary, tags, type]);

@@ -28,8 +28,8 @@ jobs:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       EAS_PLATFORM: ${{ inputs.platform }}
     steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-node@v6
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
@@ -39,16 +39,16 @@ jobs:
       - run: npm run store:submission:check
       - run: npm run store:check:ci
       - name: Set up Expo and EAS
-        uses: expo/expo-github-action@v8
+        uses: expo/expo-github-action@v9
         with:
-          eas-version: latest
+          eas-version: 24.3.0
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Queue production build
         run: |
           set -o pipefail
           eas build --platform "$EAS_PLATFORM" --profile production --non-interactive --no-wait --freeze-credentials --json --message "GitHub Actions ${GITHUB_SHA}" | tee builds/eas-build-request.json
       - name: Upload EAS build request
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: cml-memoryhive-eas-${{ inputs.platform }}-${{ github.run_number }}
           path: cml-memoryhive-mobile/builds/eas-build-request.json

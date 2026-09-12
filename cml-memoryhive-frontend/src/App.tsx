@@ -1,3 +1,4 @@
+import type { ReactElement } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import AccountDeletionPage from './components/AccountDeletionPage';
 import AdminPage from './components/AdminPage';
@@ -19,7 +20,7 @@ function LoadingScreen() {
   );
 }
 
-function RequireAuth({ children }: { children: JSX.Element }) {
+function RequireAuth({ children }: { children: ReactElement }) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
   if (isLoading) return <LoadingScreen />;
@@ -27,7 +28,7 @@ function RequireAuth({ children }: { children: JSX.Element }) {
   return children;
 }
 
-function PublicRoute({ children }: { children: JSX.Element }) {
+function PublicRoute({ children }: { children: ReactElement }) {
   const { isAuthenticated, isLoading } = useAuth();
   if (isLoading) return <LoadingScreen />;
   if (isAuthenticated) return <Navigate to="/" replace />;

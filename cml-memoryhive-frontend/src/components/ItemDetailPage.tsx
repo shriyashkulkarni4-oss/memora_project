@@ -30,22 +30,14 @@ export default function ItemDetailPage() {
   const store = useLibraryStore();
   const item = store.items.find((record) => record.id === id);
   const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(item?.title ?? '');
-  const [notes, setNotes] = useState(item?.notes ?? '');
-  const [categoryId, setCategoryId] = useState(item?.category_id ?? '');
-  const [tagNames, setTagNames] = useState(item?.tags.map((tag) => tag.name) ?? []);
+  const [title, setTitle] = useState('');
+  const [notes, setNotes] = useState('');
+  const [categoryId, setCategoryId] = useState('');
+  const [tagNames, setTagNames] = useState<string[]>([]);
   const [confirmation, setConfirmation] = useState<DetailConfirmation>(null);
   const [busy, setBusy] = useState(false);
   const initialize = store.initialize;
   const processingActive = Boolean(item && ['pending', 'processing'].includes(item.processing_status));
-
-  useEffect(() => {
-    if (!item || editing) return;
-    setTitle(item.title ?? '');
-    setNotes(item.notes ?? '');
-    setCategoryId(item.category_id ?? '');
-    setTagNames(item.tags.map((tag) => tag.name));
-  }, [editing, item]);
 
   useEffect(() => {
     if (!processingActive) return;
@@ -69,6 +61,14 @@ export default function ItemDetailPage() {
   const TypeIcon = icons[item.type];
   const category = store.categories.find((record) => record.id === item.category_id);
   const previewUrl = item.metadata?.preview_url as string | undefined;
+
+  const beginEditing = () => {
+    setTitle(item.title ?? '');
+    setNotes(item.notes ?? '');
+    setCategoryId(item.category_id ?? '');
+    setTagNames(item.tags.map((tag) => tag.name));
+    setEditing(true);
+  };
 
   const save = async (event: FormEvent) => {
     event.preventDefault();
@@ -126,7 +126,7 @@ export default function ItemDetailPage() {
           >
             <Star size={19} fill={item.is_favorite ? 'currentColor' : 'none'} />
           </button>
-          <button className="button secondary" type="button" onClick={() => setEditing(true)}>
+          <button className="button secondary" type="button" onClick={beginEditing}>
             <Pencil size={17} /> Edit
           </button>
           {item.url && (

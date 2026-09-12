@@ -35,22 +35,25 @@ export default function Capture() {
 
   useEffect(() => {
     if (!hasShareIntent) return;
-    const file = shareIntent.files?.find((candidate) => candidate.mimeType?.startsWith("image/"));
-    if (file) {
-      setType("screenshot");
-      setImageUri(file.path);
-    } else if (shareIntent.webUrl) {
-      setType("link");
-      setContent(shareIntent.webUrl);
-    } else if (shareIntent.text) {
-      const value = shareIntent.text.trim();
-      if (/^https?:\/\//i.test(value)) {
+    const timer = setTimeout(() => {
+      const file = shareIntent.files?.find((candidate) => candidate.mimeType?.startsWith("image/"));
+      if (file) {
+        setType("screenshot");
+        setImageUri(file.path);
+      } else if (shareIntent.webUrl) {
         setType("link");
-      } else {
-        setType("text");
+        setContent(shareIntent.webUrl);
+      } else if (shareIntent.text) {
+        const value = shareIntent.text.trim();
+        if (/^https?:\/\//i.test(value)) {
+          setType("link");
+        } else {
+          setType("text");
+        }
+        setContent(value);
       }
-      setContent(value);
-    }
+    }, 0);
+    return () => clearTimeout(timer);
   }, [hasShareIntent, shareIntent]);
 
   async function selectImage() {

@@ -80,16 +80,57 @@ backend. Add `--temporal` to exercise the Temporal Compose profile.
 
 ## Demo data
 
-With the development stack running, seed four realistic demo libraries:
+`seed_data.py` is the canonical script for creating mock users and their demo
+libraries. It registers users through the public API, then creates their
+categories, tags, and 53 total items. It does not start the backend or apply
+database migrations, so the API must already report ready.
+
+For a fresh Docker setup, start the full stack (which also runs migrations) and
+then seed all personas:
+
+```bash
+cp .env.example .env
+make -C cml-memoryhive-build up PROFILE=full
+make -C cml-memoryhive-build seed PROFILE=full
+```
+
+The same seed step can be run directly from the repository root:
 
 ```bash
 uv run python seed_data.py
 ```
 
-The script creates software-engineer, graduate-student, e-commerce, and home
-lifestyle accounts. It is idempotent, so rerunning it does not duplicate items.
-Use `uv run python seed_data.py --help` to select one persona, target another API URL,
-or preview the data with `--dry-run`.
+All accounts use the development-only password `MemoryhiveDemo123!` unless
+`--password` is supplied.
+
+| Persona | Name | Email | Seeded items |
+| --- | --- | --- | ---: |
+| `engineer` | Aarav Mehta - Senior Software Engineer | `engineer@demo.memoryhive.app` | 12 |
+| `student` | Ananya Rao - Graduate Student | `student@demo.memoryhive.app` | 12 |
+| `commerce` | Rohan Kapoor - E-Commerce Manager | `commerce@demo.memoryhive.app` | 12 |
+| `home` | Priya Sharma - Home and Lifestyle Curator | `home@demo.memoryhive.app` | 17 |
+
+Seed one persona, use a different API, preview without writing, or choose a
+different password:
+
+```bash
+uv run python seed_data.py --persona engineer
+uv run python seed_data.py --base-url http://localhost:8000
+uv run python seed_data.py --dry-run
+uv run python seed_data.py --password 'another-development-password'
+```
+
+The script is idempotent for accounts created with the same password and uses
+deterministic item IDs, so rerunning it does not duplicate items. It does not
+reset an existing account's password; if a demo email already exists with a
+different password, pass that password with `--password` or remove/recreate the
+development account. On an empty development database, the first registered
+user is promoted to admin. Because the default order starts with `engineer`,
+that account becomes the initial admin when all personas are seeded.
+
+These credentials are mock development data only. Do not seed them into
+production or reuse the shared password for a store-review or real account. Run
+`uv run python seed_data.py --help` for the complete option list.
 
 ## Local development
 

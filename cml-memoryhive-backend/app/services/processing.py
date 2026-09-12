@@ -321,7 +321,10 @@ class ContentProcessor:
     async def enrich(
         self, document: ExtractedDocument, value: ExtractionInput
     ) -> EnrichmentResult:
-        if not document.extracted_text:
+        if (
+            not self.settings.ai_structured_enrichment_enabled
+            or not document.extracted_text
+        ):
             return EnrichmentResult()
         request = EnrichmentRequest(
             item_id=value.item_id,
@@ -342,6 +345,7 @@ class ContentProcessor:
                 filter(None, [value.ai_provider, *value.ai_fallbacks])
             ),
         )
+        provider_order: list[tuple[ProviderType, str | None]] = []
         if value.ai_provider:
             provider_order = [
                 (ProviderType(value.ai_provider), value.ai_model),
@@ -354,7 +358,7 @@ class ContentProcessor:
                     for provider, _separator, model in [route.partition(":")]
                 ),
             ]
-        else:
+        elif not value.ai_policy_resolved:
             policy = resolve_task_policy(
                 self.settings, self.ai_gateway, AITask.ENRICHMENT
             )
@@ -501,11 +505,35 @@ class ContentProcessor:
 
 
 def processing_input(item: Item, job: ProcessingJob | None = None) -> ProcessingInput:
-    fallbacks = []
+    selected_provider = job.ai_provider if job else None
+    selected_model = job.ai_model if job else None
+    fallbacks: list[str] = []
     if job and isinstance(job.ai_policy, dict):
-        for route in job.ai_policy.get("fallbacks", []):
-            if isinstance(route, dict) and isinstance(route.get("provider"), str):
-                fallbacks.append(f"{route['provider']}:{route.get('model') or ''}")
+        routes = [job.ai_policy.get("primary"), *job.ai_policy.get("fallbacks", [])]
+        allowed_routes = [
+            route
+            for route in routes
+            if isinstance(route, dict)
+            and isinstance(route.get("provider"), str)
+            and (
+                getattr(item, "_external_ai_allowed", False)
+                or not route.get("external", False)
+            )
+        ]
+        if allowed_routes:
+            selected_provider = str(allowed_routes[0]["provider"])
+            selected_model = (
+                str(allowed_routes[0]["model"])
+                if allowed_routes[0].get("model")
+                else None
+            )
+            fallbacks = [
+                f"{route['provider']}:{route.get('model') or ''}"
+                for route in allowed_routes[1:]
+            ]
+        else:
+            selected_provider = None
+            selected_model = None
     return ProcessingInput(
         item_id=item.id,
         item_type=ItemType(item.type),
@@ -514,12 +542,13 @@ def processing_input(item: Item, job: ProcessingJob | None = None) -> Processing
         raw_text=item.raw_text,
         notes=item.notes,
         user_id=item.user_id,
-        ai_provider=job.ai_provider if job else None,
-        ai_model=job.ai_model if job else None,
+        ai_provider=selected_provider,
+        ai_model=selected_model,
         ai_fallbacks=fallbacks,
         existing_tags=getattr(item, "_existing_tag_names", ()),
         analysis_job_id=job.id if job else None,
         workflow_id=job.temporal_workflow_id if job else None,
         correlation_id=job.correlation_id if job else None,
+        ai_policy_resolved=job is not None,
         analysis_version=item.analysis_version,
     )

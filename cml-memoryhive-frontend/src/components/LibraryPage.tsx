@@ -13,7 +13,9 @@ import { useSearchParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
 import type { Item, ItemType } from '../types/api';
 import FilterPills, { type FilterPill } from './FilterPills';
+import GroundedRecallPanel from './GroundedRecallPanel';
 import ItemCard from './ItemCard';
+import ResurfacingPanel from './ResurfacingPanel';
 
 type LibraryMode = 'library' | 'favorites' | 'archive';
 type SummaryFilter = 'saved' | 'favorites' | 'processing' | 'archived';
@@ -174,6 +176,8 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
           Capture
         </button>
       </header>
+      {mode === 'library' ? <GroundedRecallPanel /> : null}
+      {mode === 'library' ? <ResurfacingPanel /> : null}
 
       {mode === 'library' && (
         <div className="library-summary" aria-label="Library summary">

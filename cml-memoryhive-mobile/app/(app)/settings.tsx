@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, Text, View } from "react-native";
 
 import { API_URL, PRIVACY_POLICY_URL, SUPPORT_URL } from "@/src/api";
 import { useAppState } from "@/src/app-state";
@@ -9,7 +9,7 @@ import { SyncIndicator } from "@/src/sync-indicator";
 import { colors } from "@/src/theme";
 
 export default function Settings() {
-  const { changePassword, deleteAccount, exportAccount, logout, sync, user } = useAppState();
+  const { changePassword, deleteAccount, exportAccount, logout, setExternalAIProcessing, sync, user } = useAppState();
   const [loading, setLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [passwordOpen, setPasswordOpen] = useState(false);
@@ -139,6 +139,11 @@ export default function Settings() {
       </View>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Data and privacy</Text>
+        <View style={styles.actionRow}>
+          <Ionicons color={colors.primary} name="shield-checkmark-outline" size={21} />
+          <View style={styles.grow}><Text style={styles.actionTitle}>External AI processing</Text><Text style={styles.secondary}>Off by default. When off, only local or self-hosted AI may process saved content.</Text></View>
+          <Switch accessibilityLabel="Allow approved external AI providers" onValueChange={(allowed) => void setExternalAIProcessing(allowed)} value={Boolean(user?.ai_external_processing_allowed)} />
+        </View>
         <PrimaryButton
           icon="download-outline"
           label={exportLoading ? "Preparing export" : "Export data"}

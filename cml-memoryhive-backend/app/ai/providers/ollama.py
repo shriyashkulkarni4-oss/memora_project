@@ -13,6 +13,8 @@ from app.ai.contracts import (
     EmbeddingResult,
     EnrichmentRequest,
     EnrichmentResult,
+    RerankRequest,
+    RerankResult,
 )
 from app.ai.gateway import (
     ProviderCapability,
@@ -35,6 +37,7 @@ class OllamaAdapter(HttpProviderAdapter):
     capabilities = frozenset(
         {
             ProviderCapability.ENRICHMENT,
+            ProviderCapability.RERANKING,
             ProviderCapability.MODEL_LISTING,
             ProviderCapability.TOKEN_USAGE,
             ProviderCapability.HEALTH,
@@ -171,6 +174,63 @@ class OllamaAdapter(HttpProviderAdapter):
                 provenance={"deployment_type": self.deployment_type},
             )
         except (KeyError, TypeError, ValueError):
+            raise ProviderError(
+                ProviderErrorCode.MALFORMED_RESPONSE, self.provider_type
+            ) from None
+
+    async def rerank(self, request: RerankRequest) -> RerankResult:
+        candidate_ids = [candidate.item_id for candidate in request.candidates]
+        schema = {
+            "type": "object",
+            "properties": {
+                "ordered_item_ids": {
+                    "type": "array",
+                    "items": {"type": "string", "enum": candidate_ids},
+                    "minItems": 1,
+                    "maxItems": len(candidate_ids),
+                    "uniqueItems": True,
+                }
+            },
+            "required": ["ordered_item_ids"],
+            "additionalProperties": False,
+        }
+        candidates = "\n".join(
+            f"{candidate.item_id}: {candidate.text}" for candidate in request.candidates
+        )
+        response = await self._request(
+            "POST",
+            f"{self.base_url}/api/generate",
+            json={
+                "model": request.model_alias,
+                "stream": False,
+                "prompt": (
+                    "Rank the candidate IDs by relevance to the query. Return only "
+                    f"schema-valid JSON.\nQuery: {request.query}\nCandidates:\n{candidates}"
+                ),
+                "format": schema,
+                "keep_alive": self.keep_alive,
+                "options": {"temperature": 0},
+            },
+        )
+        try:
+            payload = response.json()
+            generated = json.loads(payload["response"])
+            ordered = generated["ordered_item_ids"]
+            if not isinstance(ordered, list):
+                raise ValueError
+            result = RerankResult(
+                ordered_item_ids=ordered,
+                model_alias=request.model_alias,
+                provider=self.provider_type.value,
+                usage={
+                    "input_tokens": payload.get("prompt_eval_count"),
+                    "output_tokens": payload.get("eval_count"),
+                },
+            )
+            if not set(result.ordered_item_ids).issubset(candidate_ids):
+                raise ValueError
+            return result
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError):
             raise ProviderError(
                 ProviderErrorCode.MALFORMED_RESPONSE, self.provider_type
             ) from None

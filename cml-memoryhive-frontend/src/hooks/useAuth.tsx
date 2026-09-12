@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name?: string) => Promise<void>;
   logout: (options?: { localOnly?: boolean }) => Promise<void>;
+  setAIExternalProcessing: (allowed: boolean) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,6 +20,7 @@ const demoUser: User = {
   name: 'Mahesh',
   role: 'admin',
   is_active: true,
+  ai_external_processing_allowed: false,
   created_at: '2026-08-01T00:00:00Z',
   updated_at: '2026-08-01T00:00:00Z',
 };
@@ -58,9 +60,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const setAIExternalProcessing = async (allowed: boolean) => {
+    if (demoMode) {
+      setUser((current) => current ? { ...current, ai_external_processing_allowed: allowed } : current);
+      return;
+    }
+    setUser(await authApi.updateAIPrivacy(allowed));
+  };
+
   return (
     <AuthContext.Provider value={{
       user, isLoading, isAuthenticated: Boolean(user), login, register, logout,
+      setAIExternalProcessing,
     }}>
       {children}
     </AuthContext.Provider>

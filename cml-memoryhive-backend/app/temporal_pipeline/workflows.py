@@ -254,10 +254,23 @@ class BackfillEmbeddingsWorkflow:
     def __init__(self) -> None:
         self.completed = 0
         self.cursor: str | None = None
+        self.paused = False
 
     @workflow.query
-    def progress(self) -> dict[str, int | str | None]:
-        return {"completed": self.completed, "cursor": self.cursor}
+    def progress(self) -> dict[str, int | str | bool | None]:
+        return {
+            "completed": self.completed,
+            "cursor": self.cursor,
+            "paused": self.paused,
+        }
+
+    @workflow.signal
+    def pause(self) -> None:
+        self.paused = True
+
+    @workflow.signal
+    def resume(self) -> None:
+        self.paused = False
 
     @workflow.run
     async def run(self, request: EmbeddingBackfillInput) -> EmbeddingBackfillOutcome:
@@ -266,6 +279,7 @@ class BackfillEmbeddingsWorkflow:
         rate = max(1, request.items_per_minute)
         page_limit = min(25, rate)
         while self.completed < max(0, request.max_items) and not exhausted:
+            await workflow.wait_condition(lambda: not self.paused)
             remaining = request.max_items - self.completed
             page = await workflow.execute_activity(
                 backfill_embeddings_activity,

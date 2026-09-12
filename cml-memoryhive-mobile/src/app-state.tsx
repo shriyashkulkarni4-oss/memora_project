@@ -39,6 +39,7 @@ interface AppContextValue {
   register(name: string, email: string, password: string): Promise<void>;
   logout(): Promise<void>;
   changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  setExternalAIProcessing(allowed: boolean): Promise<void>;
   exportAccount(): Promise<{ filename: string; uri?: string }>;
   deleteAccount(password: string): Promise<void>;
   capture(payload: ItemCreate, localUri?: string): Promise<Item>;
@@ -202,6 +203,10 @@ export function AppStateProvider({ children }: React.PropsWithChildren) {
         new_password: newPassword,
       });
       await forceLogout("Password changed successfully. Sign in with your new password.");
+    },
+    async setExternalAIProcessing(allowed) {
+      markActive();
+      setUser(await authApi.updateAIPrivacy(allowed));
     },
     async exportAccount() {
       markActive();

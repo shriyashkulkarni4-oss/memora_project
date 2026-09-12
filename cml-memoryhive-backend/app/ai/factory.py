@@ -113,7 +113,7 @@ def build_ai_gateway(
                 limits=limits(settings.openrouter_timeout_seconds),
             )
         )
-    if settings.n8n_webhook_url:
+    if settings.n8n_enabled and settings.n8n_webhook_url:
         adapters.append(
             N8nAdapter(
                 settings.n8n_webhook_url,
@@ -128,7 +128,7 @@ def build_ai_gateway(
                 limits=limits(settings.n8n_timeout_seconds),
             )
         )
-    if settings.ollama_base_url:
+    if settings.ollama_enabled and settings.ollama_base_url:
         adapters.append(
             OllamaAdapter(
                 settings.ollama_base_url,

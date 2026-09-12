@@ -86,6 +86,21 @@ AI_CIRCUIT_OPEN = Gauge(
     "Whether the provider circuit is open",
     ("provider",),
 )
+SEARCH_REQUESTS = Counter(
+    "memoryhive_search_requests_total",
+    "Search requests by bounded retrieval mode and outcome",
+    ("mode", "outcome"),
+)
+SEARCH_LATENCY = Histogram(
+    "memoryhive_search_latency_seconds",
+    "End-to-end search ranking latency",
+    ("mode",),
+)
+SEARCH_SHADOW_OVERLAP = Histogram(
+    "memoryhive_search_shadow_topk_overlap_ratio",
+    "Top-k overlap between keyword control and shadow hybrid ranking",
+    buckets=(0, 0.25, 0.5, 0.75, 0.9, 1.0),
+)
 
 BOUNDED_COMPONENTS = {"database_worker", "temporal_worker", "temporal_scheduler"}
 BOUNDED_REASONS = {

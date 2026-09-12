@@ -170,6 +170,11 @@ export const authApi = {
       "/auth/change-password",
       { method: "POST", body: JSON.stringify(payload) },
     ),
+  updateAIPrivacy: (external_processing_allowed: boolean) =>
+    request<User>("/auth/ai-privacy", {
+      method: "PATCH",
+      body: JSON.stringify({ external_processing_allowed }),
+    }),
   async logout() {
     const refreshToken = await currentRefreshToken();
     try {

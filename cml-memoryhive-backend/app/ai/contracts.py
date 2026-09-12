@@ -66,6 +66,7 @@ class ExtractionInput:
     analysis_job_id: str | None = None
     workflow_id: str | None = None
     correlation_id: str | None = None
+    ai_policy_resolved: bool = False
     analysis_version: int = 1
     contract_version: int = ANALYSIS_CONTRACT_VERSION
 
@@ -376,6 +377,43 @@ class EmbeddingResult:
         if any(not math.isfinite(value) for value in vector):
             raise ValueError("embedding vector must contain finite values")
         object.__setattr__(self, "vector", vector)
+
+
+@dataclass(frozen=True)
+class RerankCandidate:
+    item_id: str
+    text: str
+
+
+@dataclass(frozen=True)
+class RerankRequest:
+    query: str
+    candidates: tuple[RerankCandidate, ...] | list[RerankCandidate]
+    model_alias: str
+
+    def __post_init__(self) -> None:
+        if not self.query.strip() or not self.model_alias:
+            raise ValueError("rerank query and model alias are required")
+        values = tuple(self.candidates)
+        if not values or len({candidate.item_id for candidate in values}) != len(
+            values
+        ):
+            raise ValueError("rerank candidates must have unique identifiers")
+        object.__setattr__(self, "candidates", values)
+
+
+@dataclass(frozen=True)
+class RerankResult:
+    ordered_item_ids: tuple[str, ...] | list[str]
+    model_alias: str
+    provider: str
+    usage: dict[str, int | float | None] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        values = tuple(self.ordered_item_ids)
+        if len(set(values)) != len(values):
+            raise ValueError("rerank result contains duplicate identifiers")
+        object.__setattr__(self, "ordered_item_ids", values)
 
 
 @dataclass(frozen=True)

@@ -23,7 +23,32 @@ jobs:
       - run: uv sync --extra dev --locked
       - run: uv run ruff check app tests
       - run: uv run black --check app tests
-      - run: uv run pytest -q
+      - run: uv run pytest -q -m 'not integration'
+      - run: uv run python scripts/run_ai_evaluations.py --output evaluation-results/offline-ci.json
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-offline-evaluation
+          path: cml-memoryhive-backend/evaluation-results/offline-ci.json
+
+  temporal-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with: { node-version: 24 }
+      - uses: astral-sh/setup-uv@v10
+        with: { version: '0.12.13', python-version: '3.14', enable-cache: true }
+      - run: uv sync --locked
+      - run: cp .env.example .env
+      - name: Run real Temporal acceptance and failure suite
+        run: npm --prefix cml-memoryhive-automation run test -- --temporal --cleanup --skip-seed --skip-web --skip-mobile
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: temporal-acceptance-artifacts
+          path: cml-memoryhive-backend/evaluation-results/
 
   frontend:
     runs-on: ubuntu-latest
@@ -94,6 +119,7 @@ jobs:
       - run: node --check cml-memoryhive-automation/scripts/run.mjs
       - run: npm --prefix cml-memoryhive-automation run dry-run
       - run: uv run python scripts/generate_knowledge.py --check
+      - run: uv run python scripts/validate_ai_rollout.py
       - run: uv run python cml-memoryhive-build/build/scripts/generate_image_manifest.py --version ci --sha ${{ github.sha }} --output /tmp/image-versions.json
       - run: uv run python cml-memoryhive-build/build/scripts/build_images.py --version ci --sha ${{ github.sha }} --dry-run
       - run: uv run python -m unittest discover -s cml-memoryhive-build/tests -p 'test_*.py'

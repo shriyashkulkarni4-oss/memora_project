@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { spawn } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -106,6 +106,28 @@ async function run(command, args, options = {}) {
   });
 }
 
+async function captureSanitizedLogs() {
+  const artifactRoot = resolve(ROOT, "cml-memoryhive-backend/evaluation-results");
+  mkdirSync(artifactRoot, { recursive: true });
+  const args = [
+    "compose", "--env-file", resolve(ROOT, ".env"),
+    "-f", resolve(ROOT, "cml-memoryhive-build/runtime/docker-compose.temporal.yml"),
+    "logs", "--no-color", "--tail", "300",
+  ];
+  const output = await new Promise((resolveOutput) => {
+    const child = spawn("docker", args, { cwd: ROOT, env: process.env });
+    let value = "";
+    child.stdout.on("data", (chunk) => { value += chunk; });
+    child.stderr.on("data", (chunk) => { value += chunk; });
+    child.on("error", (error) => resolveOutput(String(error)));
+    child.on("exit", () => resolveOutput(value));
+  });
+  const sanitized = output
+    .replace(/(authorization|api[_-]?key|token|password)([=: ]+)[^\s,;]+/gi, "$1$2[REDACTED]")
+    .replace(/Bearer\s+[^\s]+/gi, "Bearer [REDACTED]");
+  writeFileSync(resolve(artifactRoot, "temporal-compose-sanitized.log"), sanitized);
+}
+
 async function doctor({ useDocker }) {
   [
     "seed_data.py",
@@ -179,6 +201,12 @@ async function main() {
     if (!hasFlag("--skip-smoke")) {
       await run("sh", ["ops/smoke.sh"], { env: { BASE_URL: baseUrl } });
     }
+    if (hasFlag("--temporal")) {
+      await run("uv", ["run", "python", "scripts/run_ai_evaluations.py", "--output", "evaluation-results/offline-acceptance.json"], { cwd: "cml-memoryhive-backend" });
+      await run("uv", ["run", "python", "scripts/temporal_acceptance.py", "--base-url", baseUrl, "--output", "evaluation-results/temporal-acceptance.json"], { cwd: "cml-memoryhive-backend" });
+      await run("uv", ["run", "pytest", "-q", "tests/test_temporal_workflows.py", "tests/test_temporal_stages.py", "tests/test_analysis_dispatch.py", "tests/test_ai_gateway.py", "tests/test_openrouter.py", "tests/test_huggingface.py", "tests/test_openai_compatible.py", "tests/test_local_automation_providers.py"], { cwd: "cml-memoryhive-backend" });
+      await run("uv", ["run", "python", "scripts/load_acceptance.py", "--base-url", baseUrl, "--output", "evaluation-results/load-acceptance.json"], { cwd: "cml-memoryhive-backend" });
+    }
     if (!hasFlag("--skip-web")) {
       await run("npm", ["--prefix", "cml-memoryhive-frontend", "run", "test:e2e:live"], {
         env: { BASE_URL: baseUrl, MEMORYHIVE_API_URL: apiUrl, VITE_API_URL: apiUrl },
@@ -193,6 +221,9 @@ async function main() {
         },
       });
     }
+  } catch (error) {
+    if (hasFlag("--temporal")) await captureSanitizedLogs();
+    throw error;
   } finally {
     if (useDocker && hasFlag("--cleanup")) {
       await stopStack({ cleanVolumes, profile: runtimeProfile });

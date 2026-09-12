@@ -1,6 +1,6 @@
 # Mobile Privacy and Data Safety Draft
 
-Last checked: 2026-09-06.
+Last checked: 2026-09-12.
 
 This is an engineering draft for Apple App Privacy and Google Play Data safety. Product, legal, and operations owners must verify it against the production backend, logging, analytics, support, and retention practices before submission.
 
@@ -10,6 +10,7 @@ Memoryhive accounts collect or process:
 
 - Account data: email, optional name, password during authentication, user ID.
 - User content: links, screenshots/images, text notes, titles, descriptions, tags, categories, metadata, extracted text, OCR output, and summaries.
+- AI-derived data: classifications, suggested tags, embeddings, related/resurfacing signals, feedback, provider/model provenance, and cited recall answers.
 - App activity: capture, edit, archive, favorite, delete, sync, and processing status timestamps.
 - Diagnostics/operations: request IDs, API logs, error details, rate-limit events, backup records, and cleanup audit records.
 
@@ -19,7 +20,7 @@ No advertising SDK, third-party analytics SDK, precise location, contacts, calen
 
 `npm run store:submission` copies the following non-secret declarations into the App Store / Google Play handoff packet, and `npm run store:check` validates them:
 
-- `STORE_EXTERNAL_AI_PROCESSING`: `none`, `self_hosted`, or `third_party`. Use `self_hosted` or `third_party` if production enables `OLLAMA_BASE_URL` or `N8N_WEBHOOK_URL`; the checker blocks enrichment endpoints paired with `none`.
+- `STORE_EXTERNAL_AI_PROCESSING`: `none`, `self_hosted`, or `third_party`. Use `self_hosted` or `third_party` if production enables a remote Ollama/n8n route, OpenRouter, Hugging Face, or a generic compatible endpoint; the checker blocks configured providers paired with `none`. Third-party processing also requires an in-app user opt-in, which defaults off.
 - `STORE_PRODUCTION_TELEMETRY`: `none`, `analytics`, `crash_reporting`, `analytics_and_crash_reporting`, or `other`.
 
 The repository default is `none` for both. Product, legal, and operations owners must update these values in the release environment if production adds AI processors, analytics, crash reporting, or support tooling outside this repo.

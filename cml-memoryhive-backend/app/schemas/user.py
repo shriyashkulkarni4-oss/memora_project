@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     email: str
     name: Optional[str]
     is_active: bool
+    ai_external_processing_allowed: bool
     created_at: datetime
 
     class Config:

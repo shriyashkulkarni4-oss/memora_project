@@ -1,0 +1,108 @@
+{
+  "version": "2026-09-12",
+  "owners": {
+    "release": "product-engineering",
+    "ai": "ai-platform-on-call",
+    "temporal": "platform-on-call",
+    "privacy": "privacy-security-reviewer"
+  },
+  "feature_flags": [
+    "TEMPORAL_ENABLED",
+    "OLLAMA_ENABLED",
+    "N8N_ENABLED",
+    "OPENROUTER_ENABLED",
+    "HUGGINGFACE_ENABLED",
+    "OPENAI_COMPATIBLE_ENABLED",
+    "AI_STRUCTURED_ENRICHMENT_ENABLED",
+    "AI_EMBEDDINGS_ENABLED",
+    "AI_SEARCH_SHADOW_ENABLED",
+    "AI_HYBRID_SEARCH_ENABLED",
+    "AI_SUGGESTIONS_ENABLED",
+    "AI_RELATED_ITEMS_ENABLED",
+    "AI_RESURFACING_ENABLED",
+    "AI_GROUNDED_RECALL_ENABLED",
+    "AI_EMBEDDING_BACKFILL_ENABLED"
+  ],
+  "production_baseline": {
+    "TEMPORAL_ENABLED": false,
+    "OLLAMA_ENABLED": true,
+    "N8N_ENABLED": false,
+    "OPENROUTER_ENABLED": false,
+    "HUGGINGFACE_ENABLED": false,
+    "OPENAI_COMPATIBLE_ENABLED": false,
+    "AI_STRUCTURED_ENRICHMENT_ENABLED": true,
+    "AI_EMBEDDINGS_ENABLED": true,
+    "AI_SEARCH_SHADOW_ENABLED": true,
+    "AI_HYBRID_SEARCH_ENABLED": false,
+    "AI_SUGGESTIONS_ENABLED": true,
+    "AI_RELATED_ITEMS_ENABLED": true,
+    "AI_RESURFACING_ENABLED": false,
+    "AI_GROUNDED_RECALL_ENABLED": false,
+    "AI_EMBEDDING_BACKFILL_ENABLED": false
+  },
+  "backfill": {
+    "batch_size": 25,
+    "max_items_per_minute": 30,
+    "concurrency": 1,
+    "monthly_cost_budget_usd": 100,
+    "pause_flag": "AI_EMBEDDING_BACKFILL_ENABLED",
+    "rollback": "Disable the flag and retain the prior immutable embedding index."
+  },
+  "slos": {
+    "capture_availability_percent": 99.9,
+    "analysis_completed_within_5m_percent": 99.0,
+    "oldest_queue_age_seconds": 300,
+    "search_p95_ms": 750,
+    "enrichment_schema_success_percent": 98.0,
+    "provider_degraded_rate_percent": 2.0,
+    "cost_per_analyzed_item_usd": 0.02
+  },
+  "forecast": {
+    "monthly_items": [10000, 100000, 1000000],
+    "average_provider_tokens_per_item": 1500,
+    "worker_items_per_minute_each": 30,
+    "storage_kib_per_item": 12,
+    "budget_formula": "monthly_items * cost_per_analyzed_item_usd",
+    "capacity_formula": "ceil(peak_items_per_minute / worker_items_per_minute_each)"
+  },
+  "required_staging_gates": [
+    "offline_evaluation",
+    "shadow_ranking_review",
+    "worker_failure_drill",
+    "provider_failure_drill",
+    "capture_burst_load_test",
+    "backup_restore_verification",
+    "privacy_review",
+    "store_disclosure_check"
+  ],
+  "validation_scenarios": [
+    {
+      "name": "deterministic-only",
+      "enabled": []
+    },
+    {
+      "name": "temporal-local-enrichment",
+      "enabled": ["TEMPORAL_ENABLED", "OLLAMA_ENABLED", "AI_STRUCTURED_ENRICHMENT_ENABLED"]
+    },
+    {
+      "name": "embedding-shadow",
+      "enabled": ["OLLAMA_ENABLED", "AI_EMBEDDINGS_ENABLED", "AI_SEARCH_SHADOW_ENABLED"]
+    },
+    {
+      "name": "evaluated-hybrid",
+      "enabled": ["OLLAMA_ENABLED", "AI_EMBEDDINGS_ENABLED", "AI_HYBRID_SEARCH_ENABLED"]
+    },
+    {
+      "name": "external-provider-opt-in",
+      "enabled": ["OPENROUTER_ENABLED", "AI_STRUCTURED_ENRICHMENT_ENABLED"]
+    },
+    {
+      "name": "bounded-backfill",
+      "enabled": ["TEMPORAL_ENABLED", "OLLAMA_ENABLED", "AI_EMBEDDINGS_ENABLED", "AI_EMBEDDING_BACKFILL_ENABLED"]
+    },
+    {
+      "name": "all-user-features-local",
+      "enabled": ["OLLAMA_ENABLED", "AI_STRUCTURED_ENRICHMENT_ENABLED", "AI_EMBEDDINGS_ENABLED", "AI_HYBRID_SEARCH_ENABLED", "AI_SUGGESTIONS_ENABLED", "AI_RELATED_ITEMS_ENABLED", "AI_RESURFACING_ENABLED", "AI_GROUNDED_RECALL_ENABLED"]
+    }
+  ]
+}

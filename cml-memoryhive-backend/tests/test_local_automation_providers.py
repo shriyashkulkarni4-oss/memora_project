@@ -8,7 +8,12 @@ import httpx
 import pytest
 from pydantic import SecretStr, ValidationError
 
-from app.ai.contracts import EmbeddingRequest, EnrichmentRequest
+from app.ai.contracts import (
+    EmbeddingRequest,
+    EnrichmentRequest,
+    RerankCandidate,
+    RerankRequest,
+)
 from app.ai.gateway import AIGateway, ProviderError, ProviderErrorCode, ProviderType
 from app.ai.providers import N8nAdapter, OllamaAdapter
 from app.config import Settings
@@ -96,6 +101,43 @@ async def test_ollama_model_outage_is_not_false_success() -> None:
     await client.aclose()
     assert health.available is False
     assert health.message == "configured Ollama model is unavailable"
+
+
+async def test_ollama_reranker_is_schema_bounded_and_gateway_validated() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "response": json.dumps({"ordered_item_ids": ["semantic", "exact"]}),
+                "prompt_eval_count": 12,
+                "eval_count": 4,
+            },
+            request=request,
+        )
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    result = await AIGateway(
+        [OllamaAdapter("http://ollama.internal:11434", "rerank-v1", client=client)]
+    ).rerank(
+        ProviderType.OLLAMA,
+        RerankRequest(
+            "durable jobs",
+            [
+                RerankCandidate("exact", "jobs"),
+                RerankCandidate("semantic", "durable workflow recovery"),
+            ],
+            "rerank-v1",
+        ),
+    )
+    await client.aclose()
+
+    assert result.ordered_item_ids == ("semantic", "exact")
+    body = json.loads(seen[0].content)
+    assert body["options"]["temperature"] == 0
+    assert body["format"]["properties"]["ordered_item_ids"]["uniqueItems"] is True
 
 
 async def test_n8n_contract_is_versioned_and_request_is_signed() -> None:

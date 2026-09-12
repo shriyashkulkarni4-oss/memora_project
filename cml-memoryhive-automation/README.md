@@ -13,13 +13,25 @@ npm --prefix cml-memoryhive-automation run validate
 npm --prefix cml-memoryhive-automation run test
 npm --prefix cml-memoryhive-automation run test:docker
 npm --prefix cml-memoryhive-automation run test:docker:cleanup
+npm --prefix cml-memoryhive-automation run test -- --temporal --cleanup
 ```
 
 `test` expects the backend to be reachable at `BASE_URL` or
 `http://localhost:8000`. `test:docker` starts the Compose dev stack first,
 runs migrations, and clears transient Redis `rate:*` keys so repeated auth-heavy
 test runs do not need a volume reset. Add `--temporal` to run against the
-Temporal Compose profile.
+Temporal Compose profile. Unlike a profile-only health check, `--temporal` also
+runs the deterministic provider/Temporal failure suite, captures a text, link,
+and screenshot through the real API, verifies each workflow history and terminal
+state, runs the versioned AI evaluation, and executes a bounded capture-burst,
+backlog-drain, and search-p95 test. This is the canonical local Temporal-backed
+acceptance command.
+
+Successful reports are written under the backend's ignored
+`evaluation-results/` directory. On failure the runner also collects the final
+300 Compose log lines, redacts authorization/token/key/password-shaped values,
+and leaves the sanitized log alongside workflow IDs, terminal states, metrics,
+load results, and evaluation output.
 
 ## Options
 

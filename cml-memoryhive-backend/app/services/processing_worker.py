@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.ai.contracts import ExtractedDocument
 from app.ai.embedding_pipeline import EmbeddingPipeline
 from app.ai.gateway import ProviderError
-from app.models import AnalysisStatus, Item, ProcessingJob, ProcessingStatus, Tag
+from app.models import AnalysisStatus, Item, ProcessingJob, ProcessingStatus, Tag, User
 from app.observability import (
     ANALYSIS_OUTCOMES,
     SCHEDULE_TO_START,
@@ -117,6 +117,13 @@ class ProcessingWorker:
                 item._existing_tag_names = tuple(
                     await session.scalars(
                         select(Tag.name).where(Tag.user_id == item.user_id)
+                    )
+                )
+                item._external_ai_allowed = bool(
+                    await session.scalar(
+                        select(User.ai_external_processing_allowed).where(
+                            User.id == item.user_id
+                        )
                     )
                 )
                 value = processing_input(item, job)

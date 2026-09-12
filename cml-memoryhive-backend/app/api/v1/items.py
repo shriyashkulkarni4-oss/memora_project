@@ -27,10 +27,13 @@ from sqlalchemy.orm import selectinload
 from temporalio.client import Client
 
 from app.ai.budgets import DatabaseBudgetGuard
+from app.ai.contracts import RerankCandidate
 from app.ai.embedding_pipeline import EmbeddingPipeline
 from app.ai.factory import build_ai_gateway
 from app.ai.gateway import ProviderError
+from app.ai.grounded_recall import GroundedRecallPipeline, RecallPassage
 from app.ai.hybrid_search import lexical_signals, reciprocal_rank_fusion
+from app.ai.reranking import RerankingPipeline
 from app.ai.retrieval_eval import cosine_similarity
 from app.config import get_settings
 from app.core.deps import CurrentUser, DbSession
@@ -42,24 +45,41 @@ from app.models import (
     EnrichmentRecord,
     Item,
     ItemEmbedding,
+    ItemInteraction,
     ItemType,
     ProcessingJob,
     ProcessingStatus,
     Tag,
 )
+from app.observability import SEARCH_LATENCY, SEARCH_REQUESTS, SEARCH_SHADOW_OVERLAP
 from app.schemas.common import ErrorResponse
 from app.schemas.item import (
+    DuplicateMatchResponse,
     EnrichmentRecordResponse,
+    GroundedRecallResponse,
     ItemChangesResponse,
     ItemCreate,
     ItemListResponse,
     ItemResponse,
     ItemStats,
     ItemUpdate,
+    MemoryFeedbackRequest,
+    MemoryFeedbackResponse,
+    MemoryMatchResponse,
     ProcessingStateResponse,
+    RecallCitationResponse,
+    RecallClaimResponse,
+    RecallQuestionRequest,
+    ResurfacingPage,
     SearchMatchResponse,
 )
 from app.services.analysis_dispatch import request_item_analysis, retry_item_analysis
+from app.services.memory_graph import (
+    detect_duplicates,
+    rank_related,
+    rank_resurfacing,
+    semantic_scores,
+)
 from app.services.storage import StorageService, get_storage_service
 from app.services.urls import normalize_url
 from app.temporal_pipeline.workflows import AnalyzeItemWorkflow
@@ -204,6 +224,7 @@ async def _rank_search(
     value: str,
     limit: int,
 ) -> tuple[list[Item], dict[str, SearchMatchResponse], bool]:
+    search_started = time.perf_counter()
     current_settings = get_settings()
     candidate_limit = max(limit + 1, current_settings.ai_search_candidate_limit)
     searchable, text_matches, pattern = _text_match_condition(value)
@@ -227,12 +248,20 @@ async def _rank_search(
     keyword_items = list(keyword_result.scalars().unique())
     lexical = [lexical_signals(item, value) for item in keyword_items]
     semantic: list[tuple[str, float, str | None]] = []
+    semantic_attempted = False
+    semantic_available = False
+    semantic_failed = False
     eligible_by_id = {item.id: item for item in keyword_items}
 
     if (
-        current_settings.ai_hybrid_search_enabled
+        (
+            current_settings.ai_hybrid_search_enabled
+            or current_settings.ai_search_shadow_enabled
+        )
+        and current_settings.ai_embeddings_enabled
         and current_settings.ai_embeddings_route
     ):
+        semantic_attempted = True
         eligible_result = await db.execute(
             base_query.order_by(Item.created_at.desc(), Item.id.desc()).limit(
                 candidate_limit
@@ -254,6 +283,7 @@ async def _rank_search(
                     current_settings,
                     DatabaseBudgetGuard(session_factory, current_settings),
                 ).embed_query(value, user_id=user_id)
+            semantic_available = True
             if (
                 time.perf_counter() - started
             ) * 1_000 <= current_settings.ai_search_latency_budget_ms:
@@ -307,6 +337,7 @@ async def _rank_search(
                 ]
         except (ProviderError, TimeoutError, ValueError):
             semantic = []
+            semantic_failed = True
 
     ranked = reciprocal_rank_fusion(
         lexical,
@@ -315,6 +346,61 @@ async def _rank_search(
         keyword_weight=current_settings.ai_search_keyword_weight,
         semantic_weight=current_settings.ai_search_semantic_weight,
     )
+    if (
+        current_settings.ai_search_shadow_enabled
+        and not current_settings.ai_hybrid_search_enabled
+    ):
+        keyword_ranked = reciprocal_rank_fusion(
+            lexical,
+            [],
+            rrf_k=current_settings.ai_search_rrf_k,
+            keyword_weight=current_settings.ai_search_keyword_weight,
+            semantic_weight=current_settings.ai_search_semantic_weight,
+        )
+        control_ids = {match.item_id for match in keyword_ranked[:limit]}
+        shadow_ids = {match.item_id for match in ranked[:limit]}
+        SEARCH_SHADOW_OVERLAP.observe(
+            len(control_ids & shadow_ids) / max(1, len(control_ids))
+        )
+        ranked = keyword_ranked
+    if current_settings.ai_reranking_route and ranked and db.bind is not None:
+        session_factory = async_sessionmaker(db.bind, expire_on_commit=False)
+        rerank_window = list(ranked[: current_settings.ai_rerank_candidate_limit])
+        try:
+            ordered_ids = await RerankingPipeline(
+                session_factory,
+                build_ai_gateway(current_settings),
+                current_settings,
+                DatabaseBudgetGuard(session_factory, current_settings),
+            ).rerank(
+                value,
+                [
+                    RerankCandidate(
+                        match.item_id,
+                        "\n".join(
+                            filter(
+                                None,
+                                (
+                                    eligible_by_id[match.item_id].title,
+                                    match.snippet,
+                                    eligible_by_id[match.item_id].summary,
+                                ),
+                            )
+                        )[:2_000],
+                    )
+                    for match in rerank_window
+                ],
+                user_id=user_id,
+            )
+            by_id = {match.item_id: match for match in rerank_window}
+            reranked = [by_id[item_id] for item_id in ordered_ids if item_id in by_id]
+            used = {match.item_id for match in reranked}
+            reranked.extend(
+                match for match in rerank_window if match.item_id not in used
+            )
+            ranked = tuple(reranked) + ranked[len(rerank_window) :]
+        except (ProviderError, ValueError):
+            pass
     selected = ranked[: limit + 1]
     has_more = len(selected) > limit
     selected = selected[:limit]
@@ -327,6 +413,10 @@ async def _rank_search(
         )
         for match in selected
     }
+    mode = "hybrid" if semantic_available else "keyword"
+    outcome = "degraded" if semantic_attempted and semantic_failed else "completed"
+    SEARCH_REQUESTS.labels(mode, outcome).inc()
+    SEARCH_LATENCY.labels(mode).observe(time.perf_counter() - search_started)
     return (
         [eligible_by_id[match.item_id] for match in selected],
         matches,
@@ -459,6 +549,104 @@ async def list_items(
         next_cursor=_encode_cursor(items[-1]) if has_more else None,
         has_more=has_more,
         limit=limit,
+    )
+
+
+@router.post(
+    "/recall", response_model=GroundedRecallResponse, responses=ERROR_RESPONSES
+)
+async def grounded_recall(
+    data: RecallQuestionRequest, current_user: CurrentUser, db: DbSession
+) -> GroundedRecallResponse:
+    current_settings = get_settings()
+    if not (
+        current_settings.ai_grounded_recall_enabled
+        and current_settings.ai_evaluation_release_gate_passed
+    ):
+        raise HTTPException(
+            status_code=503,
+            detail="Grounded recall is disabled until its evaluation release gate passes",
+        )
+    base_query = (
+        select(Item)
+        .options(selectinload(Item.tags), selectinload(Item.assets))
+        .where(
+            Item.user_id == current_user.id,
+            Item.deleted_at.is_(None),
+            Item.is_archived.is_(False),
+        )
+    )
+    items, matches, _ = await _rank_search(
+        db,
+        base_query,
+        user_id=current_user.id,
+        value=data.question,
+        limit=current_settings.ai_recall_source_limit,
+    )
+    passages = tuple(
+        RecallPassage(
+            citation_id=index,
+            item_id=item.id,
+            title=item.title,
+            text=(
+                matches[item.id].snippet
+                or item.extracted_text
+                or item.raw_text
+                or item.summary
+                or item.description
+                or item.title
+                or ""
+            )[: current_settings.ai_recall_max_passage_characters],
+        )
+        for index, item in enumerate(items, 1)
+        if (
+            matches[item.id].snippet
+            or item.extracted_text
+            or item.raw_text
+            or item.summary
+            or item.description
+            or item.title
+        )
+    )
+    if db.bind is None:
+        raise HTTPException(status_code=503, detail="Recall service is unavailable")
+    session_factory = async_sessionmaker(db.bind, expire_on_commit=False)
+    try:
+        result = await GroundedRecallPipeline(
+            build_ai_gateway(current_settings),
+            current_settings,
+            DatabaseBudgetGuard(session_factory, current_settings),
+        ).answer(
+            data.question,
+            passages,
+            user_id=current_user.id,
+            external_allowed_for_user=current_user.ai_external_processing_allowed,
+        )
+    except (ProviderError, ValueError) as exc:
+        raise HTTPException(
+            status_code=503, detail="Recall service is unavailable"
+        ) from exc
+    cited_ids = {value for claim in result.claims for value in claim.citation_ids}
+    return GroundedRecallResponse(
+        answer=result.answer,
+        claims=[
+            RecallClaimResponse(text=claim.text, citation_ids=list(claim.citation_ids))
+            for claim in result.claims
+        ],
+        citations=[
+            RecallCitationResponse(
+                citation_id=passage.citation_id,
+                item_id=passage.item_id,
+                title=passage.title,
+                passage=passage.text,
+            )
+            for passage in passages
+            if passage.citation_id in cited_ids
+        ],
+        insufficient_evidence=result.insufficient_evidence,
+        provider=result.provider,
+        model=result.model,
+        latency_ms=result.latency_ms,
     )
 
 
@@ -599,6 +787,151 @@ async def list_item_changes(
     )
 
 
+def _memory_match_response(match) -> MemoryMatchResponse:
+    return MemoryMatchResponse(
+        item=_response(match.item),
+        score=match.score,
+        reasons=list(match.reasons),
+        semantic_score=match.semantic_score,
+    )
+
+
+@router.get("/resurfacing", response_model=ResurfacingPage, responses=ERROR_RESPONSES)
+async def resurfacing_feed(
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int | None = Query(default=None, ge=1, le=50),
+) -> ResurfacingPage:
+    current_settings = get_settings()
+    if not current_settings.ai_resurfacing_enabled:
+        raise HTTPException(status_code=404, detail="Resurfacing is disabled")
+    page_limit = limit or current_settings.ai_resurfacing_limit
+    candidates = list(
+        (
+            await db.scalars(
+                select(Item)
+                .options(selectinload(Item.tags), selectinload(Item.assets))
+                .where(
+                    Item.user_id == current_user.id,
+                    Item.deleted_at.is_(None),
+                    Item.is_archived.is_(False),
+                )
+                .order_by(Item.updated_at.desc(), Item.id)
+            )
+        ).unique()
+    )
+    interactions = list(
+        await db.scalars(
+            select(ItemInteraction).where(
+                ItemInteraction.user_id == current_user.id,
+                ItemInteraction.kind == "resurfacing",
+            )
+        )
+    )
+    now = datetime.now(timezone.utc)
+    matches = rank_resurfacing(
+        candidates,
+        interactions,
+        now=now,
+        limit=page_limit,
+        frequency_window_days=current_settings.ai_resurfacing_frequency_window_days,
+        frequency_cap=current_settings.ai_resurfacing_frequency_cap,
+        minimum_interval_hours=current_settings.ai_resurfacing_minimum_interval_hours,
+        max_per_source=current_settings.ai_resurfacing_max_per_source,
+        max_per_topic=current_settings.ai_resurfacing_max_per_topic,
+    )
+    for match in matches:
+        db.add(
+            ItemInteraction(
+                user_id=current_user.id,
+                subject_item_id=match.item.id,
+                kind="resurfacing",
+                action="shown",
+                reason_code="ranked_memory",
+                interaction_metadata={
+                    "score": round(match.score, 6),
+                    "reasons": list(match.reasons),
+                },
+                created_at=now,
+            )
+        )
+    await db.commit()
+    return ResurfacingPage(
+        items=[_memory_match_response(match) for match in matches],
+        generated_at=now,
+    )
+
+
+@router.post(
+    "/resurfacing/{item_id}/feedback",
+    response_model=MemoryFeedbackResponse,
+    responses=ERROR_RESPONSES,
+)
+async def record_resurfacing_feedback(
+    item_id: str,
+    data: MemoryFeedbackRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> MemoryFeedbackResponse:
+    if not get_settings().ai_resurfacing_enabled:
+        raise HTTPException(status_code=404, detail="Resurfacing is disabled")
+    item = await _load_item(db, current_user.id, item_id)
+    existing = await db.scalar(
+        select(ItemInteraction).where(
+            ItemInteraction.user_id == current_user.id,
+            ItemInteraction.client_id == data.client_id,
+        )
+    )
+    if existing:
+        return MemoryFeedbackResponse(
+            id=existing.id,
+            item_id=existing.subject_item_id,
+            action=existing.action,
+            reverses_id=existing.reverses_id,
+            created_at=existing.created_at,
+        )
+    reversed_event = None
+    if data.reverses_id:
+        reversed_event = await db.scalar(
+            select(ItemInteraction).where(
+                ItemInteraction.id == data.reverses_id,
+                ItemInteraction.user_id == current_user.id,
+                ItemInteraction.subject_item_id == item.id,
+                ItemInteraction.kind == "resurfacing",
+                ItemInteraction.action.in_(("dismiss", "pin", "useful")),
+            )
+        )
+        if reversed_event is None:
+            raise HTTPException(status_code=404, detail="Feedback event not found")
+        already_reversed = await db.scalar(
+            select(ItemInteraction.id).where(
+                ItemInteraction.user_id == current_user.id,
+                ItemInteraction.reverses_id == reversed_event.id,
+            )
+        )
+        if already_reversed:
+            raise HTTPException(status_code=409, detail="Feedback is already undone")
+    event = ItemInteraction(
+        user_id=current_user.id,
+        subject_item_id=item.id,
+        kind="resurfacing",
+        action=data.action,
+        client_id=data.client_id,
+        reverses_id=reversed_event.id if reversed_event else None,
+        reason_code="user_feedback",
+    )
+    db.add(event)
+    await db.commit()
+    await db.refresh(event)
+    return MemoryFeedbackResponse(
+        id=event.id,
+        item_id=event.subject_item_id,
+        action=event.action,
+        reverses_id=event.reverses_id,
+        created_at=event.created_at,
+    )
+
+
 @router.post(
     "/screenshot",
     response_model=ItemResponse,
@@ -697,6 +1030,93 @@ async def get_item(
     item_id: str, current_user: CurrentUser, db: DbSession
 ) -> ItemResponse:
     return _response(await _load_item(db, current_user.id, item_id))
+
+
+async def _memory_candidates(
+    db: DbSession, *, user_id: str, excluded_item_id: str
+) -> list[Item]:
+    return list(
+        (
+            await db.scalars(
+                select(Item)
+                .options(selectinload(Item.tags), selectinload(Item.assets))
+                .where(
+                    Item.user_id == user_id,
+                    Item.id != excluded_item_id,
+                    Item.deleted_at.is_(None),
+                )
+                .order_by(Item.updated_at.desc(), Item.id)
+            )
+        ).unique()
+    )
+
+
+@router.get(
+    "/{item_id}/related",
+    response_model=list[MemoryMatchResponse],
+    responses=ERROR_RESPONSES,
+)
+async def related_memories(
+    item_id: str,
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int | None = Query(default=None, ge=1, le=25),
+) -> list[MemoryMatchResponse]:
+    current_settings = get_settings()
+    if not current_settings.ai_related_items_enabled:
+        raise HTTPException(status_code=404, detail="Related items are disabled")
+    source = await _load_item(db, current_user.id, item_id)
+    candidates = await _memory_candidates(
+        db, user_id=current_user.id, excluded_item_id=source.id
+    )
+    semantic = await semantic_scores(
+        db, user_id=current_user.id, source=source, settings=current_settings
+    )
+    matches = rank_related(
+        source,
+        candidates,
+        semantic,
+        limit=limit or current_settings.ai_related_limit,
+    )
+    return [_memory_match_response(match) for match in matches]
+
+
+@router.get(
+    "/{item_id}/duplicates",
+    response_model=list[DuplicateMatchResponse],
+    responses=ERROR_RESPONSES,
+)
+async def duplicate_candidates(
+    item_id: str,
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int = Query(default=10, ge=1, le=25),
+) -> list[DuplicateMatchResponse]:
+    source = await _load_item(db, current_user.id, item_id)
+    current_settings = get_settings()
+    candidates = await _memory_candidates(
+        db, user_id=current_user.id, excluded_item_id=source.id
+    )
+    semantic = await semantic_scores(
+        db, user_id=current_user.id, source=source, settings=current_settings
+    )
+    matches = detect_duplicates(
+        source,
+        candidates,
+        semantic,
+        threshold=current_settings.ai_duplicate_semantic_threshold,
+        limit=limit,
+    )
+    return [
+        DuplicateMatchResponse(
+            item=_response(match.item),
+            score=match.score,
+            reasons=list(match.reasons),
+            semantic_score=match.semantic_score,
+            duplicate_kind=match.duplicate_kind,
+        )
+        for match in matches
+    ]
 
 
 @router.get(
@@ -910,6 +1330,14 @@ async def restore_item(
 @router.delete("/{item_id}", status_code=204, responses=ERROR_RESPONSES)
 async def delete_item(item_id: str, current_user: CurrentUser, db: DbSession) -> None:
     item = await _load_item(db, current_user.id, item_id)
+    await db.execute(
+        delete(ItemInteraction).where(
+            or_(
+                ItemInteraction.subject_item_id == item.id,
+                ItemInteraction.context_item_id == item.id,
+            )
+        )
+    )
     await db.execute(delete(ItemEmbedding).where(ItemEmbedding.item_id == item.id))
     await db.execute(delete(DocumentChunk).where(DocumentChunk.item_id == item.id))
     item.deleted_at = datetime.now(timezone.utc)

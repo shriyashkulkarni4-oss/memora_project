@@ -34,3 +34,23 @@ test('library and capture remain usable at the target viewport', async ({ page }
   await page.screenshot({ path, fullPage: true });
   testInfo.attachments.push({ name: 'viewport', path, contentType: 'image/png' });
 });
+
+test('AI explanations, suggestions, provenance, and degraded states remain visible', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('link', { name: 'Building durable habits' }).click();
+  await expect(page.getByText('AI suggestions')).toBeVisible();
+  await expect(page.getByText('ollama / fixture-local')).toBeVisible();
+  await page.getByRole('button', { name: 'Accept practice' }).click();
+  await expect(page.getByText('accepted')).toBeVisible();
+  await page.getByRole('button', { name: 'Undo' }).click();
+  await expect(page.getByText('pending').first()).toBeVisible();
+
+  await page.getByRole('link', { name: 'Back' }).click();
+  await page.getByRole('searchbox', { name: /Search library/ }).fill('Recognition');
+  await expect(page.getByLabel('Why this result matched')).toContainText('semantic passage');
+
+  await page.getByRole('searchbox', { name: /Search library/ }).fill('Patterns of distributed systems');
+  await page.getByRole('link', { name: 'Patterns of distributed systems' }).click();
+  await expect(page.getByText('degraded', { exact: true })).toBeVisible();
+  await expect(page.getByText('provider_unavailable')).toBeVisible();
+});

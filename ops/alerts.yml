@@ -147,6 +147,36 @@ groups:
           first_checks: Compare primary errors and latency with fallback outcomes.
           recovery: Repair or disable the primary after privacy and budget review.
           runbook_url: https://www.memoryhive.in/runbooks/observability#fallback-spike
+      - alert: MemoryhiveEnrichmentQualityBelowSLO
+        expr: sum(rate(memoryhive_ai_calls_total{task="enrichment",outcome="success"}[30m])) / clamp_min(sum(rate(memoryhive_ai_calls_total{task="enrichment"}[30m])), 0.001) < 0.98
+        for: 15m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Structured enrichment success is below 98 percent
+          user_impact: More captures lack validated AI metadata or suggestions.
+          first_checks: Compare schema rejection, provider errors, model/prompt version, and evaluation report.
+          recovery: Disable the affected enrichment route or roll back its model/prompt version.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#enrichment-quality
+      - alert: MemoryhiveProviderDegradedRateSLO
+        expr: sum(rate(memoryhive_analysis_outcomes_total{outcome="degraded"}[30m])) / clamp_min(sum(rate(memoryhive_analysis_outcomes_total[30m])), 0.001) > 0.02
+        for: 15m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Provider degradation exceeds two percent
+          user_impact: Deterministic capture works but AI features are frequently unavailable.
+          first_checks: Split provider outcomes, circuits, budgets, fallbacks, and queue age.
+          recovery: Disable the unhealthy provider and verify deterministic service health.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#degraded-spike
+      - alert: MemoryhiveCostPerAnalyzedItemSLO
+        expr: sum(rate(memoryhive_ai_estimated_cost_usd_total[1h])) / clamp_min(sum(rate(memoryhive_analysis_outcomes_total{stage="persist",outcome="completed"}[1h])), 0.001) > 0.02
+        for: 30m
+        labels: { severity: warning, owner: product-operations }
+        annotations:
+          summary: AI cost per analyzed item exceeds two cents
+          user_impact: AI spend is above the approved production forecast.
+          first_checks: Compare provider/model mix, token use, fallback rate, and workload volume.
+          recovery: Disable costly routes or reduce approved workload after product review.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#budget
 
   - name: memoryhive-http
     rules:
@@ -168,3 +198,13 @@ groups:
           summary: Memoryhive API p95 latency exceeds one second
           user_impact: Capture, search, and sync feel slow.
           runbook_url: https://www.memoryhive.in/runbooks/observability#api-latency
+      - alert: MemoryhiveSearchLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(memoryhive_search_latency_seconds_bucket[5m]))) > 0.75
+        for: 10m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Hybrid search p95 latency exceeds 750 milliseconds
+          user_impact: Search results may arrive slowly while keyword fallback remains available.
+          first_checks: Compare hybrid and keyword modes, provider embedding latency, candidate counts, and reranker latency.
+          recovery: Disable reranking or hybrid search, reduce the candidate cap, or restore the embedding provider.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#search-latency

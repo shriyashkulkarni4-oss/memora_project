@@ -1,0 +1,130 @@
+{
+  "metadata": {
+    "version": "memoryhive-ai-v1",
+    "schema_version": "1",
+    "prompt_version": "grounded-recall-v1",
+    "provider": "offline-deterministic",
+    "model": "fixture-v1",
+    "consent_basis": "synthetic_and_public_domain",
+    "contains_production_user_data": false,
+    "languages": ["en", "hi"]
+  },
+  "content_cases": [
+    {
+      "id": "link-en",
+      "item_type": "link",
+      "source": "Synthetic article about durable workflow history.",
+      "expected": {
+        "extraction": {"title": "Durable workflows", "author": "Memoryhive Fixture"},
+        "ocr_text": "Durable workflows preserve event history",
+        "summary": "Durable workflows preserve event history.",
+        "tags": ["temporal", "workflows"],
+        "topics": ["workflow durability"],
+        "entities": ["Temporal"],
+        "key_phrases": ["event history"],
+        "classification": "engineering"
+      },
+      "actual": {
+        "extraction": {"title": "Durable workflows", "author": "Memoryhive Fixture"},
+        "ocr_text": "Durable workflows preserve event history",
+        "summary": "Durable workflows preserve event history.",
+        "tags": ["temporal", "workflows"],
+        "topics": ["workflow durability"],
+        "entities": ["Temporal"],
+        "key_phrases": ["event history"],
+        "classification": "engineering"
+      }
+    },
+    {
+      "id": "screenshot-hi",
+      "item_type": "screenshot",
+      "source": "पूरी तरह कृत्रिम हिन्दी स्क्रीनशॉट पाठ।",
+      "expected": {
+        "extraction": {"title": "निजी नोट", "author": null},
+        "ocr_text": "यह एक निजी कृत्रिम नोट है",
+        "summary": "यह एक निजी कृत्रिम नोट है।",
+        "tags": ["नोट"],
+        "topics": ["निजी नोट"],
+        "entities": [],
+        "key_phrases": ["कृत्रिम नोट"],
+        "classification": "note"
+      },
+      "actual": {
+        "extraction": {"title": "निजी नोट", "author": null},
+        "ocr_text": "यह एक निजी कृत्रिम नोट है",
+        "summary": "यह एक निजी कृत्रिम नोट है।",
+        "tags": ["नोट"],
+        "topics": ["निजी नोट"],
+        "entities": [],
+        "key_phrases": ["कृत्रिम नोट"],
+        "classification": "note"
+      }
+    },
+    {
+      "id": "text-note-en",
+      "item_type": "text",
+      "source": "Synthetic project note with an entity and topic.",
+      "expected": {
+        "extraction": {"title": "Project Atlas", "author": null},
+        "ocr_text": "Project Atlas launches Tuesday",
+        "summary": "Project Atlas launches Tuesday.",
+        "tags": ["atlas", "launch"],
+        "topics": ["project launch"],
+        "entities": ["Project Atlas"],
+        "key_phrases": ["launches Tuesday"],
+        "classification": "project"
+      },
+      "actual": {
+        "extraction": {"title": "Project Atlas", "author": null},
+        "ocr_text": "Project Atlas launches Tuesday",
+        "summary": "Project Atlas launches Tuesday.",
+        "tags": ["atlas", "launch"],
+        "topics": ["project launch"],
+        "entities": ["Project Atlas"],
+        "key_phrases": ["launches Tuesday"],
+        "classification": "project"
+      }
+    }
+  ],
+  "retrieval_cases": [
+    {
+      "query": "How do workflows recover?",
+      "retrieved": ["workflow-history", "atlas-launch", "private-note"],
+      "relevant": ["workflow-history"],
+      "related": ["workflow-history", "atlas-launch"],
+      "related_relevant": ["workflow-history"],
+      "k": 3
+    },
+    {
+      "query": "When does Atlas launch?",
+      "retrieved": ["atlas-launch", "workflow-history"],
+      "relevant": ["atlas-launch"],
+      "related": ["atlas-launch"],
+      "related_relevant": ["atlas-launch"],
+      "k": 2
+    }
+  ],
+  "grounded_answer_cases": [
+    {
+      "question": "What do durable workflows preserve?",
+      "passages": [{"item_id": "workflow-history", "title": "Durable workflows", "text": "Durable workflows preserve event history."}],
+      "answer": "Durable workflows preserve event history.",
+      "supported": true,
+      "expected_citation_ids": [1],
+      "minimum_overlap": 0.5
+    },
+    {
+      "question": "What is the capital of France?",
+      "passages": [{"item_id": "workflow-history", "title": "Durable workflows", "text": "Durable workflows preserve event history."}],
+      "answer": "Paris is the capital of France.",
+      "supported": false,
+      "expected_citation_ids": [],
+      "minimum_overlap": 0.2
+    }
+  ],
+  "operation_samples": [
+    {"latency_ms": 180, "fallback": false, "estimated_cost_usd": 0.0},
+    {"latency_ms": 240, "fallback": false, "estimated_cost_usd": 0.0},
+    {"latency_ms": 310, "fallback": false, "estimated_cost_usd": 0.0}
+  ]
+}

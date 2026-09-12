@@ -25,6 +25,7 @@ from app.models import (
     EnrichmentRecord,
     Item,
     ItemEmbedding,
+    ItemInteraction,
     Tag,
 )
 from app.schemas.account import AccountDeleteRequest
@@ -85,6 +86,13 @@ async def export_account(
             )
         )
     )
+    interactions = list(
+        await db.scalars(
+            select(ItemInteraction)
+            .where(ItemInteraction.user_id == current_user.id)
+            .order_by(ItemInteraction.created_at)
+        )
+    )
     enrichments = list(
         await db.scalars(
             select(EnrichmentRecord)
@@ -113,6 +121,7 @@ async def export_account(
             "id": current_user.id,
             "email": current_user.email,
             "name": current_user.name,
+            "ai_external_processing_allowed": current_user.ai_external_processing_allowed,
             "created_at": current_user.created_at.isoformat(),
         },
         "categories": [
@@ -248,6 +257,19 @@ async def export_account(
                 "content_hash": chunk.content_hash,
             }
             for chunk in chunks
+        ],
+        "item_interactions": [
+            {
+                "id": interaction.id,
+                "item_id": interaction.subject_item_id,
+                "context_item_id": interaction.context_item_id,
+                "kind": interaction.kind,
+                "action": interaction.action,
+                "reverses_id": interaction.reverses_id,
+                "reason_code": interaction.reason_code,
+                "created_at": interaction.created_at.isoformat(),
+            }
+            for interaction in interactions
         ],
     }
 

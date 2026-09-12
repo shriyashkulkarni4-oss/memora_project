@@ -17,6 +17,7 @@
 - Backend: `cd cml-memoryhive-backend && uv sync --extra dev --locked && uv run ruff check app tests && uv run black --check app tests && uv run pytest -q`.
 - Frontend: `cd cml-memoryhive-frontend && npm run lint && npm test && npm run build`.
 - Mobile: `cd cml-memoryhive-mobile && npm run typecheck && npm run lint && npm test`.
+- AI rollout: `uv run python scripts/validate_ai_rollout.py`; the contract lives in `ops/ai-rollout-policy.json`.
 
 ## Project Map
 

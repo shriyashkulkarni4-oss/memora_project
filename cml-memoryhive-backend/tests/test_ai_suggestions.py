@@ -28,6 +28,36 @@ async def _session(client: AsyncClient, email: str) -> tuple[dict, dict[str, str
     return user.json(), {"Authorization": f"Bearer {login.json()['access_token']}"}
 
 
+async def test_suggestions_can_be_disabled_without_changing_source_items(
+    api_client_with_db: tuple[
+        AsyncClient, FakeStorage, async_sessionmaker[AsyncSession]
+    ],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, _storage, _session_factory = api_client_with_db
+    _user, headers = await _session(client, "suggestion-flags@example.com")
+    created = await client.post(
+        "/api/v1/items",
+        json={"type": "text", "raw_text": "Source survives feature rollback."},
+        headers=headers,
+    )
+    item_id = created.json()["id"]
+    from app.api.v1 import suggestions as suggestions_api
+
+    monkeypatch.setattr(
+        suggestions_api,
+        "get_settings",
+        lambda: Settings(
+            database_url="sqlite+aiosqlite://", ai_suggestions_enabled=False
+        ),
+    )
+    response = await client.get(f"/api/v1/items/{item_id}/suggestions", headers=headers)
+    assert response.status_code == 404
+    source = await client.get(f"/api/v1/items/{item_id}", headers=headers)
+    assert source.status_code == 200
+    assert source.json()["raw_text"] == "Source survives feature rollback."
+
+
 def enrichment(user_id: str, item_id: str, version: int) -> EnrichmentRecord:
     return EnrichmentRecord(
         user_id=user_id,

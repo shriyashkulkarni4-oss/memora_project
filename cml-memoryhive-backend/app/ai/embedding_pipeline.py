@@ -24,7 +24,7 @@ from app.ai.gateway import (
 )
 from app.ai.policy import AITask, resolve_task_policy
 from app.config import Settings, get_settings
-from app.models import DocumentChunk, EmbeddingIndex, Item, ItemEmbedding
+from app.models import DocumentChunk, EmbeddingIndex, Item, ItemEmbedding, User
 from app.observability import (
     AI_CALLS,
     AI_COST,
@@ -85,6 +85,10 @@ class EmbeddingPipeline:
     async def embed_document(
         self, document: ExtractedDocument, *, user_id: str
     ) -> EmbeddingOutcome:
+        if not self.settings.ai_embeddings_enabled:
+            return EmbeddingOutcome(
+                document.item_id, document.analysis_version, None, 0, 0, 0, "disabled"
+            )
         chunks = chunk_document(
             document,
             maximum_characters=self.settings.ai_embedding_chunk_characters,
@@ -94,7 +98,12 @@ class EmbeddingPipeline:
             return EmbeddingOutcome(
                 document.item_id, document.analysis_version, None, 0, 0, 0, "empty"
             )
-        policy = resolve_task_policy(self.settings, self.gateway, AITask.EMBEDDINGS)
+        policy = resolve_task_policy(
+            self.settings,
+            self.gateway,
+            AITask.EMBEDDINGS,
+            external_allowed_for_user=await self._external_allowed(user_id),
+        )
         routes = ([policy.primary] if policy.primary else []) + list(policy.fallbacks)
         if not routes:
             await self._persist_chunks(chunks, user_id)
@@ -132,10 +141,20 @@ class EmbeddingPipeline:
 
     async def embed_query(self, text: str, *, user_id: str) -> QueryEmbedding:
         """Embed a search query without persisting its private text or vector."""
+        if not self.settings.ai_embeddings_enabled:
+            raise ProviderError(
+                ProviderErrorCode.UNSUPPORTED_CAPABILITY,
+                ProviderType.OLLAMA,
+            )
         value = " ".join(text.split())
         if not value:
             raise ValueError("search query cannot be empty")
-        policy = resolve_task_policy(self.settings, self.gateway, AITask.EMBEDDINGS)
+        policy = resolve_task_policy(
+            self.settings,
+            self.gateway,
+            AITask.EMBEDDINGS,
+            external_allowed_for_user=await self._external_allowed(user_id),
+        )
         routes = ([policy.primary] if policy.primary else []) + list(policy.fallbacks)
         last_error: ProviderError | None = None
         for route in routes:
@@ -204,6 +223,16 @@ class EmbeddingPipeline:
         raise ProviderError(
             ProviderErrorCode.UNSUPPORTED_CAPABILITY, ProviderType.OLLAMA
         )
+
+    async def _external_allowed(self, user_id: str) -> bool:
+        async with self.session_factory() as session:
+            return bool(
+                await session.scalar(
+                    select(User.ai_external_processing_allowed).where(
+                        User.id == user_id
+                    )
+                )
+            )
 
     async def _persist_chunks(
         self, chunks: tuple[ContentChunk, ...], user_id: str
@@ -383,6 +412,8 @@ async def backfill_embeddings(
     limit: int | None = None,
 ) -> EmbeddingBackfillPage:
     """Process one bounded page; persist the returned cursor in the caller/workflow."""
+    if not pipeline.settings.ai_embedding_backfill_enabled:
+        return EmbeddingBackfillPage(outcomes=(), next_cursor=cursor, exhausted=True)
     batch = min(
         limit or pipeline.settings.ai_embedding_backfill_batch_size,
         pipeline.settings.ai_embedding_backfill_max_items_per_minute,

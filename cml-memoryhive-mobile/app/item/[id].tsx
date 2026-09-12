@@ -8,6 +8,7 @@ import { suggestionsFromItem } from "@/src/ai-suggestions";
 import { useAppState } from "@/src/app-state";
 import { CategoryPicker, EmptyState, Field, PrimaryButton, TagPicker } from "@/src/components";
 import { tagsFromItems, uniqueTags } from "@/src/item-filters";
+import { localMemoryConnections } from "@/src/memory-connections";
 import { colors } from "@/src/theme";
 import type { AISuggestionDecision, Item } from "@/src/types";
 
@@ -57,6 +58,7 @@ export default function ItemDetail() {
 
   const category = categories.find((candidate) => candidate.id === item.category_id);
   const aiSuggestions = suggestionsFromItem(item);
+  const memoryConnections = localMemoryConnections(item, items);
 
   async function decideSuggestions(decisions: AISuggestionDecision[]) {
     if (!item) return;
@@ -172,6 +174,20 @@ export default function ItemDetail() {
           <Text style={styles.suggestionHelp}>Suggestions never replace your tags or category without your action. Decisions sync when online.</Text>
         </View>
       ) : null}
+      {memoryConnections.length ? (
+        <View style={styles.connectionPanel}>
+          <Text style={styles.blockLabel}>Memory connections</Text>
+          {memoryConnections.map((connection) => (
+            <Pressable key={connection.item.id} onPress={() => router.push(`/item/${connection.item.id}`)} style={styles.connectionRow}>
+              <Ionicons color={connection.duplicate ? colors.warning : colors.primary} name={connection.duplicate ? "copy-outline" : "git-branch-outline"} size={18} />
+              <View style={styles.grow}>
+                <Text style={styles.connectionTitle}>{connection.item.title || "Untitled memory"}</Text>
+                <Text style={styles.connectionReason}>{connection.reasons.join(" · ")}{connection.duplicate ? " · Nothing is merged automatically." : ""}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      ) : null}
       {category ? (
         <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/(app)/home", params: { category: category.id } })} style={styles.categoryLink}>
           <View style={[styles.categorySwatch, { backgroundColor: category.color }]} />
@@ -224,4 +240,8 @@ const styles = StyleSheet.create({
   suggestionStatus: { color: colors.textMuted, fontSize: 11, textTransform: "uppercase" },
   suggestionButton: { backgroundColor: "#E2F2EE", borderRadius: 5, paddingHorizontal: 8, paddingVertical: 6 },
   suggestionHelp: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
+  connectionPanel: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 7, borderWidth: 1, gap: 9, padding: 13 },
+  connectionRow: { alignItems: "flex-start", borderTopColor: colors.border, borderTopWidth: 1, flexDirection: "row", gap: 9, paddingTop: 9 },
+  connectionTitle: { color: colors.text, fontSize: 14, fontWeight: "700" },
+  connectionReason: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 2 },
 });

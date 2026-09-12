@@ -1,0 +1,43 @@
+name: Opt-in AI live evaluations
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 2 * * *'
+
+permissions:
+  contents: read
+
+jobs:
+  live-provider:
+    if: vars.AI_LIVE_EVALUATIONS == 'true'
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: cml-memoryhive-backend } }
+    env:
+      AI_LIVE_EVALUATIONS: 'true'
+      OPENROUTER_ENABLED: ${{ vars.OPENROUTER_ENABLED }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
+      OPENROUTER_ALLOWED_MODELS: ${{ vars.OPENROUTER_ALLOWED_MODELS }}
+      HUGGINGFACE_ENABLED: ${{ vars.HUGGINGFACE_ENABLED }}
+      HUGGINGFACE_TOKEN: ${{ secrets.HUGGINGFACE_TOKEN }}
+      HUGGINGFACE_CHAT_MODEL: ${{ vars.HUGGINGFACE_CHAT_MODEL }}
+      HUGGINGFACE_CHAT_MODELS: ${{ vars.HUGGINGFACE_CHAT_MODELS }}
+      OPENAI_COMPATIBLE_ENABLED: ${{ vars.OPENAI_COMPATIBLE_ENABLED }}
+      OPENAI_COMPATIBLE_BASE_URL: ${{ vars.OPENAI_COMPATIBLE_BASE_URL }}
+      OPENAI_COMPATIBLE_API_KEY: ${{ secrets.OPENAI_COMPATIBLE_API_KEY }}
+      OPENAI_COMPATIBLE_MODEL: ${{ vars.OPENAI_COMPATIBLE_MODEL }}
+      OPENAI_COMPATIBLE_CHAT_MODELS: ${{ vars.OPENAI_COMPATIBLE_CHAT_MODELS }}
+      OPENAI_COMPATIBLE_ALLOWED_HOSTS: ${{ vars.OPENAI_COMPATIBLE_ALLOWED_HOSTS }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+        with: { version: '0.12.13', python-version: '3.14', enable-cache: true }
+      - run: uv sync --extra dev --locked
+      - name: Run budget-capped synthetic probe
+        run: uv run python scripts/run_ai_evaluations.py --live-provider "${{ vars.AI_LIVE_PROVIDER }}" --live-model "${{ vars.AI_LIVE_MODEL }}" --max-live-cost-usd 0.05 --output evaluation-results/live.json
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ai-live-evaluation
+          path: cml-memoryhive-backend/evaluation-results/live.json

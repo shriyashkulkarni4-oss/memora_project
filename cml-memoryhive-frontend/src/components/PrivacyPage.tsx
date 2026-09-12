@@ -12,7 +12,7 @@ export default function PrivacyPage() {
           <Link className="back-link" to="/login"><ArrowLeft size={16} /> Back to Memoryhive</Link>
           <span className="eyebrow">Privacy</span>
           <h1>Privacy Policy</h1>
-          <p>Last updated: September 6, 2026</p>
+          <p>Last updated: September 12, 2026</p>
         </header>
 
         <section>
@@ -22,12 +22,12 @@ export default function PrivacyPage() {
 
         <section>
           <h2><ShieldCheck size={18} /> How Data Is Used</h2>
-          <p>Your data is used to provide capture, search, organization, offline sync, export, account security, and content-processing features. Memoryhive does not include advertising SDKs, cross-app tracking, payments, location tracking, contacts access, or microphone recording in the current mobile app.</p>
+          <p>Your data is used to provide capture, search, organization, offline sync, export, account security, and content-processing features. AI features may create extracted text, summaries, classifications, tags, embeddings, related-memory signals, and cited recall answers. Memoryhive does not include advertising SDKs, cross-app tracking, payments, location tracking, contacts access, or microphone recording in the current mobile app.</p>
         </section>
 
         <section>
           <h2><LockKeyhole size={18} /> Security and Sharing</h2>
-          <p>Production deployments should use HTTPS for data in transit and private object storage for uploaded assets. Data is not sold. Service providers may process data only to operate Memoryhive infrastructure, storage, support, backups, logging, and content analysis.</p>
+          <p>Production deployments should use HTTPS for data in transit and private object storage for uploaded assets. Data is not sold. Local and self-hosted AI keep model processing within infrastructure controlled by the Memoryhive operator. OpenRouter, Hugging Face Inference Providers, and operator-configured third-party OpenAI-compatible or n8n endpoints may receive minimized saved-content passages only when the deployment permits that provider and you enable external AI processing in Settings. Disabling it prevents third-party AI calls while capture and keyword search continue.</p>
         </section>
 
         <section>

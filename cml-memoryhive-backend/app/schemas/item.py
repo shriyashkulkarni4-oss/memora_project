@@ -1,7 +1,7 @@
 """Versioned Item API schemas."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 from pydantic import (
@@ -154,6 +154,73 @@ class ItemListResponse(BaseModel):
     next_cursor: str | None = None
     has_more: bool
     limit: int
+
+
+class MemoryMatchResponse(BaseModel):
+    item: ItemResponse
+    score: float
+    reasons: list[str]
+    semantic_score: float | None = None
+
+
+class DuplicateMatchResponse(MemoryMatchResponse):
+    duplicate_kind: Literal["exact_url", "exact_content", "near_semantic"]
+
+
+class ResurfacingPage(BaseModel):
+    items: list[MemoryMatchResponse]
+    generated_at: datetime
+
+
+class RecallQuestionRequest(BaseModel):
+    question: str = Field(min_length=3, max_length=500)
+
+    @field_validator("question")
+    @classmethod
+    def normalize_question(cls, value: str) -> str:
+        return " ".join(value.split())
+
+
+class RecallCitationResponse(BaseModel):
+    citation_id: int
+    item_id: str
+    title: str | None
+    passage: str
+
+
+class RecallClaimResponse(BaseModel):
+    text: str
+    citation_ids: list[int]
+
+
+class GroundedRecallResponse(BaseModel):
+    answer: str
+    claims: list[RecallClaimResponse]
+    citations: list[RecallCitationResponse]
+    insufficient_evidence: bool
+    provider: str | None = None
+    model: str | None = None
+    latency_ms: int | None = None
+
+
+class MemoryFeedbackRequest(BaseModel):
+    action: Literal["dismiss", "pin", "useful", "undo"]
+    client_id: str = Field(min_length=1, max_length=100)
+    reverses_id: str | None = None
+
+    @model_validator(mode="after")
+    def validate_undo(self) -> "MemoryFeedbackRequest":
+        if (self.action == "undo") != bool(self.reverses_id):
+            raise ValueError("undo requires reverses_id and other actions forbid it")
+        return self
+
+
+class MemoryFeedbackResponse(BaseModel):
+    id: str
+    item_id: str
+    action: str
+    reverses_id: str | None
+    created_at: datetime
 
 
 class EnrichmentRecordResponse(BaseModel):

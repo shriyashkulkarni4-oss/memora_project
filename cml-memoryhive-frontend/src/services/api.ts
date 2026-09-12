@@ -1,6 +1,6 @@
 import type {
   AdminAIProviderHealth, AdminAnalysisOperations, AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminProcessingJobsPage, AdminUser, AdminUsersPage, AISuggestionDecision, AISuggestionOverview, Category, CreateItemRequest,
-  Item, ItemPage, ItemStats, ItemType, ManagedTag, ProcessingStatus, UpdateItemRequest, User,
+  DuplicateMatch, GroundedRecall, Item, ItemPage, ItemStats, ItemType, ManagedTag, MemoryFeedback, MemoryMatch, ProcessingStatus, ResurfacingPage, UpdateItemRequest, User,
 } from '../types/api';
 
 const API_URL = (import.meta.env.VITE_API_URL || '/api/v1').replace(/\/$/, '');
@@ -115,6 +115,8 @@ export const authApi = {
   me: () => request<User>('/auth/me'),
   changePassword: (data: { current_password: string; new_password: string }) =>
     request<void>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) }),
+  updateAIPrivacy: (external_processing_allowed: boolean) =>
+    request<User>('/auth/ai-privacy', { method: 'PATCH', body: JSON.stringify({ external_processing_allowed }) }),
   clearSession: () => saveTokens(null),
   logout: async () => {
     const refreshToken = localStorage.getItem(REFRESH_KEY);
@@ -198,6 +200,12 @@ export const itemsApi = {
   },
   update: (id: string, data: UpdateItemRequest) => request<Item>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   retryProcessing: (id: string) => request(`/items/${id}/processing/retry`, { method: 'POST' }),
+  related: (id: string) => request<MemoryMatch[]>(`/items/${id}/related`),
+  duplicates: (id: string) => request<DuplicateMatch[]>(`/items/${id}/duplicates`),
+  resurfacing: () => request<ResurfacingPage>('/items/resurfacing'),
+  recall: (question: string) => request<GroundedRecall>('/items/recall', { method: 'POST', body: JSON.stringify({ question }) }),
+  resurfacingFeedback: (id: string, data: { action: 'dismiss' | 'pin' | 'useful' | 'undo'; client_id: string; reverses_id?: string }) =>
+    request<MemoryFeedback>(`/items/resurfacing/${id}/feedback`, { method: 'POST', body: JSON.stringify(data) }),
   suggestions: (id: string) => request<AISuggestionOverview>(`/items/${id}/suggestions`),
   decideSuggestions: (id: string, data: { client_id: string; analysis_version: number; expected_revision: number; decisions: AISuggestionDecision[] }) =>
     request<AISuggestionOverview>(`/items/${id}/suggestions/decisions`, { method: 'POST', body: JSON.stringify(data) }),

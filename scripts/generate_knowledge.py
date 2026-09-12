@@ -72,6 +72,7 @@ def docs() -> list[KnowledgeDoc]:
                         "Backend: `cd cml-memoryhive-backend && uv sync --extra dev --locked && uv run ruff check app tests && uv run black --check app tests && uv run pytest -q`.",
                         "Frontend: `cd cml-memoryhive-frontend && npm run lint && npm test && npm run build`.",
                         "Mobile: `cd cml-memoryhive-mobile && npm run typecheck && npm run lint && npm test`.",
+                        "AI rollout: `uv run python scripts/validate_ai_rollout.py`; the contract lives in `ops/ai-rollout-policy.json`.",
                     ],
                 ),
                 (
@@ -312,6 +313,7 @@ def docs() -> list[KnowledgeDoc]:
                     [
                         "`MEMORYHIVE_REQUIREMENTS.md` and `REQUIREMENTS_TRACEABILITY.md` track product requirements.",
                         "`OPERATIONS_RUNBOOK.md` tracks deployment, monitoring, backup, restore, and rollback.",
+                        "`AI_DATA_GOVERNANCE.md` and `AI_PRODUCTION_READINESS.md` define AI privacy, ownership, SLO, rollout, and go/no-go controls.",
                         "`KUBERNETES_DEPLOYMENT.md` tracks build-manifest and Kubernetes deployment commands.",
                         "`GOAL-1/Goal Status/README.md` is the current Goal 1 verdict and restart point.",
                         "`GOAL-1/CODEX-GOAL-1.MD` is the active implementation log.",

@@ -8,6 +8,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { fixtureCategories, fixtureItems, fixtureTags } from '../data/fixtures';
 import { useLibraryStore } from '../store/libraryStore';
 import CaptureDialog from './CaptureDialog';
+import ItemCard from './ItemCard';
 import LibraryPage from './LibraryPage';
 
 function renderLibrary() {
@@ -89,6 +90,25 @@ describe('library experience', () => {
 
     await user.click(screen.getByRole('button', { name: 'Remove Favorites' }));
     expect(screen.getAllByRole('article')).toHaveLength(4);
+  });
+
+  it('shows content-safe hybrid match explanations and passage snippets', () => {
+    render(
+      <MemoryRouter>
+        <ItemCard item={{
+        ...fixtureItems[0],
+        search_match: {
+          score: 0.42,
+          reasons: ['semantic', 'source'],
+          snippet: 'A durable workflow resumes from its last persisted event.',
+          semantic_score: 0.91,
+        },
+        }} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByLabelText('Why this result matched').textContent).toContain('semantic, source');
+    expect(screen.getByText(/resumes from its last persisted event/)).toBeTruthy();
   });
 
   it('confirms favorite changes from item cards', async () => {

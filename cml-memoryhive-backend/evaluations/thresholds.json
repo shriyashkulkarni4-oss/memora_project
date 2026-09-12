@@ -1,0 +1,25 @@
+{
+  "version": "release-floors-v1",
+  "release_blocking": {
+    "schema_validity": {"min": 1.0},
+    "extraction_accuracy": {"min": 0.95},
+    "ocr_token_f1": {"min": 0.9},
+    "summary_faithfulness": {"min": 0.9},
+    "tag_precision": {"min": 0.8},
+    "tag_recall": {"min": 0.8},
+    "classification_accuracy": {"min": 0.9},
+    "topic_f1": {"min": 0.8},
+    "entity_f1": {"min": 0.8},
+    "key_phrase_f1": {"min": 0.8},
+    "recall_at_k": {"min": 0.8},
+    "mrr": {"min": 0.8},
+    "ndcg_at_k": {"min": 0.8},
+    "related_recall_at_k": {"min": 0.8},
+    "groundedness": {"min": 1.0},
+    "citation_correctness": {"min": 1.0},
+    "latency_p95_ms": {"max": 2000.0},
+    "fallback_rate": {"max": 0.1},
+    "estimated_cost_usd": {"max": 0.05}
+  },
+  "trend_warning_relative_drop": 0.05
+}

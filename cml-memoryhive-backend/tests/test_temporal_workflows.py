@@ -5,6 +5,7 @@ import uuid
 
 import pytest
 from temporalio import activity
+from temporalio.exceptions import ApplicationError
 from temporalio.testing import WorkflowEnvironment
 from temporalio.worker import Replayer, Worker
 
@@ -23,7 +24,7 @@ from app.temporal_pipeline.workflows import (
     BackfillEmbeddingsWorkflow,
 )
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
 executed_stages: list[str] = []
 
@@ -90,6 +91,7 @@ FAKE_ACTIVITIES = [
 
 extract_started: asyncio.Event | None = None
 release_extract: asyncio.Event | None = None
+enrichment_attempts = 0
 
 
 @activity.defn(name="extract_item_activity")
@@ -99,6 +101,16 @@ async def controlled_extract(request: AnalysisWorkflowInput) -> AnalysisStageOut
     await release_extract.wait()
     executed_stages.append("extracted")
     return AnalysisStageOutcome(request.item_id, request.analysis_version, "extracted")
+
+
+@activity.defn(name="enrich_item_activity")
+async def flaky_enrich(request: AnalysisWorkflowInput) -> AnalysisStageOutcome:
+    global enrichment_attempts
+    enrichment_attempts += 1
+    if enrichment_attempts == 1:
+        raise ApplicationError("synthetic provider timeout", type="provider_timeout")
+    executed_stages.append("enriched")
+    return AnalysisStageOutcome(request.item_id, request.analysis_version, "enriched")
 
 
 async def test_multistage_workflow_executes_in_order_and_replays() -> None:
@@ -235,5 +247,82 @@ async def test_cancel_signal_stops_after_current_idempotent_stage() -> None:
 
         assert result.status == "cancelled"
         assert executed_stages == ["extracted", "cancelled"]
+    finally:
+        await environment.shutdown()
+
+
+async def test_workflow_recovers_after_transient_provider_failure() -> None:
+    global enrichment_attempts
+    enrichment_attempts = 0
+    executed_stages.clear()
+    environment = await WorkflowEnvironment.start_time_skipping()
+    task_queue = f"provider-recovery-{uuid.uuid4()}"
+    request = AnalysisWorkflowInput("job-recovery", "item-recovery", 1)
+    activities = [
+        fake_extract,
+        flaky_enrich,
+        fake_embed,
+        fake_persist,
+        fake_index,
+        fake_failure,
+        fake_cancellation,
+        fake_legacy,
+    ]
+    try:
+        async with Worker(
+            environment.client,
+            task_queue=task_queue,
+            workflows=[AnalyzeItemWorkflow],
+            activities=activities,
+        ):
+            result = await environment.client.execute_workflow(
+                AnalyzeItemWorkflow.run,
+                request,
+                id=f"provider-recovery-{uuid.uuid4()}",
+                task_queue=task_queue,
+            )
+        assert result.status == "analyzed"
+        assert enrichment_attempts == 2
+        assert executed_stages == [
+            "extracted",
+            "enriched",
+            "embedded",
+            "persisted",
+            "completed",
+        ]
+    finally:
+        await environment.shutdown()
+
+
+async def test_workflow_resumes_after_worker_termination() -> None:
+    executed_stages.clear()
+    environment = await WorkflowEnvironment.start_time_skipping()
+    task_queue = f"worker-recovery-{uuid.uuid4()}"
+    request = AnalysisWorkflowInput("job-worker", "item-worker", 1)
+    try:
+        # The workflow is durably accepted while no worker is running, matching
+        # the observable state after a worker process has terminated.
+        handle = await environment.client.start_workflow(
+            AnalyzeItemWorkflow.run,
+            request,
+            id=f"worker-recovery-{uuid.uuid4()}",
+            task_queue=task_queue,
+        )
+        await asyncio.sleep(0.05)
+        async with Worker(
+            environment.client,
+            task_queue=task_queue,
+            workflows=[AnalyzeItemWorkflow],
+            activities=FAKE_ACTIVITIES,
+        ):
+            result = await handle.result()
+        assert result.status == "analyzed"
+        assert executed_stages == [
+            "extracted",
+            "enriched",
+            "embedded",
+            "persisted",
+            "completed",
+        ]
     finally:
         await environment.shutdown()

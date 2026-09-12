@@ -69,6 +69,7 @@ class Settings(BaseSettings):
     admin_backup_timeout_seconds: int = 900
 
     # Optional n8n integration
+    n8n_enabled: bool = True
     n8n_webhook_url: str | None = None
     n8n_api_key: str | None = None
     n8n_signing_secret: SecretStr | None = None
@@ -76,6 +77,7 @@ class Settings(BaseSettings):
 
     # Content processing
     ollama_base_url: str | None = None
+    ollama_enabled: bool = True
     ollama_model: str = "qwen2.5:3b"
     ollama_embedding_model: str | None = None
     ollama_keep_alive: str = "5m"
@@ -93,6 +95,8 @@ class Settings(BaseSettings):
     ai_embeddings_fallback_routes: list[str] = []
     ai_reranking_route: str | None = None
     ai_reranking_fallback_routes: list[str] = []
+    ai_recall_route: str | None = None
+    ai_recall_fallback_routes: list[str] = []
     ai_vision_route: str | None = None
     ai_vision_fallback_routes: list[str] = []
     ai_cross_provider_fallback_enabled: bool = False
@@ -109,6 +113,9 @@ class Settings(BaseSettings):
     ai_per_user_daily_token_quota: int = 0
     ai_per_user_monthly_token_quota: int = 0
     ai_suggestion_auto_apply_threshold: float = 0
+    ai_structured_enrichment_enabled: bool = True
+    ai_embeddings_enabled: bool = True
+    ai_suggestions_enabled: bool = True
     ai_embedding_dimensions: int = 768
     ai_embedding_normalization: Literal["l2", "none"] = "l2"
     ai_embedding_index_version: int = 1
@@ -117,6 +124,7 @@ class Settings(BaseSettings):
     ai_embedding_backfill_batch_size: int = 25
     ai_embedding_backfill_max_items_per_minute: int = 30
     ai_hybrid_search_enabled: bool = True
+    ai_search_shadow_enabled: bool = False
     ai_search_candidate_limit: int = 200
     ai_search_rrf_k: int = 60
     ai_search_keyword_weight: float = 1.25
@@ -125,6 +133,22 @@ class Settings(BaseSettings):
     ai_search_latency_budget_ms: int = 750
     ai_rerank_candidate_limit: int = 20
     ai_rerank_latency_budget_ms: int = 300
+    ai_duplicate_semantic_threshold: float = 0.92
+    ai_related_limit: int = 8
+    ai_related_items_enabled: bool = True
+    ai_resurfacing_enabled: bool = True
+    ai_resurfacing_limit: int = 10
+    ai_resurfacing_frequency_window_days: int = 7
+    ai_resurfacing_frequency_cap: int = 2
+    ai_resurfacing_minimum_interval_hours: int = 24
+    ai_resurfacing_max_per_source: int = 2
+    ai_resurfacing_max_per_topic: int = 2
+    ai_grounded_recall_enabled: bool = False
+    ai_evaluation_release_gate_passed: bool = False
+    ai_recall_source_limit: int = 8
+    ai_recall_max_passage_characters: int = 2_000
+    ai_recall_max_answer_characters: int = 4_000
+    ai_recall_grounding_overlap: float = 0.12
     ollama_timeout_seconds: float = 30
     n8n_timeout_seconds: float = 15
 
@@ -210,6 +234,8 @@ class Settings(BaseSettings):
     temporal_payload_encryption_required: bool = False
     temporal_history_retention_days: int = 30
     temporal_backfill_max_items_per_minute: int = 30
+    ai_embedding_backfill_enabled: bool = False
+    ai_embedding_backfill_concurrency: int = 1
     temporal_custom_search_attributes_enabled: bool = False
     temporal_sdk_metrics_port: int = 9102
     temporal_scheduler_metrics_port: int = 9103
@@ -304,8 +330,13 @@ class Settings(BaseSettings):
         if (
             self.ai_embedding_backfill_batch_size < 1
             or self.ai_embedding_backfill_max_items_per_minute < 1
+            or self.ai_embedding_backfill_concurrency < 1
         ):
             errors.append("AI embedding backfill limits must be positive")
+        if self.ai_embedding_backfill_concurrency > self.ai_provider_concurrency:
+            errors.append(
+                "AI embedding backfill concurrency cannot exceed provider concurrency"
+            )
         if (
             self.ai_search_candidate_limit < 1
             or self.ai_search_rrf_k < 1
@@ -318,6 +349,39 @@ class Settings(BaseSettings):
             errors.append("AI search fusion weights cannot be negative")
         if not 0 <= self.ai_search_semantic_threshold <= 1:
             errors.append("AI search semantic threshold must be between 0 and 1")
+        if not 0 <= self.ai_duplicate_semantic_threshold <= 1:
+            errors.append("AI duplicate semantic threshold must be between 0 and 1")
+        if any(
+            value < 1
+            for value in (
+                self.ai_related_limit,
+                self.ai_resurfacing_limit,
+                self.ai_resurfacing_frequency_window_days,
+                self.ai_resurfacing_frequency_cap,
+                self.ai_resurfacing_minimum_interval_hours,
+                self.ai_resurfacing_max_per_source,
+                self.ai_resurfacing_max_per_topic,
+            )
+        ):
+            errors.append("AI memory graph and resurfacing limits must be positive")
+        if any(
+            value < 1
+            for value in (
+                self.ai_recall_source_limit,
+                self.ai_recall_max_passage_characters,
+                self.ai_recall_max_answer_characters,
+            )
+        ):
+            errors.append("AI grounded recall limits must be positive")
+        if not 0 <= self.ai_recall_grounding_overlap <= 1:
+            errors.append("AI_RECALL_GROUNDING_OVERLAP must be between 0 and 1")
+        if (
+            self.ai_grounded_recall_enabled
+            and not self.ai_evaluation_release_gate_passed
+        ):
+            errors.append(
+                "AI_GROUNDED_RECALL_ENABLED requires AI_EVALUATION_RELEASE_GATE_PASSED"
+            )
         if (
             not 0
             <= self.ai_embedding_chunk_overlap
@@ -332,17 +396,24 @@ class Settings(BaseSettings):
             "openai_compatible",
         }
         configured = {
-            "ollama": bool(self.ollama_base_url),
+            "ollama": self.ollama_enabled and bool(self.ollama_base_url),
             "openrouter": self.openrouter_enabled
             and bool(self.openrouter_api_key)
             and bool(self.openrouter_model),
             "huggingface": self.huggingface_enabled
             and bool(self.huggingface_token)
             and bool(self.huggingface_chat_model or self.huggingface_embedding_model),
-            "n8n": bool(self.n8n_webhook_url),
+            "n8n": self.n8n_enabled and bool(self.n8n_webhook_url),
             "openai_compatible": self.openai_compatible_enabled
             and bool(self.openai_compatible_base_url)
             and bool(self.openai_compatible_model),
+        }
+        enabled = {
+            "ollama": self.ollama_enabled,
+            "openrouter": self.openrouter_enabled,
+            "huggingface": self.huggingface_enabled,
+            "n8n": self.n8n_enabled,
+            "openai_compatible": self.openai_compatible_enabled,
         }
         external = {
             "openrouter": True,
@@ -361,6 +432,7 @@ class Settings(BaseSettings):
             "enrichment",
             "embeddings",
             "reranking",
+            "recall",
             "vision",
         ):
             routes = [
@@ -372,13 +444,17 @@ class Settings(BaseSettings):
                 if provider not in providers:
                     errors.append(f"AI_{task.upper()} route has unknown provider")
                     continue
-                if not configured[provider]:
+                if enabled[provider] and not configured[provider]:
                     errors.append(
                         f"AI_{task.upper()} route selects an unconfigured provider"
                     )
-                if external[provider] and (
-                    not self.ai_external_content_allowed
-                    or provider not in self.ai_allowed_external_providers
+                if (
+                    enabled[provider]
+                    and external[provider]
+                    and (
+                        not self.ai_external_content_allowed
+                        or provider not in self.ai_allowed_external_providers
+                    )
                 ):
                     errors.append(
                         f"AI_{task.upper()} route selects an external provider without consent"

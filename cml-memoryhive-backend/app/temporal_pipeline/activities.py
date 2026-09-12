@@ -25,7 +25,7 @@ from app.ai.factory import build_ai_gateway
 from app.ai.gateway import ProviderError
 from app.config import get_settings
 from app.database import async_session_maker
-from app.models import AnalysisStatus, Item, ProcessingJob, Tag
+from app.models import AnalysisStatus, Item, ProcessingJob, Tag, User
 from app.observability import ACTIVITY_DURATION, ANALYSIS_OUTCOMES, SCHEDULE_TO_START
 from app.services.analysis import (
     AnalysisOutcome,
@@ -81,6 +81,13 @@ async def _load_item_and_job(
             )
         item._existing_tag_names = tuple(
             await session.scalars(select(Tag.name).where(Tag.user_id == item.user_id))
+        )
+        item._external_ai_allowed = bool(
+            await session.scalar(
+                select(User.ai_external_processing_allowed).where(
+                    User.id == item.user_id
+                )
+            )
         )
         return item, job
 
@@ -266,6 +273,11 @@ async def backfill_embeddings_activity(
 ) -> EmbeddingBackfillPageOutcome:
     """Embed one cursor page so Temporal can durably resume and rate-limit migration."""
     settings = get_settings()
+    if not settings.ai_embedding_backfill_enabled:
+        raise ApplicationError(
+            "Embedding backfill is disabled by rollout policy",
+            non_retryable=True,
+        )
     if request.expected_index_version != settings.ai_embedding_index_version:
         raise ApplicationError(
             "Embedding index version does not match worker configuration",

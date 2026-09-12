@@ -52,6 +52,10 @@ class LogoutRequest(RefreshRequest):
     pass
 
 
+class AIPrivacyPreferenceRequest(BaseModel):
+    external_processing_allowed: bool
+
+
 class TokenPair(BaseModel):
     access_token: str
     refresh_token: str
@@ -67,5 +71,6 @@ class UserResponse(BaseModel):
     name: str | None
     role: UserRole
     is_active: bool
+    ai_external_processing_allowed: bool
     created_at: datetime
     updated_at: datetime

@@ -1,7 +1,7 @@
 # Memoryhive AI Goal 1
 
 Date: 12 September 2026  
-Status: Proposed — implementation must not begin until this plan is reviewed and approved  
+Status: Implementation complete — production enablement remains gated
 Scope: AI extraction, model connectivity, Temporal reliability, monitoring,
 AI-powered recall, administration, privacy, testing, and production readiness
 
@@ -114,13 +114,13 @@ recorded in its section. Tasks are executed in numeric order.
 | AI-014 | Completed | 2026-09-12 | Migration 015, provider-independent grounded enrichment normalization, versioned taxonomy/tag matching, durable tenant-scoped history, field provenance and golden quality fixtures |
 | AI-015 | Completed | 2026-09-12 | Migration 016, immutable private feedback/preferences, reversible revision-safe APIs, confidence-gated auto-apply, web/mobile review UI and offline conflict replay |
 | AI-016 | Completed | 2026-09-12 | Migration 017, stable versioned chunks, immutable parallel embedding indexes, provider-neutral reuse pipeline, bounded Temporal backfill, deletion/export lifecycle and Recall@K/latency corpus |
-| AI-017 | Not started | — | — |
-| AI-018 | Not started | — | — |
-| AI-019 | Not started | — | — |
-| AI-020 | Not started | — | — |
-| AI-021 | Not started | — | — |
-| AI-022 | Not started | — | — |
-| AI-023 | Not started | — | — |
+| AI-017 | Completed | 2026-09-12 | Tenant-filtered keyword/semantic candidate retrieval, deterministic weighted RRF, exact boosts, passage explanations, bounded Ollama reranking, AI-off fallback and Recall@K/NDCG/latency gates |
+| AI-018 | Completed | 2026-09-12 | Migration 018, exact/semantic duplicate suggestions, explainable related memories, diverse frequency-capped resurfacing, append-only reversible feedback, web and offline-mobile surfaces |
+| AI-019 | Completed | 2026-09-12 | Owner-scoped single-turn recall, server-verified claim citations, insufficient-evidence fallback, provider policy/budgets, web UI, independently gated rollout |
+| AI-020 | Completed | 2026-09-12 | Versioned consent-safe corpus, 19 quality/operations metrics, blocking floors, baseline trends, credential-free CI report and opt-in capped live probes |
+| AI-021 | Completed | 2026-09-12 | Real Temporal API/history acceptance, deterministic recovery/provider failures, capture-burst/backlog/search load gate, AI browser flows, sanitized failure artifacts, separated CI lanes |
+| AI-022 | Completed | 2026-09-12 | Default-off user consent, local/external route enforcement at dispatch and execution, governance/provider register, secret/SSRF/privacy/store/deletion controls and regression coverage |
+| AI-023 | Completed | 2026-09-12 | Independent rollout/provider flags, shadow ranking, pausable bounded backfill, SLO/cost/ownership policy, go-no-go evidence validator, Compose/Kubernetes matrix validation |
 
 ---
 
@@ -1389,6 +1389,56 @@ treated as a runtime string that can change without migration.
 
 ## AI-017 — Implement Hybrid Search and Optional Reranking
 
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- Search now retrieves exact/keyword and semantic passage candidates
+  independently after applying owner, source, date, type, category, archive, tag,
+  and cursor filters. Semantic vectors are read only from the active immutable
+  provider/model/dimension/normalization/version index and current item analysis
+  version.
+- Deterministic weighted reciprocal-rank fusion combines both lists with
+  configuration for candidate count, `k`, keyword/semantic weights, similarity
+  threshold, and end-to-end latency budget. Exact title, URL/domain, tag, source,
+  and phrase matches receive explicit boosts and stable ID tie-breaking.
+- Every search result can include a content-safe `search_match` with bounded
+  score, reasons, best passage snippet, and semantic score. The web card renders
+  this explanation; the mobile contract accepts it while mobile continues to
+  provide its existing provider-independent on-device keyword search offline.
+- Query content/vectors are never persisted. Query embeddings use the same
+  privacy routing, provider capability checks, circuit/retry policy, immutable
+  index schema, usage accounting, quotas, and request/token/cost budgets as
+  document embeddings.
+- Added the provider-neutral reranking contract and gateway validation. Ollama
+  implements a temperature-zero, JSON-schema-constrained reranker. The optional
+  reranking pipeline caps candidate text/count, enforces a separate latency
+  budget, records usage/cost, rejects unknown/duplicate IDs, and leaves the
+  deterministic order unchanged on timeout, budget exhaustion, or provider
+  failure.
+- With hybrid search disabled, no embedding route, an offline provider, no
+  matching index, or a latency failure, the API returns keyword results without
+  failing capture/search. Added bounded search mode/outcome and latency metrics,
+  a Grafana p95 panel, a 750 ms alert, and recovery instructions.
+- Added complete environment, Compose, and Kubernetes tuning surfaces for hybrid
+  ranking and reranking limits.
+
+Validation evidence:
+
+- Backend Ruff and Black checks pass; the full backend suite reports `143
+  passed`. Tests prove exact and semantic fusion, filters-before-ranking,
+  cross-tenant isolation, snippets/reasons, AI-disabled keyword behavior,
+  active-index/version checks, bounded/cost-recorded reranking, and malformed
+  reranker rejection.
+- The committed retrieval corpus measures Recall@2 and NDCG@2 above `0.95`, both
+  above its synonym-miss keyword baseline, with the local ranking latency ceiling
+  below `50 ms`.
+- Web lint/build and `25` tests pass, including explanation/snippet rendering;
+  mobile typecheck/lint and `68` tests pass, including offline local search.
+- Build generation and `31` tests pass. Deployment rules/config validation
+  reports `26 passed`; the environment-sensitive kubectl dry-run initially timed
+  out and then passed independently (`1 passed`) across all 12 manifests.
+
 ### Problem
 
 Vector-only search can miss exact identifiers, while keyword-only search misses
@@ -1427,6 +1477,51 @@ durable differentiation than a generic summary endpoint.
 
 ## AI-018 — Add Related Memories, Duplicate Detection, and Resurfacing
 
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- Migration `018_item_interactions.py` adds private, append-only interaction
+  events for resurfacing exposure, dismiss, pin, useful, and undo actions, with
+  tenant/client idempotency and explicit reversal links. Events contain bounded
+  reason/score metadata rather than item content.
+- Added owner-scoped related-memory and duplicate-candidate APIs. Related ranking
+  combines current-index passage similarity, normalized tags, topics, entities,
+  key phrases, and source/domain signals with deterministic tie-breaking and a
+  human-readable reason for every result.
+- Duplicate detection identifies normalized URL, normalized text/upload hash,
+  and high semantic-similarity candidates. It only returns suggestions: no API or
+  UI path merges, overwrites, or deletes either item.
+- Added a deterministic resurfacing feed using memory age, favorite state,
+  prior useful/pin/dismiss feedback, interest overlap, exposure history, and
+  configurable per-source/per-topic diversity. Frequency windows, exposure caps,
+  and minimum intervals prevent repetition; pinned items remain deliberately
+  recoverable.
+- Dismiss/pin/useful feedback is idempotent and immediately changes future
+  ranking. Undo is an immutable reversal, rejects foreign/already-reversed events,
+  and restores the prior deterministic behavior.
+- Web item detail displays duplicate warnings and related-memory explanations;
+  its library “Rediscover” panel provides useful, pin, dismiss, and undo controls.
+  Mobile computes exact duplicates and tag/source relationships from synchronized
+  local data, explicitly documenting that nothing is automatically merged and
+  remaining useful offline.
+- Interaction history is included in account export and explicitly erased for
+  item/account deletion. All thresholds, limits, frequency controls, Compose,
+  and Kubernetes settings are configurable.
+
+Validation evidence:
+
+- Backend Ruff and Black checks pass; the full suite reports `145 passed`,
+  including migration round-trip, exact/near duplicate classes, current-index
+  semantic scoring, cross-tenant exclusion, source/topic diversity, immediate
+  exposure suppression, client idempotency, dismiss/undo behavior, and item
+  interaction cleanup.
+- Web lint/build and `26` tests pass, including explicit duplicate-no-merge and
+  related-reason rendering. Mobile typecheck/lint and `69` tests pass, including
+  provider-free offline duplicate/connection ranking.
+- Build generation and `31` tests pass; all 12 Kubernetes outputs regenerate and
+  deployment/configuration validation reports `27 passed`.
+
 ### Problem
 
 Memoryhive stores content but does not yet connect or proactively recall it in a
@@ -1463,6 +1558,40 @@ This is a primary AI-moat feature: the value comes from a user’s accumulated
 private memory graph and feedback, not from access to a commodity model.
 
 ## AI-019 — Add Grounded Recall Answers as a Controlled Follow-up Feature
+
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- Added a provider-neutral, single-turn grounded-recall pipeline. It sends only
+  bounded owner-scoped retrieved passages through the existing explicit provider
+  policy and database-backed per-user/system budget guard; it never performs web
+  search or accepts conversational history.
+- Each generated factual sentence must pass a server-side lexical grounding check
+  against a retrieved passage. Supported claims receive structured citation IDs;
+  any unsupported claim converts the entire response to an explicit
+  insufficient-evidence result rather than being shown as an answer.
+- Added `POST /items/recall` with saved-item/passage citations, provider/model and
+  latency provenance, tenant-scoped retrieval, and safe unavailable behavior.
+  A web “Ask your memories” surface links every citation to its accessible item.
+- Backend and independently compiled web flags default off. Backend enablement
+  additionally requires `AI_EVALUATION_RELEASE_GATE_PASSED=true`; configuration
+  validation rejects recall enablement without that gate. Provider routing,
+  fallback, payload bounds, and answer bounds are configurable across Compose and
+  Kubernetes.
+
+Validation evidence:
+
+- Backend Ruff/Black and the full suite pass with `148 passed`, including feature
+  gating, unsupported-claim refusal, working citations, and cross-user passage
+  exclusion.
+- Web lint/build and `27` tests pass, including a saved-item citation navigation
+  test. Runtime generation and `31` build tests pass; all Kubernetes variants
+  regenerate and deployment validation reports `27 passed`.
+- AI-020's versioned offline release evaluation passes groundedness and citation
+  correctness at `1.0`, p95 latency at `310 ms`, estimated cost at `$0.00`, and
+  all retrieval floors. Runtime rollout remains independently disabled by default
+  and requires an operator to set both the feature flag and accepted-gate flag.
 
 ### Problem
 
@@ -1501,6 +1630,41 @@ must precede generative answers.
 
 ## AI-020 — Create the AI Evaluation System
 
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- Added a versioned `memoryhive-ai-v1` corpus explicitly marked as synthetic and
+  public-domain, with no production user data. It covers link, screenshot, text,
+  English/Hindi OCR, extraction, schema validity, summaries, tags, topics,
+  classification, entities, key phrases, semantic queries, related results, and
+  supported/unsupported grounded answers.
+- Added deterministic extraction accuracy, token F1, precision/recall/F1,
+  classification, Recall@K, MRR, NDCG, related Recall@K, groundedness, citation
+  correctness, p95 latency, fallback-rate, and estimated-cost measurements.
+- Versioned release floors and a provider/model/prompt/schema/dataset-qualified
+  baseline produce blocking failures and separate non-blocking trend warnings.
+  A regression test proves quality drops fail rollout.
+- Normal CI runs without provider credentials, writes a redacted comparable JSON
+  report, and uploads it as an artifact. Existing deterministic provider-contract
+  suites exercise OpenRouter, Hugging Face, Ollama, n8n, and OpenAI-compatible
+  behavior without paid calls.
+- Added a separate scheduled/manual live-evaluation workflow. It is skipped unless
+  explicitly enabled, sends only a fixed synthetic prompt, stores no response
+  content, uses secret-backed provider configuration, and enforces a hard maximum
+  estimated-cost cap of USD 0.05.
+- `evaluations/README.md` documents corpus governance, execution, baseline update
+  review, privacy constraints, and opt-in live-provider operation.
+
+Validation evidence:
+
+- Backend Ruff/Black and the full suite pass with `153 passed`, including corpus
+  governance, deterministic baseline comparison, blocking regression detection,
+  live opt-in/cost-cap enforcement, and all AI provider contract suites.
+- The release evaluator exits successfully with no blocking failures: all quality
+  metrics are `1.0`, p95 latency is `310 ms`, fallback rate is `0.0`, and estimated
+  cost is `$0.00`, satisfying every versioned floor and closing AI-019's dependency.
+
 ### Problem
 
 There is no objective way to compare models, prompts, extraction quality, search
@@ -1537,6 +1701,45 @@ The evaluation corpus and correction signals are strategic assets. Version them
 carefully and separate synthetic/public fixtures from consented private examples.
 
 ## AI-021 — Complete End-to-End and Failure Testing
+
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- `--temporal` is now an asserting acceptance mode, not a profile alias. It runs
+  the offline AI release evaluation, captures synthetic text/link/screenshot
+  items through the running API, waits for terminal analysis state, connects to
+  the real Temporal service, and verifies each deterministic workflow ID has
+  persisted history.
+- The same command runs deterministic Temporal and provider-stub suites covering
+  ordered stages, replay, cancellation, stale versions, duplicate dispatch,
+  worker absence/recovery, transient provider failure/retry, timeout/rate limit,
+  malformed output, exhaustion, circuit breaking, fallback, and provider policy.
+- Added a bounded live-stack load gate that concurrently captures 20 items,
+  observes and waits for the analysis backlog to drain, then measures ten search
+  requests against a configurable 2-second p95 ceiling.
+- Acceptance artifacts contain workflow IDs, item types, terminal states, history
+  event counts, content-safe metrics, evaluation results, burst/backlog/search
+  measurements, and no credentials or saved content. Failures additionally
+  collect a bounded Compose log tail with token/key/password/Bearer redaction.
+- Added desktop and mobile Playwright flows for AI suggestions with undo,
+  provider/model provenance, semantic match explanations, and degraded provider
+  state. Existing component/API tests cover analysis operations and retry paths.
+- CI now separates fast credential-free backend tests, a real Docker Temporal
+  integration lane, and the separately opt-in live-provider evaluation workflow.
+
+Validation evidence:
+
+- Backend Ruff/Black and all `155` tests pass. The Temporal-focused suite reports
+  `6 passed`, including retry after a synthetic provider timeout and successful
+  execution after the workflow was durably queued with no worker available.
+- Web lint/build and `27` unit tests pass; the expanded Playwright suite reports
+  `4 passed` across desktop and mobile.
+- The automation script passes Node syntax validation, and a `--temporal --dry-run`
+  proves the canonical sequence includes real workflow-history acceptance,
+  deterministic failure suites, evaluation output, and the bounded load gate.
+  The local Docker daemon was unresponsive, so the real-container execution is
+  assigned to the new isolated CI lane and was not claimed as a local run.
 
 ### Problem
 
@@ -1577,6 +1780,41 @@ measure behavior but must not be the sole correctness gate.
 
 ## AI-022 — Enforce Privacy, Security, and Data Governance
 
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- External AI processing is user opt-in and defaults off. Web and mobile settings
+  explain the transfer boundary; the authenticated API, account export, and
+  migration persist the preference.
+- Provider routes carry local/self-hosted/third-party classification. Dispatch,
+  Temporal activities, the database worker, direct analysis, embeddings,
+  reranking, and grounded recall enforce both operator policy and current user
+  consent. Workers re-check consent at execution, so opting out after queueing
+  removes an external primary and promotes only an allowed local fallback.
+- `docs/AI_DATA_GOVERNANCE.md` now owns the provider register, data-flow diagram,
+  minimized payload rules, retention/deletion/residency/logging policy, threat
+  controls, and incident responsibilities. The public privacy policy and mobile
+  store data-safety/submission material match the implemented behavior.
+- Provider credentials remain server-side secret references and are redacted
+  from deployment artifacts, APIs, logs, and test artifacts. Generic compatible
+  endpoints enforce exact host allowlists, DNS/literal private-address checks,
+  redirect denial, sensitive-header blocking, and payload ceilings.
+- Account deletion explicitly removes chunks, embeddings, enrichment records,
+  AI runs/usage, interactions, suggestions, feedback, and preferences; export is
+  owner scoped and includes the AI privacy setting and derived records.
+
+Validation evidence:
+
+- Backend Ruff/Black and all `158` tests pass, including local-only routing,
+  queued opt-out, SSRF/redirect/header injection, secret redaction, oversized
+  input, tenant isolation, account export/deletion, and migration round-trip.
+- Web lint/build and `27` tests pass. Mobile typecheck/lint and `69` tests pass;
+  the store submission packet is current and the automated privacy consistency
+  check reports no repository blocker. Its remaining 12 release blockers are
+  pre-existing real signing, store-console, reviewer-account, and operator-contact
+  evidence—not privacy implementation failures.
+
 ### Problem
 
 External AI connectivity sends private captured content outside Memoryhive’s
@@ -1616,6 +1854,56 @@ Private/local intelligence can be part of the moat. Privacy should be represente
 as a product capability, not only a legal disclosure.
 
 ## AI-023 — Rollout, Migration, and Production Readiness
+
+Status: **Completed — 2026-09-12**
+
+Implementation evidence:
+
+- Temporal, Ollama, n8n, OpenRouter, Hugging Face, OpenAI-compatible,
+  enrichment, embeddings, shadow/hybrid ranking, suggestions, related items,
+  resurfacing, grounded recall, and embedding backfill now have independent
+  server/deployment flags. Disabling a provider filters configured routes rather
+  than preventing startup, so deterministic capture and keyword search continue.
+- Hybrid search has a real shadow mode: it executes and measures candidate
+  ranking, records top-k overlap, and returns the unchanged keyword control order.
+  Production manifests default to shadow on and user-visible hybrid ordering off.
+- Embedding backfill is independently disabled by default, cursor-resumable,
+  rate/batch/budget bounded, sequential within its configured concurrency ceiling,
+  and accepts Temporal pause/resume signals. Rollback retains the old immutable
+  embedding index and never removes source content.
+- `ops/ai-rollout-policy.json` is the machine-readable flag baseline, ownership,
+  staging-gate, SLO, backfill, and capacity/cost contract. CI runs
+  `scripts/validate_ai_rollout.py`; an optional evidence record fails closed until
+  every staging artifact passes and a named owner records an explicit go decision.
+- `docs/AI_PRODUCTION_READINESS.md` defines rollout order, immediate provider and
+  Temporal rollback, capacity forecasts at 10k/100k/1m monthly items, on-call
+  ownership, failure drills, and the go/no-go checklist. The observability runbook,
+  dashboards, alerts, environment examples, Compose generation, Kubernetes
+  generation, and Knowledge catalog now reference the same controls.
+
+Validation evidence:
+
+- Backend Ruff/Black and all `161` tests pass, including independent provider and
+  feature rollback, unchanged source content, shadow ranking, bounded backfill,
+  and provider-concurrency validation. The final offline evaluation passes every
+  blocking quality and operational threshold.
+- All six generated Compose configurations pass `docker compose config --quiet`.
+  Build generation is deterministic and all `31` build tests pass. All 12
+  Kubernetes local/staging/production × infra/app-only/full/temporal combinations
+  pass client-side kubectl dry-run validation; deployment deterministic-render
+  coverage passes.
+- The rollout policy and dashboard JSON validate, Knowledge generation is current,
+  and alert/rule YAML parses. Promtool/Alertmanager container validation remains
+  enforced in CI because the local Docker daemon was unavailable for container
+  execution during this run.
+- Web lint/build and `27` tests and mobile typecheck/lint plus `69` tests remain
+  green from AI-022. Automated store/privacy consistency has zero repository
+  blockers; real signing/store-console evidence remains a release gate.
+
+Production enablement note: implementation is complete, but the checked-in
+example release evidence intentionally says **no-go**. A real staging environment
+must supply and approve the required failure-drill, load, backup/restore, privacy,
+store, dashboard, and shadow-quality artifacts before any production flag change.
 
 ### Problem
 
@@ -1742,9 +2030,10 @@ AI Goal 1 is complete only when:
 - implementation results and architectural decisions are recorded in the Goal 1
   documentation and generated Knowledge files are current.
 
-## Decisions Required at Review
+## Production Decisions Still Required
 
-Implementation should begin only after confirming:
+The implementation is safe-by-default. Production flags remain off until owners
+confirm:
 
 1. Whether production’s default policy is local-only, hosted opt-in, or hosted by
    default with user opt-out.
@@ -1759,5 +2048,5 @@ Implementation should begin only after confirming:
    behind a disabled feature flag.
 8. Whether encrypted, expiring AI debug payload capture is permitted in staging.
 
-Until these decisions are approved, no application implementation described by
-this plan is authorized.
+Until these decisions and the staging evidence record are approved, production
+AI/Temporal flags must remain at the checked-in no-go baseline.

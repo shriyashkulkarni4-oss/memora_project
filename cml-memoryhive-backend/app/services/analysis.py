@@ -21,6 +21,7 @@ from app.models import (
     ProcessingJob,
     ProcessingStatus,
     Tag,
+    User,
 )
 from app.services.processing import ContentProcessor, ProcessingResult, processing_input
 
@@ -250,7 +251,10 @@ async def persist_enrichment_record(
 async def _auto_apply_suggestions(
     session: AsyncSession, item: Item, record: EnrichmentRecord
 ) -> None:
-    threshold = get_settings().ai_suggestion_auto_apply_threshold
+    settings = get_settings()
+    if not settings.ai_suggestions_enabled:
+        return
+    threshold = settings.ai_suggestion_auto_apply_threshold
     if threshold <= 0 or record.confidence is None or record.confidence < threshold:
         return
     blocked = set(
@@ -362,6 +366,13 @@ async def run_item_analysis(
             item.processing_error = None
         item._existing_tag_names = tuple(
             await session.scalars(select(Tag.name).where(Tag.user_id == item.user_id))
+        )
+        item._external_ai_allowed = bool(
+            await session.scalar(
+                select(User.ai_external_processing_allowed).where(
+                    User.id == item.user_id
+                )
+            )
         )
         payload = processing_input(item, job)
         await session.commit()

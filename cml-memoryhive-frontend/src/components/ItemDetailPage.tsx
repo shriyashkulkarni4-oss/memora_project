@@ -21,6 +21,7 @@ import { useLibraryStore } from '../store/libraryStore';
 import ConfirmDialog from './ConfirmDialog';
 import AISuggestionsPanel from './AISuggestionsPanel';
 import TagPicker from './TagPicker';
+import MemoryConnectionsPanel from './MemoryConnectionsPanel';
 
 const icons = { link: Link2, screenshot: ImageIcon, text: FileText };
 type DetailConfirmation = 'favorite' | 'archive' | 'delete' | null;
@@ -152,6 +153,7 @@ export default function ItemDetailPage() {
             </section>
           )}
           <AISuggestionsPanel item={item} onChanged={() => store.initialize(true)} />
+          <MemoryConnectionsPanel itemId={item.id} />
           {item.raw_text && (
             <section className="content-section">
               <span className="section-label">Captured text</span>
@@ -199,6 +201,14 @@ export default function ItemDetailPage() {
                 <RefreshCw size={15} /> Retry processing
               </button>
             )}
+          </section>
+          <section>
+            <span className="section-label">AI analysis</span>
+            <div className={`status-row ${item.analysis_status}`}><i /><span>{item.analysis_status}</span></div>
+            {item.analysis_error ? <p className="processing-error">{item.analysis_error}</p> : null}
+            {typeof (item.metadata?.enrichment as Record<string, unknown> | undefined)?.provider === 'string' ? (
+              <small>{String((item.metadata?.enrichment as Record<string, unknown>).provider)} / {String((item.metadata?.enrichment as Record<string, unknown>).model || 'default')}</small>
+            ) : null}
           </section>
           <section className="aside-actions">
             <button type="button" onClick={() => setConfirmation('archive')}>

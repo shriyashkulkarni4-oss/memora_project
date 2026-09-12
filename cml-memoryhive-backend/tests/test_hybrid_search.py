@@ -3,11 +3,20 @@
 from dataclasses import dataclass, field
 
 import pytest
+from sqlalchemy import select
 
-from app.ai.contracts import EmbeddingRequest, EmbeddingResult
+from app.ai.budgets import DatabaseBudgetGuard
+from app.ai.contracts import (
+    EmbeddingRequest,
+    EmbeddingResult,
+    RerankCandidate,
+    RerankRequest,
+    RerankResult,
+)
 from app.ai.gateway import AIGateway, ProviderCapability, ProviderLimits, ProviderType
+from app.ai.reranking import RerankingPipeline
 from app.config import Settings
-from app.models import DocumentChunk, EmbeddingIndex, Item, ItemEmbedding
+from app.models import AIUsageEvent, DocumentChunk, EmbeddingIndex, Item, ItemEmbedding
 from tests.test_core_api import register_and_login
 
 pytestmark = pytest.mark.asyncio
@@ -17,10 +26,11 @@ pytestmark = pytest.mark.asyncio
 class QueryAdapter:
     provider_type: ProviderType = ProviderType.OLLAMA
     capabilities: frozenset[ProviderCapability] = frozenset(
-        {ProviderCapability.EMBEDDINGS}
+        {ProviderCapability.EMBEDDINGS, ProviderCapability.RERANKING}
     )
     limits: ProviderLimits = ProviderLimits(maximum_attempts=1)
     calls: list[str] = field(default_factory=list)
+    rerank_calls: list[str] = field(default_factory=list)
 
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult:
         self.calls.append(request.text)
@@ -30,6 +40,15 @@ class QueryAdapter:
             request.expected_dimensions,
             [1.0, 0.0, 0.0],
             self.provider_type.value,
+        )
+
+    async def rerank(self, request: RerankRequest) -> RerankResult:
+        self.rerank_calls.append(request.query)
+        return RerankResult(
+            [candidate.item_id for candidate in reversed(request.candidates)],
+            request.model_alias,
+            self.provider_type.value,
+            {"input_tokens": 8, "output_tokens": 2, "total_tokens": 10},
         )
 
 
@@ -155,6 +174,17 @@ async def test_hybrid_search_fuses_exact_and_semantic_results_without_tenant_lea
     )
     assert [record["id"] for record in filtered.json()["items"]] == [semantic["id"]]
 
+    shadow = configured.model_copy(
+        update={"ai_hybrid_search_enabled": False, "ai_search_shadow_enabled": True}
+    )
+    monkeypatch.setattr(items_api, "get_settings", lambda: shadow)
+    shadow_response = await client.get(
+        "/api/v1/items", params={"q": "jobs surviving restarts"}, headers=headers
+    )
+    assert shadow_response.status_code == 200
+    assert [record["id"] for record in shadow_response.json()["items"]] == [exact["id"]]
+    assert adapter.calls[-1] == "jobs surviving restarts"
+
 
 async def test_search_remains_keyword_only_when_ai_is_disabled(
     api_client_with_db, monkeypatch: pytest.MonkeyPatch
@@ -180,3 +210,42 @@ async def test_search_remains_keyword_only_when_ai_is_disabled(
     assert response.status_code == 200
     assert [record["id"] for record in response.json()["items"]] == [exact["id"]]
     assert "exact" in response.json()["items"][0]["search_match"]["reasons"]
+
+
+async def test_optional_reranking_is_candidate_bounded_and_cost_recorded(
+    api_client_with_db,
+) -> None:
+    client, _storage, factory = api_client_with_db
+    user, _headers = await register_and_login(client, "rerank-budget@example.com")
+    adapter = QueryAdapter()
+    configured = Settings(
+        database_url="sqlite+aiosqlite://",
+        ollama_base_url="http://localhost:11434",
+        ai_reranking_route="ollama:rerank-v1",
+        ai_rerank_candidate_limit=2,
+        ai_rerank_latency_budget_ms=100,
+    )
+    result = await RerankingPipeline(
+        factory,
+        AIGateway([adapter]),
+        configured,
+        DatabaseBudgetGuard(factory, configured),
+    ).rerank(
+        "durable recovery",
+        [
+            RerankCandidate("one", "first"),
+            RerankCandidate("two", "second"),
+            RerankCandidate("three", "must be outside the bounded request"),
+        ],
+        user_id=user["id"],
+    )
+
+    assert result == ("two", "one")
+    assert adapter.rerank_calls == ["durable recovery"]
+    async with factory() as session:
+        usage = await session.scalar(
+            select(AIUsageEvent).where(AIUsageEvent.task == "reranking")
+        )
+    assert usage is not None
+    assert usage.status == "completed"
+    assert usage.total_tokens == 10

@@ -139,6 +139,7 @@ export interface User {
   email: string;
   name: string | null;
   role?: "admin" | "user";
+  ai_external_processing_allowed?: boolean;
 }
 
 export interface Tokens {

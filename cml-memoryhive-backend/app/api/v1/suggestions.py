@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 from sqlalchemy import select
 
+from app.config import get_settings
 from app.core.deps import CurrentUser, DbSession
 from app.models import (
     AISuggestionFeedback,
@@ -36,6 +37,8 @@ def _normalize(value: str) -> str:
 
 
 async def _item(db: DbSession, user_id: str, item_id: str) -> Item:
+    if not get_settings().ai_suggestions_enabled:
+        raise HTTPException(status_code=404, detail="AI suggestions are disabled")
     item = await db.scalar(
         select(Item).where(
             Item.id == item_id, Item.user_id == user_id, Item.deleted_at.is_(None)

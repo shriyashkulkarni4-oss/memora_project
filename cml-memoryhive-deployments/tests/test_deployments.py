@@ -120,6 +120,19 @@ class RenderTests(unittest.TestCase):
             backend_config["data"]["AI_EMBEDDING_BACKFILL_MAX_ITEMS_PER_MINUTE"],
             "30",
         )
+        self.assertEqual(backend_config["data"]["AI_HYBRID_SEARCH_ENABLED"], "false")
+        self.assertEqual(backend_config["data"]["AI_SEARCH_SHADOW_ENABLED"], "true")
+        self.assertEqual(backend_config["data"]["AI_RESURFACING_ENABLED"], "false")
+        self.assertEqual(backend_config["data"]["AI_SEARCH_RRF_K"], "60")
+        self.assertEqual(
+            backend_config["data"]["AI_SEARCH_LATENCY_BUDGET_MS"], "750"
+        )
+        self.assertEqual(
+            backend_config["data"]["AI_DUPLICATE_SEMANTIC_THRESHOLD"], "0.92"
+        )
+        self.assertEqual(
+            backend_config["data"]["AI_RESURFACING_FREQUENCY_CAP"], "2"
+        )
         serialized = json.dumps(backend_config)
         self.assertNotIn("OPENROUTER_API_KEY", serialized)
         self.assertNotIn("HUGGINGFACE_TOKEN", serialized)

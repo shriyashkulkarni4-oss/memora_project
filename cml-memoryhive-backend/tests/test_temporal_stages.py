@@ -19,7 +19,7 @@ from app.models import (
 from app.temporal_pipeline import activities
 from app.temporal_pipeline.types import AnalysisWorkflowInput
 
-pytestmark = pytest.mark.asyncio
+pytestmark = [pytest.mark.asyncio, pytest.mark.integration]
 
 
 class UnusedStorage:

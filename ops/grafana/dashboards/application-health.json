@@ -9,6 +9,8 @@
   "panels": [
     {"id": 1, "type": "stat", "title": "API Targets Up", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "min(up{job=\"cml-memoryhive-api\"})"}], "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}},
     {"id": 2, "type": "timeseries", "title": "Request Rate by Status", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (status) (rate(memoryhive_http_requests_total[5m]))"}], "gridPos": {"h": 8, "w": 16, "x": 8, "y": 0}},
-    {"id": 3, "type": "timeseries", "title": "API p95 Latency", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(memoryhive_http_request_duration_seconds_bucket[5m])))"}], "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}}
+    {"id": 3, "type": "timeseries", "title": "API p95 Latency", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(memoryhive_http_request_duration_seconds_bucket[5m])))"}], "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}},
+    {"id": 4, "type": "timeseries", "title": "Search p95 by Mode", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (mode, le) (rate(memoryhive_search_latency_seconds_bucket[5m])))", "legendFormat": "{{mode}}"}], "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}},
+    {"id": 5, "type": "timeseries", "title": "Shadow Hybrid Top-k Overlap", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.50, sum by (le) (rate(memoryhive_search_shadow_topk_overlap_ratio_bucket[30m])))"}], "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16}}
   ]
 }

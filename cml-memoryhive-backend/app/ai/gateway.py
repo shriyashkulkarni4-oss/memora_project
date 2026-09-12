@@ -14,6 +14,8 @@ from app.ai.contracts import (
     EmbeddingResult,
     EnrichmentRequest,
     EnrichmentResult,
+    RerankRequest,
+    RerankResult,
 )
 
 
@@ -28,6 +30,7 @@ class ProviderType(str, Enum):
 class ProviderCapability(str, Enum):
     ENRICHMENT = "enrichment"
     EMBEDDINGS = "embeddings"
+    RERANKING = "reranking"
     VISION = "vision"
     MODEL_LISTING = "model_listing"
     TOKEN_USAGE = "token_usage"
@@ -171,6 +174,8 @@ class ProviderAdapter(Protocol):
 
     async def embed(self, request: EmbeddingRequest) -> EmbeddingResult: ...
 
+    async def rerank(self, request: RerankRequest) -> RerankResult: ...
+
     async def vision(self, request: VisionRequest) -> VisionResponse: ...
 
     async def list_models(self) -> tuple[ProviderModel, ...]: ...
@@ -247,6 +252,25 @@ class AIGateway:
         return await self._execute(
             provider, ProviderCapability.EMBEDDINGS, lambda: adapter.embed(request)
         )
+
+    async def rerank(
+        self, provider: ProviderType, request: RerankRequest
+    ) -> RerankResult:
+        adapter = self.require_capability(provider, ProviderCapability.RERANKING)
+        payload_size = len(request.query.encode("utf-8")) + sum(
+            len(candidate.text.encode("utf-8")) for candidate in request.candidates
+        )
+        if payload_size > adapter.limits.maximum_payload_bytes:
+            raise ProviderError(ProviderErrorCode.INVALID_REQUEST, provider)
+        result = await self._execute(
+            provider, ProviderCapability.RERANKING, lambda: adapter.rerank(request)
+        )
+        expected = {candidate.item_id for candidate in request.candidates}
+        if not result.ordered_item_ids or not set(result.ordered_item_ids).issubset(
+            expected
+        ):
+            raise ProviderError(ProviderErrorCode.MALFORMED_RESPONSE, provider)
+        return result
 
     async def vision(
         self, provider: ProviderType, request: VisionRequest

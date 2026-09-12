@@ -18,6 +18,7 @@ from app.core.security import (
 )
 from app.models import RefreshToken, User, UserRole
 from app.schemas.auth import (
+    AIPrivacyPreferenceRequest,
     ChangePasswordRequest,
     LogoutRequest,
     RefreshRequest,
@@ -187,4 +188,15 @@ async def change_password(
 
 @router.get("/me", response_model=UserResponse, responses=AUTH_ERRORS)
 async def get_me(current_user: CurrentUser) -> User:
+    return current_user
+
+
+@router.patch("/ai-privacy", response_model=UserResponse, responses=AUTH_ERRORS)
+async def update_ai_privacy(
+    data: AIPrivacyPreferenceRequest, current_user: CurrentUser, db: DbSession
+) -> User:
+    current_user.ai_external_processing_allowed = data.external_processing_allowed
+    current_user.updated_at = datetime.now(timezone.utc)
+    await db.commit()
+    await db.refresh(current_user)
     return current_user

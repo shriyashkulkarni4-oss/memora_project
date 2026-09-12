@@ -57,6 +57,7 @@ def settings(*, version: int = 1, dimensions: int = 3) -> Settings:
         ai_embedding_chunk_overlap=4,
         ai_embedding_backfill_batch_size=1,
         ai_embedding_backfill_max_items_per_minute=1,
+        ai_embedding_backfill_enabled=True,
     )
 
 

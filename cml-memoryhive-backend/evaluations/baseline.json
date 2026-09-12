@@ -1,0 +1,28 @@
+{
+  "dataset_version": "memoryhive-ai-v1",
+  "schema_version": "1",
+  "provider": "offline-deterministic",
+  "model": "fixture-v1",
+  "prompt_version": "grounded-recall-v1",
+  "metrics": {
+    "schema_validity": 1.0,
+    "extraction_accuracy": 1.0,
+    "ocr_token_f1": 1.0,
+    "summary_faithfulness": 1.0,
+    "tag_precision": 1.0,
+    "tag_recall": 1.0,
+    "classification_accuracy": 1.0,
+    "topic_f1": 1.0,
+    "entity_f1": 1.0,
+    "key_phrase_f1": 1.0,
+    "recall_at_k": 1.0,
+    "mrr": 1.0,
+    "ndcg_at_k": 1.0,
+    "related_recall_at_k": 1.0,
+    "groundedness": 1.0,
+    "citation_correctness": 1.0,
+    "latency_p95_ms": 310.0,
+    "fallback_rate": 0.0,
+    "estimated_cost_usd": 0.0
+  }
+}

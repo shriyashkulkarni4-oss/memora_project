@@ -211,6 +211,19 @@ class BuildTests(unittest.TestCase):
             "AI_EMBEDDING_DIMENSIONS",
             "AI_EMBEDDING_INDEX_VERSION",
             "AI_EMBEDDING_BACKFILL_MAX_ITEMS_PER_MINUTE",
+            "AI_HYBRID_SEARCH_ENABLED",
+            "AI_SEARCH_SHADOW_ENABLED",
+            "AI_STRUCTURED_ENRICHMENT_ENABLED",
+            "AI_EMBEDDINGS_ENABLED",
+            "AI_SUGGESTIONS_ENABLED",
+            "AI_RELATED_ITEMS_ENABLED",
+            "AI_RESURFACING_ENABLED",
+            "AI_EMBEDDING_BACKFILL_ENABLED",
+            "AI_SEARCH_RRF_K",
+            "AI_SEARCH_LATENCY_BUDGET_MS",
+            "AI_RERANK_LATENCY_BUDGET_MS",
+            "AI_DUPLICATE_SEMANTIC_THRESHOLD",
+            "AI_RESURFACING_FREQUENCY_CAP",
         ):
             self.assertIn(key, environment)
         self.assertEqual(environment["OPENROUTER_API_KEY"], "${OPENROUTER_API_KEY:-}")

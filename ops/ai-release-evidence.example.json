@@ -1,0 +1,19 @@
+{
+  "environment": "staging",
+  "release": "replace-with-release-id",
+  "recorded_at": "replace-with-UTC-timestamp",
+  "gates": [
+    {"name": "offline_evaluation", "status": "pending", "artifact": ""},
+    {"name": "shadow_ranking_review", "status": "pending", "artifact": ""},
+    {"name": "worker_failure_drill", "status": "pending", "artifact": ""},
+    {"name": "provider_failure_drill", "status": "pending", "artifact": ""},
+    {"name": "capture_burst_load_test", "status": "pending", "artifact": ""},
+    {"name": "backup_restore_verification", "status": "pending", "artifact": ""},
+    {"name": "privacy_review", "status": "pending", "artifact": ""},
+    {"name": "store_disclosure_check", "status": "pending", "artifact": ""}
+  ],
+  "dashboards_reviewed_by": "",
+  "on_call_handoff": "",
+  "rollback_rehearsal_artifact": "",
+  "approval": {"decision": "no-go", "approved_by": "", "approved_at": ""}
+}

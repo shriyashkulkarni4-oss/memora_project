@@ -136,6 +136,40 @@ export interface ItemPage {
   limit: number;
 }
 
+export interface MemoryMatch {
+  item: Item;
+  score: number;
+  reasons: string[];
+  semantic_score: number | null;
+}
+
+export interface DuplicateMatch extends MemoryMatch {
+  duplicate_kind: 'exact_url' | 'exact_content' | 'near_semantic';
+}
+
+export interface ResurfacingPage {
+  items: MemoryMatch[];
+  generated_at: string;
+}
+
+export interface MemoryFeedback {
+  id: string;
+  item_id: string;
+  action: string;
+  reverses_id: string | null;
+  created_at: string;
+}
+
+export interface GroundedRecall {
+  answer: string;
+  claims: { text: string; citation_ids: number[] }[];
+  citations: { citation_id: number; item_id: string; title: string | null; passage: string }[];
+  insufficient_evidence: boolean;
+  provider: string | null;
+  model: string | null;
+  latency_ms: number | null;
+}
+
 export interface Category {
   id: string;
   name: string;
@@ -169,6 +203,7 @@ export interface User {
   name: string | null;
   role: 'admin' | 'user';
   is_active: boolean;
+  ai_external_processing_allowed: boolean;
   created_at: string;
   updated_at: string;
 }

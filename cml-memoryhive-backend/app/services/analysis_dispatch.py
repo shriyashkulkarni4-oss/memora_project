@@ -18,6 +18,7 @@ from app.models import (
     ItemType,
     ProcessingJob,
     ProcessingStatus,
+    User,
 )
 from app.observability import DISPATCH_TOTAL, safe_reason
 
@@ -83,8 +84,12 @@ async def request_item_analysis(
     mark_analysis_pending(item, now)
     item.updated_at = now
     resolved_settings = settings or get_settings()
+    user = await session.get(User, item.user_id)
     decision = resolve_task_policy(
-        resolved_settings, build_ai_gateway(resolved_settings), AITask.ENRICHMENT
+        resolved_settings,
+        build_ai_gateway(resolved_settings),
+        AITask.ENRICHMENT,
+        external_allowed_for_user=bool(user and user.ai_external_processing_allowed),
     )
     job = ProcessingJob(
         item_id=item.id,

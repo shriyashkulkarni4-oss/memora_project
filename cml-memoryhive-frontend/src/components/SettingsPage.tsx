@@ -17,7 +17,7 @@ function SettingToggle({ label, checked, onChange }: { label: string; checked: b
 const demoMode = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth();
+  const { user, logout, setAIExternalProcessing } = useAuth();
   const navigate = useNavigate();
   const clear = useLibraryStore((state) => state.clear);
   const [sync, setSync] = useState(true);
@@ -35,6 +35,19 @@ export default function SettingsPage() {
   const [confirmation, setConfirmation] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState('');
+  const [privacyBusy, setPrivacyBusy] = useState(false);
+
+  const toggleExternalAI = async () => {
+    setPrivacyBusy(true);
+    setError('');
+    try {
+      await setAIExternalProcessing(!user?.ai_external_processing_allowed);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to update AI privacy preference');
+    } finally {
+      setPrivacyBusy(false);
+    }
+  };
 
   const exportData = async () => {
     setExporting(true);
@@ -132,6 +145,14 @@ export default function SettingsPage() {
           <SettingToggle label="Content processing" checked={processing} onChange={() => setProcessing(!processing)} />
           <SettingToggle label="Dark appearance" checked={dark} onChange={() => setDark(!dark)} />
         </div>
+      </section>
+
+      <section className="settings-section">
+        <div className="settings-title"><ShieldCheck size={19} /><div><h2>AI privacy</h2><p>External model processing is off by default</p></div></div>
+        <div className="settings-controls">
+          <SettingToggle label={privacyBusy ? 'Updating external AI processing' : 'Allow approved external AI providers'} checked={Boolean(user?.ai_external_processing_allowed)} onChange={() => { if (!privacyBusy) void toggleExternalAI(); }} />
+        </div>
+        <p className="privacy-note">When off, Memoryhive permits only local or self-hosted AI routes. Turning it on allows the operator-approved third-party providers listed in the privacy policy. Capture and keyword search continue either way.</p>
       </section>
 
       <section className="settings-section">

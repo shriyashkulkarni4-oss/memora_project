@@ -15,6 +15,7 @@ from app.ai.contracts import (
     EnrichmentResult,
     ExtractionInput,
 )
+from app.ai.factory import build_ai_gateway
 from app.ai.gateway import (
     AIGateway,
     ProviderCapability,
@@ -36,8 +37,8 @@ from app.ai.policy import (
 )
 from app.config import Settings
 from app.database import Base
-from app.models import AIUsageEvent, ItemType
-from app.services.processing import ContentProcessor
+from app.models import AIUsageEvent, Item, ItemType, ProcessingJob
+from app.services.processing import ContentProcessor, processing_input
 
 pytestmark = pytest.mark.asyncio
 
@@ -104,6 +105,7 @@ async def test_every_task_resolves_explicit_provider_model_and_capability() -> N
             {
                 ProviderCapability.ENRICHMENT,
                 ProviderCapability.EMBEDDINGS,
+                ProviderCapability.RERANKING,
                 ProviderCapability.VISION,
             }
         ),
@@ -114,6 +116,7 @@ async def test_every_task_resolves_explicit_provider_model_and_capability() -> N
         ai_enrichment_route="ollama:enrichment-model",
         ai_embeddings_route="ollama:embedding-model",
         ai_reranking_route="ollama:reranking-model",
+        ai_recall_route="ollama:recall-model",
         ai_vision_route="ollama:vision-model",
     )
 
@@ -122,6 +125,7 @@ async def test_every_task_resolves_explicit_provider_model_and_capability() -> N
         AITask.ENRICHMENT: "enrichment-model",
         AITask.EMBEDDINGS: "embedding-model",
         AITask.RERANKING: "reranking-model",
+        AITask.RECALL: "recall-model",
         AITask.VISION: "vision-model",
     }
     for task in AITask:
@@ -208,6 +212,127 @@ async def test_external_routes_require_explicit_content_permission() -> None:
         ai_allowed_external_providers=["openrouter"],
     )
     assert settings.ai_external_content_allowed is True
+
+
+async def test_user_opt_out_removes_external_routes_before_any_provider_call() -> None:
+    external = PolicyAdapter(
+        ProviderType.OPENROUTER, frozenset({ProviderCapability.ENRICHMENT})
+    )
+    local = PolicyAdapter(
+        ProviderType.OLLAMA, frozenset({ProviderCapability.ENRICHMENT})
+    )
+    gateway = AIGateway([external, local])
+    settings = Settings(
+        database_url="sqlite+aiosqlite://",
+        ollama_base_url="http://ollama:11434",
+        openrouter_enabled=True,
+        openrouter_api_key=SecretStr("secret"),
+        openrouter_model="vendor/model",
+        ai_enrichment_route="openrouter:vendor/model",
+        ai_enrichment_fallback_routes=["ollama:local-model"],
+        ai_cross_provider_fallback_enabled=True,
+        ai_external_content_allowed=True,
+        ai_allowed_external_providers=["openrouter"],
+    )
+    decision = resolve_task_policy(
+        settings,
+        gateway,
+        AITask.ENRICHMENT,
+        external_allowed_for_user=False,
+    )
+    assert decision.primary is not None
+    assert decision.primary.provider == ProviderType.OLLAMA
+    await gateway.enrich(
+        decision.primary.provider,
+        EnrichmentRequest("item", 1, "Synthetic local-only content"),
+        model=decision.primary.model,
+    )
+    assert external.calls == 0
+    assert local.calls == 1
+
+
+async def test_queued_external_job_rechecks_opt_out_before_provider_call() -> None:
+    item = Item(
+        id="item-queued",
+        user_id="user-1",
+        type=ItemType.TEXT,
+        raw_text="Private queued content",
+        analysis_version=1,
+    )
+    item._external_ai_allowed = False
+    job = ProcessingJob(
+        id="job-queued",
+        item_id=item.id,
+        kind="analyze",
+        analysis_version=1,
+        ai_provider=ProviderType.OPENROUTER.value,
+        ai_model="vendor/model",
+        ai_policy={
+            "primary": {
+                "provider": ProviderType.OPENROUTER.value,
+                "model": "vendor/model",
+                "external": True,
+            },
+            "fallbacks": [
+                {
+                    "provider": ProviderType.OLLAMA.value,
+                    "model": "local-model",
+                    "external": False,
+                }
+            ],
+        },
+        correlation_id="correlation-1",
+    )
+
+    queued = processing_input(item, job)
+
+    assert queued.ai_provider == ProviderType.OLLAMA.value
+    assert queued.ai_model == "local-model"
+    assert queued.ai_fallbacks == ()
+    assert queued.ai_policy_resolved is True
+
+
+async def test_rollout_flags_disable_provider_and_enrichment_independently() -> None:
+    settings = local_settings(
+        ollama_enabled=False,
+        ai_structured_enrichment_enabled=False,
+        ai_enrichment_route="ollama:model",
+    )
+    assert ProviderType.OLLAMA not in build_ai_gateway(settings).adapters
+    disabled = resolve_task_policy(
+        settings, build_ai_gateway(settings), AITask.ENRICHMENT
+    )
+    assert disabled.primary is None
+
+    adapter = PolicyAdapter(
+        ProviderType.OLLAMA, frozenset({ProviderCapability.ENRICHMENT})
+    )
+    processor = ContentProcessor(
+        MemoryStorage(),  # type: ignore[arg-type]
+        settings=local_settings(
+            ai_structured_enrichment_enabled=False,
+            ai_enrichment_route="ollama:model",
+        ),
+        ai_gateway=AIGateway([adapter]),
+    )
+    result = await processor.process(
+        ExtractionInput(
+            item_id="flagged-item",
+            item_type=ItemType.TEXT,
+            url=None,
+            asset_keys=(),
+            raw_text="Deterministic capture remains available.",
+        )
+    )
+    assert result.extracted_text == "Deterministic capture remains available."
+    assert result.enrichment_attempted is False
+    assert adapter.calls == 0
+
+    with pytest.raises(ValidationError, match="backfill concurrency"):
+        local_settings(
+            ai_provider_concurrency=1,
+            ai_embedding_backfill_concurrency=2,
+        )
 
 
 async def test_credential_reference_supports_future_byok_without_plaintext() -> None:

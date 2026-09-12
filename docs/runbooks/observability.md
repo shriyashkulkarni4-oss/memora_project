@@ -59,6 +59,16 @@ Compare degraded outcomes with provider errors, budgets, circuits, and fallback
 rate. Deterministic extraction remains usable. Restore the approved provider or
 disable its route deliberately; verify privacy policy before rerouting.
 
+## Immediate provider disable
+
+Set the affected provider's `*_ENABLED` flag to `false`, remove that provider
+from every primary and fallback route, and restart API, database worker, and
+Temporal worker workloads. Confirm its `memoryhive_ai_calls_total` rate reaches
+zero and run deterministic capture plus keyword-search smoke tests. Do not delete
+source content or prior enrichment/index records. Escalation, staged rollout,
+backfill pause, and go/no-go ownership are defined in
+`docs/AI_PRODUCTION_READINESS.md` and `ops/ai-rollout-policy.json`.
+
 ## Provider auth
 
 Group `memoryhive_ai_calls_total` by provider/model alias/outcome. Verify the
@@ -69,6 +79,13 @@ credential and run the content-free health check.
 
 Compare call rate, retries, concurrency, and provider quota. Reduce concurrency,
 request approved quota, or enable a reviewed fallback. Confirm backlog recovery.
+
+## Enrichment quality
+
+Compare successful enrichment calls with all enrichment outcomes and the latest
+offline evaluation artifact. Inspect schema rejections by model and prompt
+version without logging content. Disable the affected route or restore the last
+accepted model/prompt when success remains below 98%.
 
 ## Provider circuit
 
@@ -95,6 +112,15 @@ logs. Restore the failing dependency or roll back, then verify the affected flow
 
 Compare route p95 with database, Redis, object storage, worker, and provider
 latency. Remove the bottleneck or scale the constrained stateless service.
+
+## Search latency
+
+Compare `memoryhive_search_latency_seconds` by `hybrid` and `keyword` mode with
+embedding and reranking provider latency. Verify candidate caps and the active
+embedding index. Disable the optional reranker first; if the embedding provider
+is unhealthy, disable hybrid search and preserve keyword search while recovering
+the provider. Never increase latency, candidate, or cost bounds without load and
+retrieval-quality evidence.
 
 ## Synthetic alert drills
 

@@ -12,6 +12,7 @@ class AITask(str, Enum):
     ENRICHMENT = "enrichment"
     EMBEDDINGS = "embeddings"
     RERANKING = "reranking"
+    RECALL = "recall"
     VISION = "vision"
 
 
@@ -33,7 +34,8 @@ TASK_CAPABILITY = {
     AITask.SUMMARIZATION: ProviderCapability.ENRICHMENT,
     AITask.ENRICHMENT: ProviderCapability.ENRICHMENT,
     AITask.EMBEDDINGS: ProviderCapability.EMBEDDINGS,
-    AITask.RERANKING: ProviderCapability.ENRICHMENT,
+    AITask.RERANKING: ProviderCapability.RERANKING,
+    AITask.RECALL: ProviderCapability.ENRICHMENT,
     AITask.VISION: ProviderCapability.VISION,
 }
 
@@ -51,6 +53,7 @@ class RoutingDecision:
     primary: ProviderRoute | None
     fallbacks: tuple[ProviderRoute, ...] = ()
     external_content_allowed: bool = False
+    external_user_allowed: bool = True
 
     def to_payload(self) -> dict[str, object]:
         return {
@@ -58,6 +61,7 @@ class RoutingDecision:
             "primary": asdict(self.primary) if self.primary else None,
             "fallbacks": [asdict(route) for route in self.fallbacks],
             "external_content_allowed": self.external_content_allowed,
+            "external_user_allowed": self.external_user_allowed,
         }
 
 
@@ -99,6 +103,16 @@ def _is_external(settings: Settings, provider: ProviderType) -> bool:
     return settings.openai_compatible_deployment_type == "third_party"
 
 
+def _provider_enabled(settings: Settings, provider: ProviderType) -> bool:
+    return {
+        ProviderType.OLLAMA: settings.ollama_enabled,
+        ProviderType.N8N: settings.n8n_enabled,
+        ProviderType.OPENROUTER: settings.openrouter_enabled,
+        ProviderType.HUGGINGFACE: settings.huggingface_enabled,
+        ProviderType.OPENAI_COMPATIBLE: settings.openai_compatible_enabled,
+    }[provider]
+
+
 def _parse_route(
     value: str, settings: Settings, gateway: AIGateway, task: AITask
 ) -> ProviderRoute:
@@ -120,20 +134,38 @@ def _parse_route(
 
 
 def resolve_task_policy(
-    settings: Settings, gateway: AIGateway, task: AITask
+    settings: Settings,
+    gateway: AIGateway,
+    task: AITask,
+    *,
+    external_allowed_for_user: bool = True,
 ) -> RoutingDecision:
     primary_value, fallback_values = _route_fields(settings, task)
     if not primary_value:
-        return RoutingDecision(task, None)
-    primary = _parse_route(primary_value, settings, gateway, task)
-    fallbacks: tuple[ProviderRoute, ...] = ()
-    if settings.ai_cross_provider_fallback_enabled:
-        fallbacks = tuple(
-            _parse_route(value, settings, gateway, task) for value in fallback_values
+        return RoutingDecision(
+            task, None, external_user_allowed=external_allowed_for_user
         )
+    route_values = [primary_value]
+    if settings.ai_cross_provider_fallback_enabled:
+        route_values.extend(fallback_values)
+    configured_routes = [
+        _parse_route(value, settings, gateway, task)
+        for value in route_values
+        if _provider_enabled(settings, ProviderType(value.partition(":")[0]))
+    ]
+    allowed_routes = [
+        route
+        for route in configured_routes
+        if external_allowed_for_user or not route.external
+    ]
+    primary = allowed_routes[0] if allowed_routes else None
+    fallbacks = tuple(allowed_routes[1:])
     return RoutingDecision(
         task,
         primary,
         fallbacks,
-        external_content_allowed=settings.ai_external_content_allowed,
+        external_content_allowed=(
+            settings.ai_external_content_allowed and external_allowed_for_user
+        ),
+        external_user_allowed=external_allowed_for_user,
     )

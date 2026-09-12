@@ -103,6 +103,9 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(
         Boolean, default=True, server_default="true"
     )
+    ai_external_processing_allowed: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false"
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )
@@ -753,6 +756,44 @@ class DocumentChunk(Base):
     start_offset: Mapped[int] = mapped_column(Integer)
     end_offset: Mapped[int] = mapped_column(Integer)
     content_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class ItemInteraction(Base):
+    __tablename__ = "item_interactions"
+    __table_args__ = (
+        UniqueConstraint("user_id", "client_id", name="uq_item_interaction_client"),
+        Index(
+            "ix_item_interaction_subject_created",
+            "user_id",
+            "subject_item_id",
+            "created_at",
+        ),
+        Index("ix_item_interaction_kind_action", "user_id", "kind", "action"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    subject_item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    context_item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    kind: Mapped[str] = mapped_column(String(30))
+    action: Mapped[str] = mapped_column(String(30))
+    client_id: Mapped[str | None] = mapped_column(String(100))
+    reverses_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("item_interactions.id", ondelete="SET NULL")
+    )
+    reason_code: Mapped[str | None] = mapped_column(String(60))
+    interaction_metadata: Mapped[dict[str, Any] | None] = mapped_column(
+        "metadata", JSON
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utc_now, server_default=func.now()
     )

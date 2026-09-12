@@ -16,6 +16,7 @@ from app.models import (
     DocumentChunk,
     EnrichmentRecord,
     ItemEmbedding,
+    ItemInteraction,
     LifecycleAudit,
     StorageDeletionJob,
     User,
@@ -56,6 +57,7 @@ async def delete_user_account(
     )
     await db.execute(delete(ItemEmbedding).where(ItemEmbedding.user_id == user.id))
     await db.execute(delete(DocumentChunk).where(DocumentChunk.user_id == user.id))
+    await db.execute(delete(ItemInteraction).where(ItemInteraction.user_id == user.id))
     await db.execute(
         delete(AISuggestionFeedback).where(AISuggestionFeedback.user_id == user.id)
     )

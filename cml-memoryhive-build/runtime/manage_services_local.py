@@ -51,6 +51,10 @@ def load_env() -> dict[str, str]:
             "MINIO_ENDPOINT": f"127.0.0.1:{values.get('MINIO_API_PORT', '9000')}",
         }
     )
+    values.setdefault(
+        "VITE_PROXY_TARGET",
+        f"http://127.0.0.1:{values.get('BACKEND_PORT', '8000')}",
+    )
     return values
 
 
@@ -100,9 +104,18 @@ def ensure_port(service: dict[str, Any], env: dict[str, str]) -> None:
                 raise SystemExit(f"Port {port} for {label} is occupied: {exc}") from exc
 
 
-def command_for(service: dict[str, Any]) -> tuple[list[str], Path]:
+def command_for(
+    service: dict[str, Any], environment: dict[str, str]
+) -> tuple[list[str], Path]:
     cwd = REPO_ROOT / service["source"]
-    return list(service["command"]), cwd
+    command = list(service["command"])
+    port_env = service.get("host_port_env")
+    if port_env and "--port" in command:
+        port_index = command.index("--port") + 1
+        command[port_index] = environment.get(
+            port_env, str(service.get("host_port", service["port"]))
+        )
+    return command, cwd
 
 
 def process_running(pid: int) -> bool:
@@ -186,7 +199,7 @@ def start(profile: str, dry_run: bool) -> None:
         if not dry_run:
             subprocess.run(migrate, cwd=backend, env=env, check=True)
     for service in selected:
-        command, cwd = command_for(service)
+        command, cwd = command_for(service, env)
         print("+", " ".join(command))
         if dry_run:
             continue

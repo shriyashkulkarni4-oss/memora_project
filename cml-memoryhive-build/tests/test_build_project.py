@@ -129,7 +129,7 @@ class RegistryTests(unittest.TestCase):
 class BuildTests(unittest.TestCase):
     def test_project_makefile_exposes_supported_command_surface(self) -> None:
         makefile = (BUILD_ROOT / "Makefile").read_text()
-        for target in (
+        expected = {
             "generate",
             "validate",
             "build",
@@ -141,18 +141,31 @@ class BuildTests(unittest.TestCase):
             "status",
             "logs",
             "runtime-validate",
+            "rate-reset",
             "clean",
             "migrate",
             "seed",
             "smoke",
             "local",
             "local-stop",
+            "local-restart",
             "local-status",
+            "local-logs",
+            "local-clean",
             "health",
             "health-local",
             "health-k8s",
             "test",
-        ):
+        }
+        phony = set(
+            next(
+                line.removeprefix(".PHONY:").split()
+                for line in makefile.splitlines()
+                if line.startswith(".PHONY:")
+            )
+        )
+        self.assertEqual(phony, expected)
+        for target in expected:
             self.assertRegex(makefile, rf"(?m)^{target}\s*:[^\n]*$")
 
     def test_missing_dockerfile_is_rejected(self) -> None:
@@ -413,6 +426,32 @@ class OrchestrationTests(unittest.TestCase):
                 local = root / ".env"
                 local.write_text("BACKEND_PORT=18000\n", encoding="utf-8")
                 self.assertEqual(local_manager.runtime_env_file(), local)
+
+    def test_local_commands_and_proxy_use_configured_app_ports(self) -> None:
+        services = {
+            service["key"]: service for service in local_manager.registry()["services"]
+        }
+        environment = {"BACKEND_PORT": "18000", "FRONTEND_PORT": "13000"}
+
+        backend, _ = local_manager.command_for(
+            services["cml-memoryhive-backend"], environment
+        )
+        frontend, _ = local_manager.command_for(
+            services["cml-memoryhive-frontend"], environment
+        )
+
+        self.assertEqual(backend[backend.index("--port") + 1], "18000")
+        self.assertEqual(frontend[frontend.index("--port") + 1], "13000")
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / ".env").write_text("BACKEND_PORT=18000\n", encoding="utf-8")
+            with (
+                patch.object(local_manager, "REPO_ROOT", root),
+                patch.dict(os.environ, {}, clear=True),
+            ):
+                loaded = local_manager.load_env()
+        self.assertEqual(loaded["VITE_PROXY_TARGET"], "http://127.0.0.1:18000")
 
     def test_local_start_dry_run_does_not_spawn_processes(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

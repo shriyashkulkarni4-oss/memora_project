@@ -50,10 +50,17 @@ class ProcessingStatus(str, enum.Enum):
 class AnalysisStatus(str, enum.Enum):
     NOT_ANALYZED = "not_analyzed"
     PENDING = "pending"
+    SCHEDULED = "scheduled"
     ANALYZING = "analyzing"
     ANALYZED = "analyzed"
+    DEGRADED = "degraded"
     FAILED = "failed"
     SKIPPED = "skipped"
+
+
+class AnalysisExecutionBackend(str, enum.Enum):
+    DATABASE = "database"
+    TEMPORAL = "temporal"
 
 
 class UserRole(str, enum.Enum):
@@ -362,6 +369,11 @@ class ProcessingJob(Base):
         CheckConstraint("max_attempts > 0", name="ck_processing_jobs_max_attempts"),
         Index("ix_processing_jobs_claim", "status", "next_attempt_at", "created_at"),
         Index("ix_processing_jobs_item_id", "item_id"),
+        UniqueConstraint(
+            "item_id",
+            "analysis_version",
+            name="uq_processing_jobs_item_analysis_version",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
@@ -369,6 +381,32 @@ class ProcessingJob(Base):
         String(36), ForeignKey("items.id", ondelete="CASCADE")
     )
     kind: Mapped[str] = mapped_column(String(20))
+    analysis_version: Mapped[int | None] = mapped_column(Integer)
+    execution_backend: Mapped[str] = mapped_column(
+        String(20),
+        default=AnalysisExecutionBackend.DATABASE.value,
+        server_default=AnalysisExecutionBackend.DATABASE.value,
+    )
+    reason: Mapped[str] = mapped_column(
+        String(40), default="capture", server_default="capture"
+    )
+    temporal_workflow_id: Mapped[str | None] = mapped_column(String(255))
+    stage: Mapped[str] = mapped_column(
+        String(40), default="queued", server_default="queued"
+    )
+    stage_data: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
+    content_hash: Mapped[str | None] = mapped_column(String(64))
+    cancel_requested: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="0"
+    )
+    correlation_id: Mapped[str] = mapped_column(String(128), default=new_uuid)
+    ai_provider: Mapped[str | None] = mapped_column(String(40))
+    ai_model: Mapped[str | None] = mapped_column(String(255))
+    ai_policy: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
     status: Mapped[str] = mapped_column(String(20), default="pending")
     attempts: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
     max_attempts: Mapped[int] = mapped_column(Integer, default=3, server_default="3")
@@ -386,3 +424,335 @@ class ProcessingJob(Base):
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     item: Mapped["Item"] = relationship(back_populates="processing_jobs")
+
+
+class AIUsageEvent(Base):
+    __tablename__ = "ai_usage_events"
+    __table_args__ = (
+        Index("ix_ai_usage_created", "created_at"),
+        Index("ix_ai_usage_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    operation_key: Mapped[str] = mapped_column(String(255), unique=True)
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="SET NULL")
+    )
+    task: Mapped[str] = mapped_column(String(40))
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str | None] = mapped_column(String(255))
+    status: Mapped[str] = mapped_column(String(20), default="reserved")
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    cost_usd: Mapped[float] = mapped_column(default=0.0, server_default="0")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AIRun(Base):
+    __tablename__ = "ai_runs"
+    __table_args__ = (
+        Index("ix_ai_runs_user_created", "user_id", "started_at"),
+        Index("ix_ai_runs_item_version", "item_id", "analysis_version"),
+        Index("ix_ai_runs_provider_status", "provider", "status"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    analysis_version: Mapped[int | None] = mapped_column(Integer)
+    job_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("processing_jobs.id", ondelete="SET NULL")
+    )
+    workflow_id: Mapped[str | None] = mapped_column(String(255))
+    correlation_id: Mapped[str | None] = mapped_column(String(128))
+    task: Mapped[str] = mapped_column(String(40))
+    provider: Mapped[str] = mapped_column(String(40))
+    requested_model: Mapped[str | None] = mapped_column(String(255))
+    resolved_model: Mapped[str | None] = mapped_column(String(255))
+    prompt_version: Mapped[str] = mapped_column(String(40), default="enrichment-v1")
+    schema_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    content_hash: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(30), default="started")
+    started_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    latency_ms: Mapped[int | None] = mapped_column(Integer)
+    attempts: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    finish_reason: Mapped[str | None] = mapped_column(String(100))
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    total_tokens: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
+    estimated_cost_usd: Mapped[float] = mapped_column(default=0.0, server_default="0")
+    fallback_chain: Mapped[list[Any]] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
+    error_code: Mapped[str | None] = mapped_column(String(100))
+    encrypted_debug_payload: Mapped[str | None] = mapped_column(Text)
+    debug_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class AdminAnalysisAction(Base):
+    """Immutable, content-free audit trail for operator analysis actions."""
+
+    __tablename__ = "admin_analysis_actions"
+    __table_args__ = (
+        Index("ix_admin_analysis_actions_created", "created_at"),
+        Index("ix_admin_analysis_actions_job", "job_id"),
+        UniqueConstraint("idempotency_key", name="uq_admin_analysis_action_key"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    actor_user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="SET NULL")
+    )
+    item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="SET NULL")
+    )
+    job_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("processing_jobs.id", ondelete="SET NULL")
+    )
+    action: Mapped[str] = mapped_column(String(20))
+    status: Mapped[str] = mapped_column(String(20))
+    idempotency_key: Mapped[str] = mapped_column(String(255))
+    correlation_id: Mapped[str] = mapped_column(String(128))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class EnrichmentRecord(Base):
+    """Validated structured enrichment retained per immutable analysis version."""
+
+    __tablename__ = "enrichment_records"
+    __table_args__ = (
+        UniqueConstraint(
+            "item_id", "analysis_version", name="uq_enrichment_item_version"
+        ),
+        Index("ix_enrichment_user_generated", "user_id", "generated_at"),
+        Index("ix_enrichment_classification", "classification"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    ai_run_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("ai_runs.id", ondelete="SET NULL")
+    )
+    analysis_version: Mapped[int] = mapped_column(Integer)
+    schema_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    taxonomy_version: Mapped[int] = mapped_column(
+        Integer, default=1, server_default="1"
+    )
+    summary: Mapped[str | None] = mapped_column(Text)
+    detailed_summary: Mapped[str | None] = mapped_column(Text)
+    topics: Mapped[list[Any]] = mapped_column(JSON, default=list, server_default="[]")
+    suggested_tags: Mapped[list[Any]] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
+    classification: Mapped[str | None] = mapped_column(String(100))
+    entities: Mapped[list[Any]] = mapped_column(JSON, default=list, server_default="[]")
+    key_phrases: Mapped[list[Any]] = mapped_column(
+        JSON, default=list, server_default="[]"
+    )
+    content_language: Mapped[str | None] = mapped_column(String(20))
+    confidence: Mapped[float | None]
+    warnings: Mapped[list[Any]] = mapped_column(JSON, default=list, server_default="[]")
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str | None] = mapped_column(String(255))
+    prompt_version: Mapped[str] = mapped_column(String(40))
+    content_hash: Mapped[str] = mapped_column(String(64))
+    field_provenance: Mapped[dict[str, Any]] = mapped_column(
+        JSON, default=dict, server_default="{}"
+    )
+    generated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class AISuggestionFeedback(Base):
+    """Immutable private feedback and application event for an AI suggestion."""
+
+    __tablename__ = "ai_suggestion_feedback"
+    __table_args__ = (
+        UniqueConstraint("client_id", name="uq_ai_suggestion_feedback_client"),
+        Index("ix_ai_suggestion_item_version", "item_id", "analysis_version"),
+        Index("ix_ai_suggestion_user_created", "user_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    client_id: Mapped[str] = mapped_column(String(100))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    enrichment_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("enrichment_records.id", ondelete="CASCADE")
+    )
+    analysis_version: Mapped[int] = mapped_column(Integer)
+    suggestion_type: Mapped[str] = mapped_column(String(30))
+    value: Mapped[str] = mapped_column(String(100))
+    normalized_value: Mapped[str] = mapped_column(String(100))
+    action: Mapped[str] = mapped_column(String(30))
+    changed_item: Mapped[bool] = mapped_column(Boolean, default=False)
+    item_revision_after: Mapped[int] = mapped_column(Integer)
+    metadata_json: Mapped[dict[str, Any]] = mapped_column(
+        "metadata", JSON, default=dict, server_default="{}"
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class AISuggestionPreference(Base):
+    __tablename__ = "ai_suggestion_preferences"
+    __table_args__ = (
+        UniqueConstraint(
+            "user_id",
+            "suggestion_type",
+            "normalized_value",
+            name="uq_ai_suggestion_preference",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    suggestion_type: Mapped[str] = mapped_column(String(30))
+    normalized_value: Mapped[str] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class AIFieldProvenance(Base):
+    __tablename__ = "ai_field_provenance"
+    __table_args__ = (Index("ix_ai_field_item_version", "item_id", "analysis_version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    run_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("ai_runs.id", ondelete="CASCADE")
+    )
+    user_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    analysis_version: Mapped[int | None] = mapped_column(Integer)
+    field_name: Mapped[str] = mapped_column(String(60))
+    source: Mapped[str] = mapped_column(String(30))
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str | None] = mapped_column(String(255))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class ItemEmbedding(Base):
+    __tablename__ = "item_embeddings"
+    __table_args__ = (
+        UniqueConstraint(
+            "item_id",
+            "analysis_version",
+            "chunk_id",
+            "index_id",
+            name="uq_item_embedding",
+        ),
+        Index("ix_item_embeddings_user", "user_id"),
+        Index("ix_item_embeddings_index_hash", "index_id", "content_hash"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    analysis_version: Mapped[int] = mapped_column(Integer)
+    chunk_id: Mapped[str] = mapped_column(String(64))
+    index_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("embedding_indexes.id", ondelete="RESTRICT")
+    )
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(255))
+    dimensions: Mapped[int] = mapped_column(Integer)
+    normalization: Mapped[str] = mapped_column(String(20), default="l2")
+    index_version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    vector: Mapped[list[float]] = mapped_column(JSON)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class EmbeddingIndex(Base):
+    __tablename__ = "embedding_indexes"
+    __table_args__ = (
+        UniqueConstraint(
+            "provider",
+            "model",
+            "dimensions",
+            "normalization",
+            "version",
+            name="uq_embedding_index_schema",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    provider: Mapped[str] = mapped_column(String(40))
+    model: Mapped[str] = mapped_column(String(255))
+    dimensions: Mapped[int] = mapped_column(Integer)
+    normalization: Mapped[str] = mapped_column(String(20), default="l2")
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default="1")
+    status: Mapped[str] = mapped_column(String(20), default="active")
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )
+
+
+class DocumentChunk(Base):
+    __tablename__ = "document_chunks"
+    __table_args__ = (
+        UniqueConstraint(
+            "item_id", "analysis_version", "ordinal", name="uq_document_chunk_ordinal"
+        ),
+        Index("ix_document_chunk_hash", "user_id", "content_hash"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_uuid)
+    chunk_key: Mapped[str] = mapped_column(String(100))
+    user_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("users.id", ondelete="CASCADE")
+    )
+    item_id: Mapped[str] = mapped_column(
+        String(36), ForeignKey("items.id", ondelete="CASCADE")
+    )
+    analysis_version: Mapped[int] = mapped_column(Integer)
+    ordinal: Mapped[int] = mapped_column(Integer)
+    text: Mapped[str] = mapped_column(Text)
+    start_offset: Mapped[int] = mapped_column(Integer)
+    end_offset: Mapped[int] = mapped_column(Integer)
+    content_hash: Mapped[str] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utc_now, server_default=func.now()
+    )

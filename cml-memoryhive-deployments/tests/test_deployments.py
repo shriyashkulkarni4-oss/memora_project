@@ -108,6 +108,60 @@ class RenderTests(unittest.TestCase):
         self.assertEqual(
             backend_config["data"]["ALLOWED_HOSTS"], '["www.memoryhive.in"]'
         )
+        for provider_flag in (
+            "OPENROUTER_ENABLED",
+            "HUGGINGFACE_ENABLED",
+            "OPENAI_COMPATIBLE_ENABLED",
+        ):
+            self.assertEqual(backend_config["data"][provider_flag], "false")
+        self.assertEqual(backend_config["data"]["AI_EMBEDDING_DIMENSIONS"], "768")
+        self.assertEqual(backend_config["data"]["AI_EMBEDDING_INDEX_VERSION"], "1")
+        self.assertEqual(
+            backend_config["data"]["AI_EMBEDDING_BACKFILL_MAX_ITEMS_PER_MINUTE"],
+            "30",
+        )
+        serialized = json.dumps(backend_config)
+        self.assertNotIn("OPENROUTER_API_KEY", serialized)
+        self.assertNotIn("HUGGINGFACE_TOKEN", serialized)
+        self.assertNotIn("OPENAI_COMPATIBLE_API_KEY", serialized)
+
+    def test_all_ai_provider_secrets_are_streamed_and_never_rendered(self) -> None:
+        env, profile, _images = manage.load_context("local", "app-only")
+        values = manage.secret_values("local", profile, None)
+        values.update(
+            {
+                "OPENROUTER_API_KEY": "openrouter-secret",
+                "HUGGINGFACE_TOKEN": "huggingface-secret",
+                "OPENAI_COMPATIBLE_API_KEY": "compatible-secret",
+                "N8N_SIGNING_SECRET": "n8n-secret",
+                "AI_ENRICHMENT_ROUTE": "openrouter:vendor/model",
+            }
+        )
+        resources = manage.secret_resources(env, profile, values)
+        app_secret = next(
+            resource
+            for resource in resources
+            if resource["metadata"]["name"] == "cml-memoryhive-backend-secrets"
+        )
+        for key in (
+            "OPENROUTER_API_KEY",
+            "HUGGINGFACE_TOKEN",
+            "OPENAI_COMPATIBLE_API_KEY",
+            "N8N_SIGNING_SECRET",
+            "AI_ENRICHMENT_ROUTE",
+        ):
+            self.assertIn(key, app_secret["stringData"])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            rendered = manage.render("local", "app-only", Path(temporary))
+            bundle = (rendered / "cml-memoryhive.yaml").read_text()
+        for secret in (
+            "openrouter-secret",
+            "huggingface-secret",
+            "compatible-secret",
+            "n8n-secret",
+        ):
+            self.assertNotIn(secret, bundle)
 
     def test_template_allowlist_rejects_unknown_identifiers(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

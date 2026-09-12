@@ -243,6 +243,9 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
 .item-card p, .item-card blockquote { display: -webkit-box; overflow: hidden; min-height: 54px; margin: 0 0 14px; color: #65716e; font-size: 12px; line-height: 1.5; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 .item-card blockquote { padding-left: 11px; border-left: 2px solid #8cc9c1; font-style: normal; }
 .item-tags { display: flex; flex-wrap: wrap; gap: 5px; min-height: 23px; }
+.search-explanation { margin: 8px 0; padding: 8px 10px; border-left: 3px solid var(--teal); border-radius: 5px; background: var(--teal-soft); }
+.search-explanation span { color: var(--muted); font-size: 10px; font-weight: 650; text-transform: capitalize; }
+.search-explanation p { margin: 4px 0 0; color: var(--ink); font-size: 12px; }
 .item-tags span, .item-tags a, .item-tags button { display: inline-flex; align-items: center; height: 21px; padding: 0 7px; border: 0; border-radius: 5px; color: #53615e; background: #f0f3f2; font-size: 10px; font-weight: 600; }
 .item-tags a:hover, .item-tags button:hover { color: var(--teal); background: var(--teal-soft); }
 .item-card-footer { display: flex; align-items: center; gap: 10px; min-width: 0; margin-top: 14px; padding-top: 10px; border-top: 1px solid #edf0ef; }
@@ -403,6 +406,26 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
 .job-status-badge.processing { color: #075f58; background: var(--teal-soft); }
 .job-status-badge.completed { color: #176a48; background: #e6f5ed; }
 .job-status-badge.failed { color: var(--danger); background: #fff1ef; }
+.job-status-badge.cancelled { color: var(--muted); background: var(--surface-alt); }
+.admin-operations-links { display: flex; align-items: center; gap: 10px; }
+.admin-analysis-metrics { margin: 16px 0; }
+.admin-provider-health { display: flex; flex-wrap: wrap; gap: 10px; margin: 14px 0; }
+.admin-provider-health > div { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; }
+.admin-provider-health small { color: var(--muted); }
+.admin-recent-errors { display: grid; gap: 6px; margin: 12px 0; }
+.admin-recent-errors > div { display: flex; align-items: center; gap: 8px; color: var(--danger); font-size: 12px; }
+.admin-recent-errors span { color: var(--muted); }
+.admin-analysis-row { grid-template-columns: minmax(120px, 1.2fr) minmax(100px, 1fr) auto minmax(120px, 1fr) minmax(130px, 1fr) minmax(90px, .8fr) auto; }
+.admin-analysis-row > small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ai-suggestions > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ai-suggestions .section-label { display: inline-flex; align-items: center; gap: 6px; }
+.suggestion-list { display: grid; gap: 7px; margin: 12px 0; }
+.suggestion { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 7px; }
+.suggestion > span { margin-right: auto; font-weight: 700; }
+.suggestion > small { color: var(--muted); }
+.suggestion button { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 7px; border: 1px solid var(--line); border-radius: 5px; background: white; font-size: 11px; }
+.suggestion.accepted { border-color: #a9d8c1; background: #f2fbf6; }
+.suggestion.rejected, .suggestion.never { opacity: .68; }
 .admin-processing-actions { display: flex; justify-content: flex-end; }
 .admin-processing-actions .button { min-height: 32px; padding-inline: 9px; font-size: 11px; }
 .admin-empty { padding: 16px 0; color: var(--muted); font-size: 13px; }

@@ -155,7 +155,21 @@ export function isKnownPrivacyDisclosureValue(name, value) {
 }
 
 function externalAiDisclosure(mode, values) {
-  const configuredBackendEnrichment = Boolean(values.OLLAMA_BASE_URL || values.N8N_WEBHOOK_URL);
+  const selectedRoutes = [
+    values.AI_SUMMARIZATION_ROUTE,
+    values.AI_ENRICHMENT_ROUTE,
+    values.AI_EMBEDDINGS_ROUTE,
+    values.AI_RERANKING_ROUTE,
+    values.AI_VISION_ROUTE,
+  ].filter(Boolean);
+  const configuredBackendEnrichment = Boolean(
+    values.OLLAMA_BASE_URL ||
+      values.N8N_WEBHOOK_URL ||
+      values.OPENROUTER_ENABLED === "true" ||
+      values.HUGGINGFACE_ENABLED === "true" ||
+      values.OPENAI_COMPATIBLE_ENABLED === "true" ||
+      selectedRoutes.length,
+  );
   const contentSentToProcessor = mode !== "none";
   let notes = "No external AI processor is declared for store privacy answers.";
   if (mode === "self_hosted") {
@@ -222,6 +236,18 @@ export function resolveStoreReleaseConfig({
     ),
     OLLAMA_BASE_URL: releaseValue(context, "OLLAMA_BASE_URL"),
     N8N_WEBHOOK_URL: releaseValue(context, "N8N_WEBHOOK_URL"),
+    OPENROUTER_ENABLED: releaseValue(context, "OPENROUTER_ENABLED", "false"),
+    HUGGINGFACE_ENABLED: releaseValue(context, "HUGGINGFACE_ENABLED", "false"),
+    OPENAI_COMPATIBLE_ENABLED: releaseValue(
+      context,
+      "OPENAI_COMPATIBLE_ENABLED",
+      "false",
+    ),
+    AI_SUMMARIZATION_ROUTE: releaseValue(context, "AI_SUMMARIZATION_ROUTE"),
+    AI_ENRICHMENT_ROUTE: releaseValue(context, "AI_ENRICHMENT_ROUTE"),
+    AI_EMBEDDINGS_ROUTE: releaseValue(context, "AI_EMBEDDINGS_ROUTE"),
+    AI_RERANKING_ROUTE: releaseValue(context, "AI_RERANKING_ROUTE"),
+    AI_VISION_ROUTE: releaseValue(context, "AI_VISION_ROUTE"),
   };
   const webOrigin = publicOriginFromReleaseUrl(
     values.EXPO_PUBLIC_SUPPORT_URL ?? values.EXPO_PUBLIC_PRIVACY_POLICY_URL ?? values.EXPO_PUBLIC_API_URL,

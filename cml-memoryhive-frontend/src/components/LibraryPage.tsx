@@ -50,6 +50,8 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
   const requestedType = searchParams.get('type');
   const typeFilter = typeOptions.some((option) => option.value === requestedType) ? requestedType as ItemType : 'all';
   const category = searchParams.get('category') ?? 'all';
+  const classification = searchParams.get('classification') ?? 'all';
+  const topic = searchParams.get('topic') ?? 'all';
   const tagFilters = useMemo(() => uniqueTags(searchParams.getAll('tag')), [searchParams]);
   const requestedSummary = searchParams.get('summary');
   const summaryFilter = requestedSummary !== null && requestedSummary in summaryLabels ? requestedSummary as SummaryFilter : null;
@@ -93,6 +95,9 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       if (!applySummaryFilter(item)) return false;
       if (typeFilter !== 'all' && item.type !== typeFilter) return false;
       if (category !== 'all' && item.category_id !== category) return false;
+      const enrichment = item.metadata?.enrichment as { classification?: string; topics?: string[] } | undefined;
+      if (classification !== 'all' && enrichment?.classification !== classification) return false;
+      if (topic !== 'all' && !enrichment?.topics?.includes(topic)) return false;
       if (tagFilters.length && !tagFilters.every((tag) => item.tags.some((itemTag) => itemTag.name === tag))) return false;
       if (!query) return true;
       return [
@@ -111,12 +116,14 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       if (sort === 'title') return (a.title || '').localeCompare(b.title || '');
       return b.created_at.localeCompare(a.created_at);
     });
-  }, [applySummaryFilter, category, sort, store.items, store.query, store.searchResults, tagFilters, typeFilter]);
+  }, [applySummaryFilter, category, classification, sort, store.items, store.query, store.searchResults, tagFilters, topic, typeFilter]);
 
   const activeItems = store.items.filter((item) => !item.is_archived);
   const pending = activeItems.filter((item) => ['pending', 'processing'].includes(item.processing_status)).length;
   const favorites = activeItems.filter((item) => item.is_favorite).length;
   const categoryLabel = store.categories.find((item) => item.id === category)?.name;
+  const classificationOptions = Array.from(new Set(store.items.map((item) => (item.metadata?.enrichment as { classification?: string } | undefined)?.classification).filter((value): value is string => Boolean(value)))).sort();
+  const topicOptions = Array.from(new Set(store.items.flatMap((item) => (item.metadata?.enrichment as { topics?: string[] } | undefined)?.topics || []))).sort();
   const activePills: FilterPill[] = [
     ...(store.query.trim() ? [{
       id: 'q',
@@ -136,6 +143,8 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       label: `Category: ${categoryLabel ?? 'Unknown'}`,
       onRemove: () => updateFilters({ category: null }),
     }] : []),
+    ...(classification !== 'all' ? [{ id: 'classification', label: `Classification: ${classification}`, onRemove: () => updateFilters({ classification: null }) }] : []),
+    ...(topic !== 'all' ? [{ id: 'topic', label: `Topic: ${topic}`, onRemove: () => updateFilters({ topic: null }) }] : []),
     ...tagFilters.map((tag) => ({
       id: `tag:${tag}`,
       label: `#${tag}`,
@@ -232,6 +241,20 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
                 ))}
               </select>
             </label>
+            {classificationOptions.length ? <label>
+              <span className="sr-only">AI classification</span>
+              <select value={classification} onChange={(event) => updateFilters({ classification: event.target.value === 'all' ? null : event.target.value })}>
+                <option value="all">All classifications</option>
+                {classificationOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label> : null}
+            {topicOptions.length ? <label>
+              <span className="sr-only">AI topic</span>
+              <select value={topic} onChange={(event) => updateFilters({ topic: event.target.value === 'all' ? null : event.target.value })}>
+                <option value="all">All topics</option>
+                {topicOptions.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label> : null}
             <label>
               <span className="sr-only">Sort</span>
               <select value={sort} onChange={(event) => setSort(event.target.value)}>

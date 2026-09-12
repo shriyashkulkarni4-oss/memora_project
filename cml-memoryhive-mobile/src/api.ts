@@ -16,7 +16,7 @@ import {
   resolvePrivacyPolicyUrl,
   resolveSupportUrl,
 } from "./account-helpers";
-import type { Category, ChangePage, Item, ManagedTag, Tokens, User } from "./types";
+import type { AISuggestionDecisionPayload, Category, ChangePage, Item, ManagedTag, Tokens, User } from "./types";
 
 export const API_URL = resolveApiUrl(
   process.env.EXPO_PUBLIC_API_URL ??
@@ -230,6 +230,8 @@ export const syncApi: SyncApi = {
   get: (id) => request<Item>(`/items/${id}`),
   changes: (since, cursor) =>
     request<ChangePage>(`/items/changes${query({ since, cursor, limit: "200" })}`),
+  decideSuggestions: (id: string, payload: AISuggestionDecisionPayload) =>
+    request<void>(`/items/${id}/suggestions/decisions`, { method: "POST", body: JSON.stringify(payload) }),
 };
 
 export const categoriesApi = {

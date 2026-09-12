@@ -1,5 +1,5 @@
 import type {
-  AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminProcessingJobsPage, AdminUser, AdminUsersPage, Category, CreateItemRequest,
+  AdminAIProviderHealth, AdminAnalysisOperations, AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminProcessingJobsPage, AdminUser, AdminUsersPage, AISuggestionDecision, AISuggestionOverview, Category, CreateItemRequest,
   Item, ItemPage, ItemStats, ItemType, ManagedTag, ProcessingStatus, UpdateItemRequest, User,
 } from '../types/api';
 
@@ -198,6 +198,9 @@ export const itemsApi = {
   },
   update: (id: string, data: UpdateItemRequest) => request<Item>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   retryProcessing: (id: string) => request(`/items/${id}/processing/retry`, { method: 'POST' }),
+  suggestions: (id: string) => request<AISuggestionOverview>(`/items/${id}/suggestions`),
+  decideSuggestions: (id: string, data: { client_id: string; analysis_version: number; expected_revision: number; decisions: AISuggestionDecision[] }) =>
+    request<AISuggestionOverview>(`/items/${id}/suggestions/decisions`, { method: 'POST', body: JSON.stringify(data) }),
   remove: (id: string) => request<void>(`/items/${id}`, { method: 'DELETE' }),
   favorite: (id: string, value: boolean) => request<Item>(`/items/${id}/favorite`, { method: value ? 'PUT' : 'DELETE' }),
   archive: (id: string, value: boolean) => request<Item>(`/items/${id}/archive`, { method: value ? 'PUT' : 'DELETE' }),
@@ -237,7 +240,13 @@ export const adminApi = {
   processingJobs: (filters: { status?: 'pending' | 'processing' | 'completed' | 'failed'; limit?: number; offset?: number } = {}) =>
     request<AdminProcessingJobsPage>(`/admin/processing/jobs${queryString(filters)}`),
   retryProcessingJob: (id: string) =>
-    request<AdminProcessingJob>(`/admin/processing/jobs/${id}/retry`, { method: 'POST' }),
+    request<AdminProcessingJob>(`/admin/processing/jobs/${id}/retry`, { method: 'POST', body: JSON.stringify({ confirmation: 'RETRY' }) }),
+  cancelProcessingJob: (id: string) =>
+    request<AdminProcessingJob>(`/admin/processing/jobs/${id}/cancel`, { method: 'POST', body: JSON.stringify({ confirmation: 'CANCEL' }) }),
+  reanalyzeItem: (id: string) =>
+    request<AdminProcessingJob>(`/admin/items/${id}/reanalyze`, { method: 'POST', body: JSON.stringify({ confirmation: 'REANALYZE' }) }),
+  analysisOperations: () => request<AdminAnalysisOperations>('/admin/analysis/operations'),
+  providerHealth: () => request<AdminAIProviderHealth[]>('/admin/ai/providers/health'),
   users: (filters: { limit?: number; offset?: number } = {}) =>
     request<AdminUsersPage>(`/admin/users${queryString(filters)}`),
   updateUser: (id: string, data: { role?: AdminUser['role']; is_active?: boolean }) =>

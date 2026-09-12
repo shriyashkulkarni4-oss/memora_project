@@ -29,7 +29,8 @@
     "infra": ["db", "redis", "minio"],
     "app-only": ["cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
     "full": ["db", "redis", "minio", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-frontend"],
-    "temporal": ["db", "redis", "minio", "temporal-db", "temporal", "temporal-ui", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler", "cml-memoryhive-frontend"]
+    "temporal": ["db", "redis", "minio", "temporal-db", "temporal", "temporal-ui", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler", "cml-memoryhive-frontend"],
+    "observability": ["db", "redis", "minio", "temporal-db", "temporal", "temporal-ui", "cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler", "cml-memoryhive-frontend", "prometheus", "alertmanager", "grafana"]
   },
   "services": [
     {
@@ -100,6 +101,36 @@
       "image": "temporalio/ui:${TEMPORAL_UI_VERSION:-2.54.1}",
       "health": {"type": "http", "path": "/"},
       "depends_on": ["temporal"]
+    },
+    {
+      "key": "prometheus",
+      "kind": "infra",
+      "port": 9090,
+      "host_port_env": "PROMETHEUS_PORT",
+      "host_port": 9090,
+      "image": "prom/prometheus:v3.14.0",
+      "health": {"type": "http", "path": "/-/ready"},
+      "depends_on": ["cml-memoryhive-backend", "cml-memoryhive-worker", "cml-memoryhive-temporal-worker", "cml-memoryhive-temporal-scheduler", "temporal"]
+    },
+    {
+      "key": "alertmanager",
+      "kind": "infra",
+      "port": 9093,
+      "host_port_env": "ALERTMANAGER_PORT",
+      "host_port": 9093,
+      "image": "prom/alertmanager:v0.30.1",
+      "health": {"type": "http", "path": "/-/ready"},
+      "depends_on": []
+    },
+    {
+      "key": "grafana",
+      "kind": "infra",
+      "port": 3000,
+      "host_port_env": "GRAFANA_PORT",
+      "host_port": 3001,
+      "image": "grafana/grafana:12.3.5",
+      "health": {"type": "http", "path": "/api/health"},
+      "depends_on": ["prometheus"]
     },
     {
       "key": "cml-memoryhive-backend",

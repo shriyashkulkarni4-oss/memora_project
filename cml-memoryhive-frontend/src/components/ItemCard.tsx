@@ -80,6 +80,13 @@ export default function ItemCard({
           <p>{item.summary || item.description || item.url}</p>
         )}
 
+        {item.search_match ? (
+          <div className="search-explanation" aria-label="Why this result matched">
+            <span>Matched by {item.search_match.reasons.join(', ')}</span>
+            {item.search_match.snippet ? <p>{item.search_match.snippet}</p> : null}
+          </div>
+        ) : null}
+
         <div className="item-tags" aria-label="Tags">
           {item.tags.slice(0, 3).map((tag) => (
             <button key={tag.id} type="button" onClick={() => onTagClick?.(tag.name)}>

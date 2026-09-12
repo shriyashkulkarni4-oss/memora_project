@@ -1,0 +1,54 @@
+[
+  {
+    "name": "machine-learning-release",
+    "source": "Acme released an open source machine learning toolkit for document classification. The toolkit includes Python examples and evaluation data.",
+    "existing_tags": ["Machine Learning", "Python"],
+    "output": {
+      "summary": "Acme released an open source machine learning toolkit for document classification.",
+      "detailed_summary": "The machine learning toolkit includes Python examples and evaluation data for document classification.",
+      "topics": ["machine learning", "document classification"],
+      "suggested_tags": ["machine learning", "Python"],
+      "classification": "documentation",
+      "entities": ["Acme"],
+      "key_phrases": ["open source toolkit"],
+      "confidence": 0.92,
+      "warnings": []
+    },
+    "expected_classification": "reference",
+    "minimum_faithfulness": 0.65
+  },
+  {
+    "name": "research-paper",
+    "source": "Researchers measured coastal rainfall over ten years. The paper reports a twelve percent increase in extreme rainfall events.",
+    "existing_tags": ["Climate"],
+    "output": {
+      "summary": "Researchers report a twelve percent increase in extreme coastal rainfall events over ten years.",
+      "topics": ["coastal rainfall"],
+      "suggested_tags": ["rainfall"],
+      "classification": "paper",
+      "entities": [],
+      "key_phrases": ["extreme rainfall events"],
+      "confidence": 0.88,
+      "warnings": []
+    },
+    "expected_classification": "research",
+    "minimum_faithfulness": 0.65
+  },
+  {
+    "name": "unsupported-claims-removed",
+    "source": "The guide explains PostgreSQL indexing and query planning for large tables.",
+    "existing_tags": ["PostgreSQL"],
+    "output": {
+      "summary": "The guide explains PostgreSQL indexing and query planning for large tables.",
+      "topics": ["PostgreSQL indexing", "quantum computing"],
+      "suggested_tags": ["postgresql", "astronomy"],
+      "classification": "unknown bucket",
+      "entities": ["PostgreSQL", "NASA"],
+      "key_phrases": ["query planning", "space telescope"],
+      "confidence": 0.7,
+      "warnings": []
+    },
+    "expected_classification": "other",
+    "minimum_faithfulness": 0.9
+  }
+]

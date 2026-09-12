@@ -48,7 +48,8 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(self.registry["schema_version"], 1)
         self.assertEqual(self.registry["app"], "cml-memoryhive")
         self.assertEqual(
-            set(self.registry["profiles"]), {"infra", "app-only", "full", "temporal"}
+            set(self.registry["profiles"]),
+            {"infra", "app-only", "full", "temporal", "observability"},
         )
         services = self.registry["services"]
         keys = [item["key"] for item in services]
@@ -127,6 +128,94 @@ class RegistryTests(unittest.TestCase):
 
 
 class BuildTests(unittest.TestCase):
+    def test_observability_profile_dashboards_alerts_and_runbooks_are_owned(self) -> None:
+        registry = runtime_generator.load_registry()
+        profile = registry["profiles"]["observability"]
+        self.assertTrue({"prometheus", "alertmanager", "grafana"} <= set(profile))
+        compose = runtime_generator.render_profile(registry, "observability")
+        self.assertIn("/etc/grafana/provisioning:ro", " ".join(compose["services"]["grafana"]["volumes"]))
+        self.assertIn("alertmanager:9093", (REPO_ROOT / "ops/prometheus.yml").read_text())
+
+        dashboards = sorted((REPO_ROOT / "ops/grafana/dashboards").glob("*.json"))
+        self.assertEqual(len(dashboards), 5)
+        documents = [json.loads(path.read_text()) for path in dashboards]
+        self.assertEqual(len({document["uid"] for document in documents}), 5)
+        for document in documents:
+            self.assertGreater(len(document["panels"]), 1)
+            self.assertIn("owned", document["tags"])
+            for panel in document["panels"]:
+                self.assertTrue(all(target.get("expr") for target in panel["targets"]))
+
+        rules = yaml.safe_load((REPO_ROOT / "ops/alerts.yml").read_text())
+        alerts = [rule for group in rules["groups"] for rule in group["rules"]]
+        expected = {
+            "MemoryhiveDatabaseWorkerMissing",
+            "MemoryhiveTemporalWorkerMissing",
+            "MemoryhiveAnalysisBacklogGrowing",
+            "MemoryhiveOldestPendingTooOld",
+            "MemoryhiveAnalysisStuck",
+            "MemoryhiveTemporalActivityFailures",
+            "MemoryhiveTemporalUnavailable",
+            "MemoryhiveProviderAuthenticationFailure",
+            "MemoryhiveProviderRateLimited",
+            "MemoryhiveProviderCircuitOpen",
+            "MemoryhiveAIBudgetExhausted",
+            "MemoryhiveDegradedSpike",
+            "MemoryhiveFallbackSpike",
+        }
+        self.assertTrue(expected <= {rule["alert"] for rule in alerts})
+        for rule in alerts:
+            self.assertIn(rule["labels"]["severity"], {"warning", "critical"})
+            self.assertTrue(rule["labels"]["owner"])
+            self.assertEqual(
+                set(rule["annotations"]),
+                {"summary", "user_impact", "first_checks", "recovery", "runbook_url"},
+            )
+        self.assertTrue((REPO_ROOT / "ops/tests/alerts.test.yml").is_file())
+        self.assertTrue((REPO_ROOT / "docs/runbooks/observability.md").is_file())
+
+    def test_prometheus_scrapes_api_workers_sdk_scheduler_and_temporal(self) -> None:
+        config = yaml.safe_load((REPO_ROOT / "ops/prometheus.yml").read_text())
+        jobs = {entry["job_name"]: entry for entry in config["scrape_configs"]}
+        self.assertEqual(
+            set(jobs),
+            {
+                "cml-memoryhive-api",
+                "cml-memoryhive-database-worker",
+                "cml-memoryhive-temporal-sdk",
+                "cml-memoryhive-temporal-scheduler",
+                "cml-memoryhive-temporal-worker",
+                "temporal-server",
+            },
+        )
+        temporal = runtime_generator.build_service(
+            "temporal", set(runtime_generator.load_registry()["profiles"]["temporal"])
+        )
+        self.assertEqual(temporal["environment"]["PROMETHEUS_ENDPOINT"], "0.0.0.0:8000")
+
+    def test_compose_exposes_all_ai_provider_policy_and_secret_references(self) -> None:
+        environment = runtime_generator.backend_environment(temporal=True)
+        for key in (
+            "OPENROUTER_ENABLED",
+            "OPENROUTER_API_KEY",
+            "HUGGINGFACE_ENABLED",
+            "HUGGINGFACE_TOKEN",
+            "OPENAI_COMPATIBLE_ENABLED",
+            "OPENAI_COMPATIBLE_API_KEY",
+            "N8N_SIGNING_SECRET",
+            "OLLAMA_EMBEDDING_MODEL",
+            "AI_ENRICHMENT_ROUTE",
+            "AI_EXTERNAL_CONTENT_ALLOWED",
+            "AI_DAILY_COST_BUDGET_USD",
+            "AI_PER_USER_DAILY_TOKEN_QUOTA",
+            "AI_EMBEDDING_DIMENSIONS",
+            "AI_EMBEDDING_INDEX_VERSION",
+            "AI_EMBEDDING_BACKFILL_MAX_ITEMS_PER_MINUTE",
+        ):
+            self.assertIn(key, environment)
+        self.assertEqual(environment["OPENROUTER_API_KEY"], "${OPENROUTER_API_KEY:-}")
+        self.assertNotIn("sk-", json.dumps(environment))
+
     def test_project_makefile_exposes_supported_command_surface(self) -> None:
         makefile = (BUILD_ROOT / "Makefile").read_text()
         expected = {

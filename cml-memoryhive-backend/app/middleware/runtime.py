@@ -7,6 +7,7 @@ import time
 import uuid
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
+from contextvars import ContextVar
 
 from fastapi import Request, Response
 from prometheus_client import Counter, Histogram
@@ -17,6 +18,9 @@ from app.config import Settings
 from app.core.errors import error_payload
 
 logger = logging.getLogger("memoryhive.requests")
+REQUEST_ID_CONTEXT: ContextVar[str | None] = ContextVar(
+    "memoryhive_request_id", default=None
+)
 REQUEST_COUNT = Counter(
     "memoryhive_http_requests_total",
     "HTTP requests",
@@ -37,7 +41,18 @@ class JsonFormatter(logging.Formatter):
             "logger": record.name,
             "message": record.getMessage(),
         }
-        for key in ("request_id", "method", "path", "status", "duration_ms"):
+        for key in (
+            "request_id",
+            "correlation_id",
+            "job_id",
+            "workflow_id",
+            "provider",
+            "stage",
+            "method",
+            "path",
+            "status",
+            "duration_ms",
+        ):
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
         if record.exc_info:
@@ -63,8 +78,12 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         request_id = supplied_id[:128] if supplied_id.isascii() else ""
         request_id = request_id or str(uuid.uuid4())
         request.state.request_id = request_id
+        token = REQUEST_ID_CONTEXT.set(request_id)
         started = time.perf_counter()
-        response = await call_next(request)
+        try:
+            response = await call_next(request)
+        finally:
+            REQUEST_ID_CONTEXT.reset(token)
         duration = time.perf_counter() - started
         route = request.scope.get("route")
         route_path = getattr(route, "path", request.url.path)
@@ -82,6 +101,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             },
         )
         return response
+
+
+def current_request_id() -> str | None:
+    return REQUEST_ID_CONTEXT.get()
 
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):

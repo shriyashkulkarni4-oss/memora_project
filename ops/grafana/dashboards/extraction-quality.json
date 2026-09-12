@@ -1,0 +1,14 @@
+{
+  "uid": "memoryhive-extraction",
+  "title": "Memoryhive Extraction Quality",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "1m",
+  "tags": ["memoryhive", "extraction", "owned"],
+  "links": [{"title": "Quality Runbook", "url": "https://www.memoryhive.in/runbooks/observability#degraded-spike", "type": "link"}],
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Extraction Outcomes", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (backend, outcome) (rate(memoryhive_analysis_outcomes_total{stage=~\"extract|completed\"}[10m]))"}], "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}},
+    {"id": 2, "type": "timeseries", "title": "Degraded Results", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (backend) (rate(memoryhive_analysis_outcomes_total{outcome=\"degraded\"}[10m]))"}], "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}},
+    {"id": 3, "type": "timeseries", "title": "Extraction Activity p95", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(memoryhive_analysis_activity_duration_seconds_bucket{stage=\"extract\"}[10m])))"}], "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}}
+  ]
+}

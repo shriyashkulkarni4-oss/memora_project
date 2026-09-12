@@ -8,8 +8,16 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.config import get_settings
-from app.models import Item, ProcessingJob, ProcessingStatus
+from app.ai.gateway import AIGateway
+from app.api.v1 import admin as admin_api
+from app.config import Settings, get_settings
+from app.models import (
+    AdminAnalysisAction,
+    AIRun,
+    Item,
+    ProcessingJob,
+    ProcessingStatus,
+)
 from tests.conftest import FakeStorage
 
 PASSWORD = "correct-horse-battery"
@@ -17,6 +25,94 @@ pytestmark = pytest.mark.asyncio
 PNG_1X1 = base64.b64decode(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="
 )
+
+
+async def test_ai_provider_health_is_admin_only_and_content_free(
+    api_client: tuple[AsyncClient, FakeStorage], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _storage = api_client
+    _admin, admin_headers = await register_and_login(client, "health-admin@example.com")
+    _user, user_headers = await register_and_login(client, "health-user@example.com")
+    monkeypatch.setattr(admin_api, "build_ai_gateway", lambda _settings: AIGateway([]))
+
+    denied = await client.get("/api/v1/admin/ai/providers/health", headers=user_headers)
+    allowed = await client.get(
+        "/api/v1/admin/ai/providers/health", headers=admin_headers
+    )
+
+    assert denied.status_code == 403
+    assert allowed.status_code == 200
+    assert allowed.json() == []
+
+
+async def test_ai_configuration_is_admin_only_and_redacts_secrets(
+    api_client: tuple[AsyncClient, FakeStorage], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    client, _storage = api_client
+    _admin, admin_headers = await register_and_login(client, "config-admin@example.com")
+    _user, user_headers = await register_and_login(client, "config-user@example.com")
+    secret = "credential-must-never-appear"
+    settings = Settings(
+        database_url="sqlite+aiosqlite://",
+        openrouter_enabled=True,
+        openrouter_api_key=secret,
+        openrouter_model="vendor/model",
+        ai_enrichment_route="openrouter:vendor/model",
+        ai_external_content_allowed=True,
+        ai_allowed_external_providers=["openrouter"],
+    )
+    monkeypatch.setattr(admin_api, "get_settings", lambda: settings)
+
+    denied = await client.get("/api/v1/admin/ai/config", headers=user_headers)
+    allowed = await client.get("/api/v1/admin/ai/config", headers=admin_headers)
+
+    assert denied.status_code == 403
+    assert allowed.status_code == 200
+    body = allowed.json()
+    assert body["tasks"]["enrichment"]["primary"] == "openrouter:vendor/model"
+    assert (
+        next(
+            provider
+            for provider in body["providers"]
+            if provider["provider"] == "openrouter"
+        )["credential_configured"]
+        is True
+    )
+    assert secret not in allowed.text
+
+
+async def test_admin_ai_runs_contract_contains_only_audit_metadata(
+    api_client_with_db: tuple[
+        AsyncClient, FakeStorage, async_sessionmaker[AsyncSession]
+    ],
+) -> None:
+    client, _storage, session_factory = api_client_with_db
+    admin, headers = await register_and_login(client, "runs-admin@example.com")
+    async with session_factory() as session:
+        session.add(
+            AIRun(
+                user_id=admin["id"],
+                item_id=None,
+                analysis_version=1,
+                task="enrichment",
+                provider="openrouter",
+                requested_model="approved-alias",
+                resolved_model="vendor/model",
+                content_hash="a" * 64,
+                status="completed",
+                total_tokens=12,
+                fallback_chain=["ollama", "openrouter"],
+            )
+        )
+        await session.commit()
+
+    response = await client.get("/api/v1/admin/ai/runs", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["runs"][0]["provider"] == "openrouter"
+    assert response.json()["runs"][0]["content_hash"] == "a" * 64
+    assert "raw_prompt" not in response.text.lower()
+    assert "raw_response" not in response.text.lower()
 
 
 async def register_and_login(
@@ -176,11 +272,15 @@ async def test_admin_processing_queue_lists_and_retries_failed_jobs(
     assert record["item_title"] == "Retry Me"
     assert record["item_type"] == "link"
     assert record["item_processing_status"] == "failed"
+    assert record["analysis_version"] == 1
+    assert record["execution_backend"] == "database"
+    assert record["reason"] == "capture"
     assert record["user_email"] == "queue-user@example.com"
     assert record["last_error"] == "metadata fetch timed out"
 
     retried = await client.post(
         f"/api/v1/admin/processing/jobs/{record['id']}/retry",
+        json={"confirmation": "RETRY"},
         headers=admin_headers,
     )
     assert retried.status_code == 200, retried.text
@@ -191,10 +291,17 @@ async def test_admin_processing_queue_lists_and_retries_failed_jobs(
 
     duplicate = await client.post(
         f"/api/v1/admin/processing/jobs/{record['id']}/retry",
+        json={"confirmation": "RETRY"},
         headers=admin_headers,
     )
-    assert duplicate.status_code == 409
-    assert duplicate.json()["error"]["message"] == "Item processing is already queued"
+    assert duplicate.status_code == 200
+    assert duplicate.json()["id"] == retry_body["id"]
+
+    async with session_factory() as session:
+        audit_records = list(await session.scalars(select(AdminAnalysisAction)))
+        assert len(audit_records) == 1
+        assert audit_records[0].action == "retry"
+        assert audit_records[0].actor_user_id == _admin["id"]
 
     status_response = await client.get("/api/v1/admin/backup", headers=admin_headers)
     assert status_response.status_code == 200
@@ -204,6 +311,101 @@ async def test_admin_processing_queue_lists_and_retries_failed_jobs(
     run_response = await client.post("/api/v1/admin/backup/run", headers=admin_headers)
     assert run_response.status_code == 503
     get_settings.cache_clear()
+
+
+async def test_analysis_operations_are_safe_authorized_and_audited(
+    api_client_with_db: tuple[
+        AsyncClient, FakeStorage, async_sessionmaker[AsyncSession]
+    ],
+) -> None:
+    client, _storage, session_factory = api_client_with_db
+    admin, admin_headers = await register_and_login(
+        client, "analysis-admin@example.com"
+    )
+    _user, user_headers = await register_and_login(client, "analysis-user@example.com")
+    captured = await client.post(
+        "/api/v1/items",
+        json={
+            "type": "link",
+            "url": "https://private.example/secret-path",
+            "title": "Private tenant title",
+        },
+        headers=user_headers,
+    )
+    item_id = captured.json()["id"]
+    async with session_factory() as session:
+        job = await session.scalar(
+            select(ProcessingJob).where(ProcessingJob.item_id == item_id)
+        )
+        assert job
+        job.last_error = "credential secret-value failed unexpectedly"
+        await session.commit()
+        job_id = job.id
+
+    forbidden = await client.get(
+        "/api/v1/admin/analysis/operations", headers=user_headers
+    )
+    assert forbidden.status_code == 403
+
+    operations = await client.get(
+        "/api/v1/admin/analysis/operations", headers=admin_headers
+    )
+    assert operations.status_code == 200, operations.text
+    body = operations.json()
+    assert body["queue_depth"] == 1
+    assert body["recent_runs"][0]["item_reference"].startswith("link:")
+    assert body["recent_runs"][0]["correlation_id"]
+    assert body["recent_runs"][0]["error_code"] == "authentication_failed"
+    assert "Private tenant title" not in operations.text
+    assert "secret-value" not in operations.text
+    assert "private.example" not in operations.text
+
+    missing_confirmation = await client.post(
+        f"/api/v1/admin/processing/jobs/{job_id}/cancel",
+        json={"confirmation": "RETRY"},
+        headers=admin_headers,
+    )
+    assert missing_confirmation.status_code == 400
+
+    cancelled = await client.post(
+        f"/api/v1/admin/processing/jobs/{job_id}/cancel",
+        json={"confirmation": "CANCEL"},
+        headers=admin_headers,
+    )
+    assert cancelled.status_code == 200, cancelled.text
+    assert cancelled.json()["status"] == "cancelled"
+    duplicate_cancel = await client.post(
+        f"/api/v1/admin/processing/jobs/{job_id}/cancel",
+        json={"confirmation": "CANCEL"},
+        headers=admin_headers,
+    )
+    assert duplicate_cancel.status_code == 200
+
+    reanalyzed = await client.post(
+        f"/api/v1/admin/items/{item_id}/reanalyze",
+        json={"confirmation": "REANALYZE"},
+        headers=admin_headers,
+    )
+    assert reanalyzed.status_code == 200, reanalyzed.text
+    assert reanalyzed.json()["analysis_version"] == 2
+    duplicate_reanalyze = await client.post(
+        f"/api/v1/admin/items/{item_id}/reanalyze",
+        json={"confirmation": "REANALYZE"},
+        headers=admin_headers,
+    )
+    assert duplicate_reanalyze.status_code == 200
+    assert duplicate_reanalyze.json()["id"] == reanalyzed.json()["id"]
+
+    async with session_factory() as session:
+        audits = list(
+            await session.scalars(
+                select(AdminAnalysisAction).order_by(AdminAnalysisAction.created_at)
+            )
+        )
+    assert [(record.action, record.actor_user_id) for record in audits] == [
+        ("cancel", admin["id"]),
+        ("reanalyze", admin["id"]),
+    ]
 
 
 async def test_admin_can_run_configured_backup_command(

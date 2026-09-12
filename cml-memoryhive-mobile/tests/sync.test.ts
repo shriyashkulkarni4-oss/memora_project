@@ -79,6 +79,7 @@ function api(overrides: Partial<SyncApi> = {}): SyncApi {
     remove: async () => undefined,
     get: async (id) => item({ id }),
     changes: async () => empty,
+    decideSuggestions: async () => undefined,
     ...overrides,
   };
 }
@@ -136,6 +137,34 @@ describe("offline sync", () => {
     expect(revisions).toEqual([1, 3]);
     expect(repository.records.get(item().id)?.title).toBe("Local title");
     expect(result.conflicts).toBe(1);
+  });
+
+  it("replays an offline suggestion decision against the current revision", async () => {
+    const repository = new MemoryRepository();
+    repository.mutations.push({
+      sequence: 1,
+      itemId: item().id,
+      operation: "suggestion",
+      payload: {
+        client_id: "offline-feedback",
+        analysis_version: 1,
+        expected_revision: 1,
+        decisions: [{ suggestion_type: "tag", value: "systems", action: "accept" }],
+      },
+      attempts: 0,
+    });
+    const revisions: number[] = [];
+    let reads = 0;
+    const result = await synchronize(repository, api({
+      decideSuggestions: async (_id, payload) => {
+        revisions.push(payload.expected_revision);
+        if (payload.expected_revision === 1) throw new ApiError("Item revision conflict", 409);
+      },
+      get: async () => item({ revision: ++reads === 1 ? 4 : 5 }),
+    }));
+    expect(revisions).toEqual([1, 4]);
+    expect(result.conflicts).toBe(1);
+    expect(repository.mutations).toHaveLength(0);
   });
 
   it("applies remote tombstones", async () => {

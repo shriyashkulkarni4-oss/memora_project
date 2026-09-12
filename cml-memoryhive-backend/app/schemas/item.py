@@ -37,6 +37,13 @@ class AssetResponse(BaseModel):
     created_at: datetime
 
 
+class SearchMatchResponse(BaseModel):
+    score: float
+    reasons: list[str]
+    snippet: str | None = None
+    semantic_score: float | None = None
+
+
 class ItemCreate(BaseModel):
     """Capture payload. A supplied UUID makes offline capture idempotent."""
 
@@ -139,6 +146,7 @@ class ItemResponse(BaseModel):
     deleted_at: datetime | None
     created_at: datetime
     updated_at: datetime
+    search_match: SearchMatchResponse | None = None
 
 
 class ItemListResponse(BaseModel):
@@ -146,6 +154,33 @@ class ItemListResponse(BaseModel):
     next_cursor: str | None = None
     has_more: bool
     limit: int
+
+
+class EnrichmentRecordResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    item_id: str
+    ai_run_id: str | None
+    analysis_version: int
+    schema_version: int
+    taxonomy_version: int
+    summary: str | None
+    detailed_summary: str | None
+    topics: list[str]
+    suggested_tags: list[str]
+    classification: str | None
+    entities: list[str]
+    key_phrases: list[str]
+    content_language: str | None
+    confidence: float | None
+    warnings: list[str]
+    provider: str
+    model: str | None
+    prompt_version: str
+    content_hash: str
+    field_provenance: dict[str, Any]
+    generated_at: datetime
 
 
 class ItemChangesResponse(BaseModel):

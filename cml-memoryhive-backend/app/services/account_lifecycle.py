@@ -3,10 +3,23 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import Asset, LifecycleAudit, StorageDeletionJob, User
+from app.models import (
+    AIFieldProvenance,
+    AIRun,
+    AISuggestionFeedback,
+    AISuggestionPreference,
+    AIUsageEvent,
+    Asset,
+    DocumentChunk,
+    EnrichmentRecord,
+    ItemEmbedding,
+    LifecycleAudit,
+    StorageDeletionJob,
+    User,
+)
 from app.services.storage import StorageService
 
 
@@ -36,6 +49,24 @@ async def delete_user_account(
         for object_key in object_keys
     ]
     db.add_all(jobs)
+    # Explicit deletion keeps behavior deterministic even where database FK
+    # cascade enforcement differs (for example, SQLite test/export tooling).
+    await db.execute(
+        delete(AIFieldProvenance).where(AIFieldProvenance.user_id == user.id)
+    )
+    await db.execute(delete(ItemEmbedding).where(ItemEmbedding.user_id == user.id))
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.user_id == user.id))
+    await db.execute(
+        delete(AISuggestionFeedback).where(AISuggestionFeedback.user_id == user.id)
+    )
+    await db.execute(
+        delete(AISuggestionPreference).where(AISuggestionPreference.user_id == user.id)
+    )
+    await db.execute(
+        delete(EnrichmentRecord).where(EnrichmentRecord.user_id == user.id)
+    )
+    await db.execute(delete(AIUsageEvent).where(AIUsageEvent.user_id == user.id))
+    await db.execute(delete(AIRun).where(AIRun.user_id == user.id))
     await db.delete(user)
     await db.commit()
 

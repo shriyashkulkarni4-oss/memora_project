@@ -4,15 +4,16 @@ import React, { useEffect, useRef, useState } from "react";
 import { Alert, Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { retryItemProcessing } from "@/src/api";
+import { suggestionsFromItem } from "@/src/ai-suggestions";
 import { useAppState } from "@/src/app-state";
 import { CategoryPicker, EmptyState, Field, PrimaryButton, TagPicker } from "@/src/components";
 import { tagsFromItems, uniqueTags } from "@/src/item-filters";
 import { colors } from "@/src/theme";
-import type { Item } from "@/src/types";
+import type { AISuggestionDecision, Item } from "@/src/types";
 
 export default function ItemDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { categories, get, items, remove, sync, update } = useAppState();
+  const { categories, get, items, remove, reviewSuggestions, sync, update } = useAppState();
   const [item, setItem] = useState<Item>();
   const [editing, setEditing] = useState(false);
   const [title, setTitle] = useState("");
@@ -55,6 +56,12 @@ export default function ItemDetail() {
   }
 
   const category = categories.find((candidate) => candidate.id === item.category_id);
+  const aiSuggestions = suggestionsFromItem(item);
+
+  async function decideSuggestions(decisions: AISuggestionDecision[]) {
+    if (!item) return;
+    setItem(await reviewSuggestions(item.id, decisions));
+  }
 
   function toggleEditing() {
     if (editing) {
@@ -142,6 +149,29 @@ export default function ItemDetail() {
       {item.raw_text ? <View style={styles.block}><Text style={styles.blockLabel}>Saved text</Text><Text selectable style={styles.body}>{item.raw_text}</Text></View> : null}
       {item.notes ? <View style={styles.block}><Text style={styles.blockLabel}>Notes</Text><Text selectable style={styles.body}>{item.notes}</Text></View> : null}
       {item.summary ? <View style={styles.block}><Text style={styles.blockLabel}>Summary</Text><Text selectable style={styles.body}>{item.summary}</Text></View> : null}
+      {aiSuggestions.suggestions.length || aiSuggestions.topics.length ? (
+        <View style={styles.suggestionPanel}>
+          <View style={styles.suggestionHeader}>
+            <Text style={styles.blockLabel}>AI suggestions</Text>
+            {aiSuggestions.suggestions.filter((entry) => entry.status === "pending").length > 1 ? (
+              <Pressable onPress={() => void decideSuggestions(aiSuggestions.suggestions.filter((entry) => entry.status === "pending").map(({ suggestion_type, value }) => ({ suggestion_type, value, action: "accept" })))} style={styles.suggestionButton}><Text>Accept all</Text></Pressable>
+            ) : null}
+          </View>
+          {aiSuggestions.topics.length ? <Text style={styles.suggestionTopics}>Topics: {aiSuggestions.topics.join(" · ")}</Text> : null}
+          {aiSuggestions.suggestions.map((suggestion) => (
+            <View key={`${suggestion.suggestion_type}:${suggestion.value}`} style={styles.suggestionRow}>
+              <Text style={styles.suggestionValue}>{suggestion.suggestion_type === "tag" ? "#" : ""}{suggestion.value}</Text>
+              <Text style={styles.suggestionStatus}>{suggestion.status}</Text>
+              {suggestion.status === "pending" ? <>
+                <Pressable accessibilityLabel={`Accept ${suggestion.value}`} onPress={() => void decideSuggestions([{ suggestion_type: suggestion.suggestion_type, value: suggestion.value, action: "accept" }])} style={styles.suggestionButton}><Text>Accept</Text></Pressable>
+                <Pressable accessibilityLabel={`Reject ${suggestion.value}`} onPress={() => void decideSuggestions([{ suggestion_type: suggestion.suggestion_type, value: suggestion.value, action: "reject" }])} style={styles.suggestionButton}><Text>Reject</Text></Pressable>
+                {suggestion.suggestion_type === "tag" ? <Pressable onPress={() => void decideSuggestions([{ suggestion_type: "tag", value: suggestion.value, action: "never" }])} style={styles.suggestionButton}><Text>Never</Text></Pressable> : null}
+              </> : suggestion.status === "accepted" ? <Pressable onPress={() => void decideSuggestions([{ suggestion_type: suggestion.suggestion_type, value: suggestion.value, action: "undo" }])} style={styles.suggestionButton}><Text>Undo</Text></Pressable> : null}
+            </View>
+          ))}
+          <Text style={styles.suggestionHelp}>Suggestions never replace your tags or category without your action. Decisions sync when online.</Text>
+        </View>
+      ) : null}
       {category ? (
         <Pressable accessibilityRole="button" onPress={() => router.push({ pathname: "/(app)/home", params: { category: category.id } })} style={styles.categoryLink}>
           <View style={[styles.categorySwatch, { backgroundColor: category.color }]} />
@@ -186,4 +216,12 @@ const styles = StyleSheet.create({
   metaText: { color: colors.textMuted, fontSize: 12, textTransform: "capitalize" },
   failure: { alignItems: "flex-start", backgroundColor: "#FEF3F2", borderColor: "#FECDCA", borderRadius: 7, borderWidth: 1, flexDirection: "row", gap: 9, padding: 12 },
   failureText: { color: colors.danger, flex: 1, fontSize: 13, lineHeight: 19 },
+  suggestionPanel: { backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 7, borderWidth: 1, gap: 10, padding: 13 },
+  suggestionHeader: { alignItems: "center", flexDirection: "row", justifyContent: "space-between" },
+  suggestionTopics: { color: colors.textMuted, fontSize: 13 },
+  suggestionRow: { alignItems: "center", flexDirection: "row", flexWrap: "wrap", gap: 7 },
+  suggestionValue: { color: colors.text, flex: 1, fontSize: 14, fontWeight: "700", minWidth: 100 },
+  suggestionStatus: { color: colors.textMuted, fontSize: 11, textTransform: "uppercase" },
+  suggestionButton: { backgroundColor: "#E2F2EE", borderRadius: 5, paddingHorizontal: 8, paddingVertical: 6 },
+  suggestionHelp: { color: colors.textMuted, fontSize: 11, lineHeight: 16 },
 });

@@ -2,10 +2,10 @@ import * as SQLite from "expo-sqlite";
 
 import { normalizeTag } from "./item-filters";
 import { matchesLocalSearch } from "./local-search";
-import type { Item, ItemCreate, ItemUpdate, PendingMutation } from "./types";
+import type { AISuggestionDecisionPayload, Item, ItemCreate, ItemUpdate, PendingMutation } from "./types";
 import type { SyncRepository } from "./sync";
 
-type PendingPayload = ItemCreate | ItemUpdate;
+type PendingPayload = ItemCreate | ItemUpdate | AISuggestionDecisionPayload;
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | undefined;
 
@@ -169,6 +169,38 @@ export async function deleteLocal(id: string) {
   });
 }
 
+export async function queueSuggestionDecision(
+  id: string,
+  payload: AISuggestionDecisionPayload,
+) {
+  const db = await database();
+  const row = await db.getFirstAsync<{ payload: string }>("SELECT payload FROM items WHERE id = ?", id);
+  if (!row) throw new Error("Item not found");
+  const item = JSON.parse(row.payload) as Item;
+  const metadata = { ...(item.metadata || {}) } as Record<string, unknown>;
+  const local = { ...((metadata.suggestion_decisions as Record<string, string> | undefined) || {}) };
+  payload.decisions.forEach((decision) => {
+    local[`${decision.suggestion_type}:${decision.value.toLowerCase()}`] = decision.action;
+  });
+  metadata.suggestion_decisions = local;
+  const updated = { ...item, metadata, updated_at: new Date().toISOString() };
+  await db.withTransactionAsync(async () => {
+    await db.runAsync(
+      "UPDATE items SET payload = ?, updated_at = ?, dirty = 1 WHERE id = ?",
+      JSON.stringify(updated),
+      updated.updated_at,
+      id,
+    );
+    await db.runAsync(
+      "INSERT INTO mutations (item_id, operation, payload, created_at) VALUES (?, 'suggestion', ?, ?)",
+      id,
+      JSON.stringify(payload),
+      updated.updated_at,
+    );
+  });
+  return updated;
+}
+
 async function rewriteCachedItems(transform: (item: Item) => Item) {
   const db = await database();
   const rows = await db.getAllAsync<{ id: string; payload: string }>(
@@ -208,6 +240,7 @@ export async function clearLocalCategory(categoryId: string) {
     item.category_id === categoryId ? { ...item, category_id: null } : item,
   );
   await rewritePendingPayloads((payload) => {
+    if (!("category_id" in payload)) return payload;
     if (payload.category_id !== categoryId) return payload;
     if (!("type" in payload)) return { ...payload, category_id: null };
     const next = { ...payload };
@@ -226,6 +259,7 @@ export async function removeLocalTag(tagId: string, tagName?: string) {
   });
   if (normalizedName) {
     await rewritePendingPayloads((payload) => {
+      if (!("tags" in payload)) return payload;
       if (!payload.tags?.length) return payload;
       return {
         ...payload,

@@ -5,11 +5,12 @@ import ipaddress
 import logging
 import re
 import socket
-from dataclasses import dataclass, field
+import time
+from dataclasses import replace
 from datetime import datetime
 from html.parser import HTMLParser
 from io import BytesIO
-from typing import Any, Awaitable, Callable
+from typing import Awaitable, Callable
 from urllib.parse import urljoin, urlparse
 
 import httpx
@@ -17,35 +18,39 @@ import pytesseract
 from langdetect import DetectorFactory, LangDetectException, detect
 from PIL import Image
 
+from app.ai.audit import AIRunContext, AIRunRecorder
+from app.ai.budgets import DatabaseBudgetGuard
+from app.ai.contracts import (
+    AnalysisResult,
+    EnrichmentRequest,
+    EnrichmentResult,
+    ExtractedDocument,
+    ExtractionInput,
+)
+from app.ai.factory import build_ai_gateway
+from app.ai.gateway import AIGateway, ProviderError, ProviderType, ProviderUsage
+from app.ai.policy import AITask, resolve_task_policy
+from app.ai.structured_enrichment import normalize_enrichment
 from app.config import Settings, get_settings
 from app.models import Item, ItemType, ProcessingJob
+from app.observability import (
+    AI_CALLS,
+    AI_CIRCUIT_OPEN,
+    AI_COST,
+    AI_FALLBACKS,
+    AI_LATENCY,
+    AI_TOKENS,
+    configured_model_alias,
+)
 from app.services.storage import StorageService
 
 logger = logging.getLogger(__name__)
 DetectorFactory.seed = 0
 
 
-@dataclass
-class ProcessingInput:
-    item_id: str
-    item_type: ItemType
-    url: str | None
-    asset_keys: list[str]
-    raw_text: str | None = None
-
-
-@dataclass
-class ProcessingResult:
-    title: str | None = None
-    description: str | None = None
-    author: str | None = None
-    published_at: datetime | None = None
-    favicon_url: str | None = None
-    extracted_text: str | None = None
-    normalized_text: str | None = None
-    language: str | None = None
-    summary: str | None = None
-    metadata: dict[str, Any] = field(default_factory=dict)
+# Compatibility aliases retained while callers migrate to the canonical names.
+ProcessingInput = ExtractionInput
+ProcessingResult = AnalysisResult
 
 
 class UnsafeUrlError(ValueError):
@@ -200,6 +205,10 @@ class ContentProcessor:
         settings: Settings | None = None,
         fetcher: SecureLinkFetcher | None = None,
         ocr: Callable[[Image.Image], str] | None = None,
+        enrichment_client: httpx.AsyncClient | None = None,
+        ai_gateway: AIGateway | None = None,
+        budget_guard: DatabaseBudgetGuard | None = None,
+        run_recorder: AIRunRecorder | None = None,
     ) -> None:
         self.settings = settings or get_settings()
         self.storage = storage
@@ -207,29 +216,44 @@ class ContentProcessor:
         if self.settings.tesseract_cmd:
             pytesseract.pytesseract.tesseract_cmd = self.settings.tesseract_cmd
         self.ocr = ocr or pytesseract.image_to_string
+        self.enrichment_client = enrichment_client
+        self.ai_gateway = ai_gateway or build_ai_gateway(
+            self.settings, client=enrichment_client
+        )
+        self.budget_guard = budget_guard
+        self.run_recorder = run_recorder
 
     async def process(self, value: ProcessingInput) -> ProcessingResult:
-        if value.item_type == ItemType.SCREENSHOT:
-            result = await self._screenshot(value)
-        elif value.item_type == ItemType.LINK and value.url:
-            result = await self._link(value.url)
-        elif value.item_type == ItemType.TEXT and value.raw_text:
-            result = self._text(value.raw_text)
-        else:
-            return ProcessingResult()
-        await self._optional_enrichment(result)
-        result.summary = result.summary or fallback_summary(result.extracted_text or "")
-        return result
+        document = await self.extract(value)
+        enrichment = await self.enrich(document, value)
+        return AnalysisResult.from_stages(
+            document,
+            enrichment,
+            fallback_summary=fallback_summary(document.extracted_text or ""),
+        )
 
-    def _text(self, raw_text: str) -> ProcessingResult:
-        extracted = normalize_extracted_text(raw_text)
-        return ProcessingResult(
+    async def extract(self, value: ExtractionInput) -> ExtractedDocument:
+        if value.item_type == ItemType.SCREENSHOT:
+            return await self._screenshot(value)
+        elif value.item_type == ItemType.LINK and value.url:
+            return await self._link(value)
+        elif value.item_type == ItemType.TEXT and value.raw_text:
+            return self._text(value)
+        return ExtractedDocument(
+            item_id=value.item_id, analysis_version=value.analysis_version
+        )
+
+    def _text(self, value: ExtractionInput) -> ExtractedDocument:
+        extracted = normalize_extracted_text(value.raw_text or "")
+        return ExtractedDocument(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
             extracted_text=extracted or None,
             normalized_text=extracted.casefold() or None,
             language=detect_language(extracted),
         )
 
-    async def _screenshot(self, value: ProcessingInput) -> ProcessingResult:
+    async def _screenshot(self, value: ExtractionInput) -> ExtractedDocument:
         if not value.asset_keys:
             raise ValueError("Screenshot has no source asset")
         content = await asyncio.to_thread(
@@ -241,19 +265,24 @@ class ContentProcessor:
                 return self.ocr(image)
 
         extracted = normalize_extracted_text(await asyncio.to_thread(run_ocr))
-        return ProcessingResult(
+        return ExtractedDocument(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
             extracted_text=extracted or None,
             normalized_text=extracted.casefold() or None,
             language=detect_language(extracted),
             metadata={"ocr_engine": "tesseract"},
         )
 
-    async def _link(self, url: str) -> ProcessingResult:
+    async def _link(self, value: ExtractionInput) -> ExtractedDocument:
+        url = value.url or ""
         final_url, content, content_type = await self.fetcher.fetch(url)
         text = content.decode("utf-8", errors="replace")
         if content_type == "text/plain":
             extracted = normalize_extracted_text(text)
-            return ProcessingResult(
+            return ExtractedDocument(
+                item_id=value.item_id,
+                analysis_version=value.analysis_version,
                 extracted_text=extracted,
                 normalized_text=extracted.casefold(),
                 language=detect_language(extracted),
@@ -273,7 +302,9 @@ class ContentProcessor:
             )
         except ValueError:
             published_at = None
-        return ProcessingResult(
+        return ExtractedDocument(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
             title=metadata.get("og:title") or " ".join(parser.title) or None,
             description=metadata.get("og:description")
             or metadata.get("description")
@@ -287,65 +318,208 @@ class ContentProcessor:
             metadata={"resolved_url": final_url},
         )
 
-    async def _optional_enrichment(self, result: ProcessingResult) -> None:
-        if not result.extracted_text:
-            return
-        if self.settings.ollama_base_url:
-            try:
-                async with httpx.AsyncClient(timeout=30) as client:
-                    response = await client.post(
-                        f"{self.settings.ollama_base_url.rstrip('/')}/api/generate",
-                        json={
-                            "model": self.settings.ollama_model,
-                            "stream": False,
-                            "prompt": "Summarize in at most three sentences:\n\n"
-                            + result.extracted_text[:12000],
-                        },
+    async def enrich(
+        self, document: ExtractedDocument, value: ExtractionInput
+    ) -> EnrichmentResult:
+        if not document.extracted_text:
+            return EnrichmentResult()
+        request = EnrichmentRequest(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
+            text=document.extracted_text,
+            language=document.language,
+            notes=value.notes,
+        )
+        errors: list[str] = []
+        audit_context = AIRunContext(
+            user_id=value.user_id,
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
+            job_id=value.analysis_job_id,
+            workflow_id=value.workflow_id,
+            correlation_id=value.correlation_id,
+            fallback_chain=tuple(
+                filter(None, [value.ai_provider, *value.ai_fallbacks])
+            ),
+        )
+        if value.ai_provider:
+            provider_order = [
+                (ProviderType(value.ai_provider), value.ai_model),
+                *(
+                    (
+                        ProviderType(provider),
+                        model or None,
                     )
-                    response.raise_for_status()
-                    result.summary = response.json().get("response") or None
-            except Exception:
-                logger.warning("Optional Ollama enrichment failed", exc_info=True)
-        if self.settings.n8n_webhook_url:
+                    for route in value.ai_fallbacks
+                    for provider, _separator, model in [route.partition(":")]
+                ),
+            ]
+        else:
+            policy = resolve_task_policy(
+                self.settings, self.ai_gateway, AITask.ENRICHMENT
+            )
+            provider_order = (
+                [(policy.primary.provider, policy.primary.model)]
+                if policy.primary
+                else []
+            ) + [(route.provider, route.model) for route in policy.fallbacks]
+        attempted = False
+        for route_index, (provider, model) in enumerate(provider_order):
+            attempted = True
+            route_started = time.perf_counter()
+            reservation = None
+            ai_run_id = None
             try:
-                headers = (
-                    {"Authorization": f"Bearer {self.settings.n8n_api_key}"}
-                    if self.settings.n8n_api_key
-                    else {}
+                if self.run_recorder:
+                    ai_run_id = await self.run_recorder.start_model_run(
+                        audit_context,
+                        task=AITask.ENRICHMENT.value,
+                        provider=provider,
+                        requested_model=model,
+                        content=request.contextual_text,
+                        prompt_version="enrichment-v1",
+                    )
+                if self.budget_guard:
+                    reservation = await self.budget_guard.reserve(
+                        operation_key=(
+                            f"{value.item_id}:v{value.analysis_version}:"
+                            f"enrichment:{provider.value}"
+                        ),
+                        user_id=value.user_id,
+                        item_id=value.item_id,
+                        task=AITask.ENRICHMENT.value,
+                        provider=provider,
+                        model=model,
+                        estimated_tokens=max(1, len(request.contextual_text) // 4),
+                    )
+                response = await self.ai_gateway.enrich(
+                    provider,
+                    request,
+                    model=model,
                 )
-                async with httpx.AsyncClient(timeout=15) as client:
-                    response = await client.post(
-                        self.settings.n8n_webhook_url,
-                        headers=headers,
-                        json={
-                            "text": result.extracted_text[:50000],
-                            "language": result.language,
-                        },
+                response = replace(
+                    response,
+                    enrichment=normalize_enrichment(
+                        response.enrichment,
+                        source_text=request.text,
+                        content_language=document.language,
+                        existing_tags=value.existing_tags,
+                    ),
+                )
+                if reservation:
+                    await self.budget_guard.complete(reservation, response.usage)
+                if ai_run_id and self.run_recorder:
+                    await self.run_recorder.complete_model_run(ai_run_id, response)
+                    if not response.enrichment.summary:
+                        await self.run_recorder.record_deterministic_summary(
+                            audit_context,
+                            content=request.contextual_text,
+                            reason="ungrounded_summary_rejected",
+                        )
+                usage = response.usage
+                model_alias = configured_model_alias(
+                    self.settings, provider.value, model
+                )
+                labels = (provider.value, model_alias, AITask.ENRICHMENT.value)
+                AI_CALLS.labels(*labels, "success").inc()
+                AI_LATENCY.labels(*labels, "success").observe(
+                    (response.provenance.latency_ms / 1000)
+                    if response.provenance.latency_ms is not None
+                    else time.perf_counter() - route_started
+                )
+                AI_CIRCUIT_OPEN.labels(provider.value).set(0)
+                if route_index > 0 or response.provenance.provider_fallback:
+                    AI_FALLBACKS.labels(*labels).inc()
+                AI_TOKENS.labels(*labels, "input").inc(usage.input_tokens or 0)
+                AI_TOKENS.labels(*labels, "output").inc(usage.output_tokens or 0)
+                AI_COST.labels(*labels).inc(usage.estimated_cost_usd or 0)
+                return replace(
+                    response.enrichment,
+                    request_id=response.provenance.request_id,
+                    latency_ms=response.provenance.latency_ms,
+                    usage={
+                        "input_tokens": usage.input_tokens,
+                        "output_tokens": usage.output_tokens,
+                        "total_tokens": usage.total_tokens,
+                        "estimated_cost_usd": usage.estimated_cost_usd,
+                    },
+                    provenance={
+                        "configured_model": response.provenance.configured_model,
+                        "resolved_model": response.provenance.model,
+                        "resolved_provider": response.provenance.resolved_provider,
+                        "finish_reason": response.provenance.finish_reason,
+                        "routing_policy": response.provenance.routing_policy,
+                        "provider_fallback": response.provenance.provider_fallback,
+                        "gateway_fallback": route_index > 0,
+                    },
+                )
+            except ProviderError as exc:
+                if reservation:
+                    await self.budget_guard.complete(
+                        reservation, ProviderUsage(), failed=True
                     )
-                    response.raise_for_status()
-                    enrichment = response.json()
-                    result.summary = enrichment.get("summary") or result.summary
-                    result.metadata["suggested_tags"] = enrichment.get("tags", [])[:20]
-                    result.metadata["classification"] = enrichment.get("classification")
-            except Exception:
-                logger.warning("Optional n8n enrichment failed", exc_info=True)
+                if ai_run_id and self.run_recorder:
+                    await self.run_recorder.fail_model_run(
+                        ai_run_id, error_code=exc.code.value
+                    )
+                model_alias = configured_model_alias(
+                    self.settings, provider.value, model
+                )
+                labels = (provider.value, model_alias, AITask.ENRICHMENT.value)
+                AI_CALLS.labels(*labels, exc.code.value).inc()
+                AI_LATENCY.labels(*labels, exc.code.value).observe(
+                    time.perf_counter() - route_started
+                )
+                AI_CIRCUIT_OPEN.labels(provider.value).set(
+                    1 if exc.code.value == "circuit_open" else 0
+                )
+                errors.append(f"{provider.value}:{exc.code.value}")
+                logger.warning(
+                    "Optional AI enrichment failed: provider=%s code=%s",
+                    provider.value,
+                    exc.code.value,
+                    extra={
+                        "correlation_id": value.correlation_id,
+                        "job_id": value.analysis_job_id,
+                        "workflow_id": value.workflow_id,
+                        "provider": provider.value,
+                        "stage": "enrichment",
+                    },
+                )
+        if self.run_recorder:
+            await self.run_recorder.record_deterministic_summary(
+                audit_context,
+                content=request.contextual_text,
+                reason=errors[-1] if errors else "ai_not_configured",
+            )
+        return EnrichmentResult(
+            content_language=document.language,
+            attempted=attempted,
+            succeeded=False,
+            errors=errors,
+        )
 
 
-def processing_input(item: Item) -> ProcessingInput:
+def processing_input(item: Item, job: ProcessingJob | None = None) -> ProcessingInput:
+    fallbacks = []
+    if job and isinstance(job.ai_policy, dict):
+        for route in job.ai_policy.get("fallbacks", []):
+            if isinstance(route, dict) and isinstance(route.get("provider"), str):
+                fallbacks.append(f"{route['provider']}:{route.get('model') or ''}")
     return ProcessingInput(
         item_id=item.id,
         item_type=ItemType(item.type),
         url=item.url,
         asset_keys=[asset.object_key for asset in item.assets],
         raw_text=item.raw_text,
-    )
-
-
-def enqueue_processing_job(
-    item: Item, max_attempts: int | None = None
-) -> ProcessingJob:
-    return ProcessingJob(
-        item_id=item.id,
-        kind=ItemType(item.type).value,
-        max_attempts=max_attempts or get_settings().processing_max_attempts,
+        notes=item.notes,
+        user_id=item.user_id,
+        ai_provider=job.ai_provider if job else None,
+        ai_model=job.ai_model if job else None,
+        ai_fallbacks=fallbacks,
+        existing_tags=getattr(item, "_existing_tag_names", ()),
+        analysis_job_id=job.id if job else None,
+        workflow_id=job.temporal_workflow_id if job else None,
+        correlation_id=job.correlation_id if job else None,
+        analysis_version=item.analysis_version,
     )

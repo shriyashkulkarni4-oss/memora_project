@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "description": "Synthetic provider-neutral vectors for deterministic Recall@K regression checks.",
+  "documents": [
+    {"id": "temporal-monitoring", "text": "Temporal visibility and execution telemetry", "vector": [0.98, 0.12, 0.02, 0.01, 0.00, 0.00]},
+    {"id": "workflow-retries", "text": "Durable workflow recovery policies", "vector": [0.91, 0.25, 0.04, 0.01, 0.00, 0.00]},
+    {"id": "semantic-search", "text": "Meaning-aware information discovery", "vector": [0.03, 0.02, 0.99, 0.14, 0.01, 0.00]},
+    {"id": "vector-indexing", "text": "Embedding storage and similarity ranking", "vector": [0.02, 0.01, 0.92, 0.31, 0.03, 0.00]},
+    {"id": "privacy-controls", "text": "Consent boundaries and data minimization", "vector": [0.01, 0.00, 0.03, 0.02, 0.99, 0.11]},
+    {"id": "account-deletion", "text": "Lifecycle erasure for personal records", "vector": [0.00, 0.01, 0.02, 0.01, 0.90, 0.30]}
+  ],
+  "queries": [
+    {"text": "observe durable jobs", "vector": [0.95, 0.20, 0.02, 0.01, 0.00, 0.00], "relevant": ["temporal-monitoring", "workflow-retries"]},
+    {"text": "find related concepts", "vector": [0.02, 0.01, 0.96, 0.22, 0.01, 0.00], "relevant": ["semantic-search", "vector-indexing"]},
+    {"text": "erase private user data", "vector": [0.00, 0.01, 0.02, 0.01, 0.96, 0.20], "relevant": ["privacy-controls", "account-deletion"]}
+  ]
+}

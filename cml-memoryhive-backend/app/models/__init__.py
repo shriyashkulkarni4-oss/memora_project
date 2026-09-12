@@ -1,10 +1,21 @@
 """Public domain model exports."""
 
 from app.models.models import (
+    AdminAnalysisAction,
+    AIFieldProvenance,
+    AIRun,
+    AISuggestionFeedback,
+    AISuggestionPreference,
+    AIUsageEvent,
+    AnalysisExecutionBackend,
     AnalysisStatus,
     Asset,
     Category,
+    DocumentChunk,
+    EmbeddingIndex,
+    EnrichmentRecord,
     Item,
+    ItemEmbedding,
     ItemType,
     LifecycleAudit,
     ProcessingJob,
@@ -18,10 +29,21 @@ from app.models.models import (
 )
 
 __all__ = [
+    "AdminAnalysisAction",
+    "AIFieldProvenance",
+    "AIRun",
+    "AISuggestionFeedback",
+    "AISuggestionPreference",
+    "AnalysisExecutionBackend",
     "AnalysisStatus",
+    "AIUsageEvent",
     "Asset",
     "Category",
+    "DocumentChunk",
+    "EmbeddingIndex",
+    "EnrichmentRecord",
     "Item",
+    "ItemEmbedding",
     "ItemType",
     "LifecycleAudit",
     "ProcessingJob",

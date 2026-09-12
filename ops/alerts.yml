@@ -1,21 +1,170 @@
 groups:
-  - name: memoryhive
+  - name: memoryhive-availability
     rules:
       - alert: MemoryhiveApiUnavailable
         expr: up{job="cml-memoryhive-api"} == 0
         for: 2m
-        labels: { severity: critical }
-        annotations:
+        labels: { severity: critical, owner: platform }
+        annotations: &api_annotations
           summary: Memoryhive API is unavailable
+          user_impact: Captures, search, and sync cannot reach the service.
+          first_checks: Check target health, workload status, logs, and database readiness.
+          recovery: Restore the failed dependency or roll back the release.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#api-unavailable
+      - alert: MemoryhiveDatabaseWorkerMissing
+        expr: absent(memoryhive_worker_last_heartbeat_unixtime{component="database_worker"}) or (time() - memoryhive_worker_last_heartbeat_unixtime{component="database_worker"} > 90)
+        for: 2m
+        labels: { severity: critical, owner: ai-platform }
+        annotations:
+          summary: Database analysis worker heartbeat is missing
+          user_impact: New captures remain pending when Temporal is disabled.
+          first_checks: Check worker target, process logs, database access, and recent deploys.
+          recovery: Restore the dependency and restart or scale the worker.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#missing-poller
+      - alert: MemoryhiveTemporalWorkerMissing
+        expr: absent(memoryhive_worker_last_heartbeat_unixtime{component="temporal_worker"}) or (time() - memoryhive_worker_last_heartbeat_unixtime{component="temporal_worker"} > 90)
+        for: 2m
+        labels: { severity: critical, owner: ai-platform }
+        annotations:
+          summary: Temporal analysis poller heartbeat is missing
+          user_impact: Temporal workflows cannot make progress.
+          first_checks: Check SDK target, task queue, namespace, worker logs, and Temporal connectivity.
+          recovery: Restore connectivity and restart or scale a compatible worker.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#missing-poller
+      - alert: MemoryhiveTemporalUnavailable
+        expr: up{job="temporal-server"} == 0
+        for: 2m
+        labels: { severity: critical, owner: platform }
+        annotations:
+          summary: Temporal Server is unavailable
+          user_impact: Durable analysis scheduling and execution may be unavailable.
+          first_checks: Check Temporal frontend, persistence, DNS, and network policy.
+          recovery: Restore the Temporal cluster using the supported recovery procedure.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#temporal-unavailable
+
+  - name: memoryhive-analysis
+    rules:
+      - alert: MemoryhiveAnalysisBacklogGrowing
+        expr: sum(memoryhive_analysis_queue_pending) > 100
+        for: 10m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Analysis backlog exceeds 100 jobs
+          user_impact: Generated summaries and suggestions are delayed.
+          first_checks: Compare enqueue rate, heartbeats, poll outcomes, and provider latency.
+          recovery: Resolve the bottleneck and scale within database/provider limits.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#backlog
+      - alert: MemoryhiveOldestPendingTooOld
+        expr: max(memoryhive_analysis_queue_oldest_age_seconds) > 300
+        for: 5m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Oldest analysis request has waited over five minutes
+          user_impact: At least one capture is visibly stuck pending.
+          first_checks: Split age by backend and inspect worker and Temporal health.
+          recovery: Unblock the queue and use guarded retry for stranded jobs.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#oldest-pending
+      - alert: MemoryhiveAnalysisStuck
+        expr: sum(memoryhive_analysis_stuck) > 0
+        for: 5m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Analysis remains active beyond its recovery window
+          user_impact: Affected items never reach a terminal analysis state.
+          first_checks: Inspect stage, job lock, logs, and Temporal history.
+          recovery: Recover stale claims or safely cancel and retry the workflow.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#stuck-analysis
+      - alert: MemoryhiveTemporalActivityFailures
+        expr: sum(rate(memoryhive_analysis_outcomes_total{backend="temporal",outcome="failed"}[5m])) > 0.05
+        for: 10m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Temporal activity failures are elevated
+          user_impact: Analysis is slow or fails after retries.
+          first_checks: Group outcomes by stage and inspect SDK retry and latency metrics.
+          recovery: Correct the dependency or deploy a compatible activity fix.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#activity-failures
+      - alert: MemoryhiveDegradedSpike
+        expr: sum(rate(memoryhive_analysis_outcomes_total{outcome="degraded"}[10m])) > 0.1
+        for: 10m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Deterministic degradation rate is elevated
+          user_impact: Captures work but AI enrichment is frequently unavailable.
+          first_checks: Compare provider errors, budgets, fallbacks, and circuits.
+          recovery: Restore or intentionally disable the unhealthy provider route.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#degraded-spike
+
+  - name: memoryhive-ai-providers
+    rules:
+      - alert: MemoryhiveProviderAuthenticationFailure
+        expr: sum(rate(memoryhive_ai_calls_total{outcome=~"authentication|authorization"}[5m])) > 0
+        for: 2m
+        labels: { severity: critical, owner: ai-platform }
+        annotations:
+          summary: An AI provider rejects authentication or authorization
+          user_impact: The configured task degrades or falls back.
+          first_checks: Identify provider/model alias and inspect secret age and provider status.
+          recovery: Rotate the secret without logging it and run the content-free health check.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#provider-auth
+      - alert: MemoryhiveProviderRateLimited
+        expr: sum(rate(memoryhive_ai_calls_total{outcome="rate_limit"}[5m])) > 0.1
+        for: 5m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: AI provider rate limiting is sustained
+          user_impact: Enrichment latency rises and may degrade after retries.
+          first_checks: Compare provider throughput, retries, concurrency, and quota.
+          recovery: Reduce concurrency, approve quota, or enable a reviewed fallback.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#provider-rate-limit
+      - alert: MemoryhiveProviderCircuitOpen
+        expr: memoryhive_ai_circuit_open > 0
+        for: 1m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: AI provider circuit breaker is open
+          user_impact: Calls skip the provider and degrade or fall back.
+          first_checks: Inspect normalized errors, provider health, and reset interval.
+          recovery: Restore the provider and allow the bounded probe to close the circuit.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#provider-circuit
+      - alert: MemoryhiveAIBudgetExhausted
+        expr: sum(rate(memoryhive_ai_calls_total{outcome="budget_exceeded"}[5m])) > 0
+        for: 2m
+        labels: { severity: warning, owner: product-operations }
+        annotations:
+          summary: AI budget or user quota is exhausted
+          user_impact: Deterministic processing continues but paid enrichment stops.
+          first_checks: Review bounded request, token, cost, and quota policy.
+          recovery: Wait for reset or approve a budget change after cost review.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#budget
+      - alert: MemoryhiveFallbackSpike
+        expr: sum(rate(memoryhive_ai_fallback_total[10m])) > 0.1
+        for: 10m
+        labels: { severity: warning, owner: ai-platform }
+        annotations:
+          summary: Cross-provider fallback usage is elevated
+          user_impact: Results may be slower, costlier, or use another approved provider.
+          first_checks: Compare primary errors and latency with fallback outcomes.
+          recovery: Repair or disable the primary after privacy and budget review.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#fallback-spike
+
+  - name: memoryhive-http
+    rules:
       - alert: MemoryhiveHighErrorRate
         expr: sum(rate(memoryhive_http_requests_total{status=~"5.."}[5m])) / clamp_min(sum(rate(memoryhive_http_requests_total[5m])), 0.001) > 0.05
         for: 10m
-        labels: { severity: warning }
+        labels: { severity: warning, owner: platform }
         annotations:
-          summary: Memoryhive API error rate exceeds 5 percent
+          <<: *api_annotations
+          summary: Memoryhive API error rate exceeds five percent
+          user_impact: API actions intermittently fail.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#api-errors
       - alert: MemoryhiveHighLatency
         expr: histogram_quantile(0.95, sum by (le) (rate(memoryhive_http_request_duration_seconds_bucket[5m]))) > 1
         for: 10m
-        labels: { severity: warning }
+        labels: { severity: warning, owner: platform }
         annotations:
+          <<: *api_annotations
           summary: Memoryhive API p95 latency exceeds one second
+          user_impact: Capture, search, and sync feel slow.
+          runbook_url: https://www.memoryhive.in/runbooks/observability#api-latency

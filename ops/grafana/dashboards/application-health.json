@@ -1,0 +1,14 @@
+{
+  "uid": "memoryhive-application",
+  "title": "Memoryhive Application Health",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["memoryhive", "owned"],
+  "links": [{"title": "Runbook", "url": "https://www.memoryhive.in/runbooks/observability", "type": "link"}],
+  "panels": [
+    {"id": 1, "type": "stat", "title": "API Targets Up", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "min(up{job=\"cml-memoryhive-api\"})"}], "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}},
+    {"id": 2, "type": "timeseries", "title": "Request Rate by Status", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (status) (rate(memoryhive_http_requests_total[5m]))"}], "gridPos": {"h": 8, "w": 16, "x": 8, "y": 0}},
+    {"id": 3, "type": "timeseries", "title": "API p95 Latency", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le) (rate(memoryhive_http_request_duration_seconds_bucket[5m])))"}], "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}}
+  ]
+}

@@ -160,4 +160,22 @@ describe("store release config", () => {
 
     expect(isExternalAiDisclosureConsistent(mismatch)).toBe(false);
   });
+
+  it.each([
+    { OPENROUTER_ENABLED: "true" },
+    { HUGGINGFACE_ENABLED: "true" },
+    { OPENAI_COMPATIBLE_ENABLED: "true" },
+    { AI_EMBEDDINGS_ROUTE: "ollama:nomic-embed-text" },
+  ])("detects every AI provider family for store disclosure checks", (providerValues) => {
+    const config = resolveStoreReleaseConfig({
+      readTemplateValue: readTemplate({}),
+      envFile: {
+        values: { STORE_EXTERNAL_AI_PROCESSING: "none", ...providerValues },
+      },
+      env: {},
+    });
+
+    expect(isExternalAiDisclosureConsistent(config)).toBe(false);
+    expect(config.privacyDisclosures.external_ai_processing.notes).not.toContain("https://");
+  });
 });

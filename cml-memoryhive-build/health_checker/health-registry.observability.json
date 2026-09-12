@@ -1,0 +1,207 @@
+{
+  "profile": "observability",
+  "services": {
+    "db": {
+      "key": "db",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "host_port_env": "POSTGRES_PORT",
+      "health": {
+        "type": "tcp"
+      },
+      "container": "cml-memoryhive-db",
+      "kubernetes": {
+        "kind": "statefulset",
+        "name": "db"
+      }
+    },
+    "redis": {
+      "key": "redis",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 6379,
+      "host_port_env": "REDIS_PORT",
+      "health": {
+        "type": "tcp"
+      },
+      "container": "cml-memoryhive-redis",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "redis"
+      }
+    },
+    "minio": {
+      "key": "minio",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 9000,
+      "host_port_env": "MINIO_API_PORT",
+      "health": {
+        "type": "http",
+        "path": "/minio/health/ready"
+      },
+      "container": "cml-memoryhive-minio",
+      "kubernetes": {
+        "kind": "statefulset",
+        "name": "minio"
+      }
+    },
+    "temporal-db": {
+      "key": "temporal-db",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 0,
+      "host_port_env": null,
+      "health": {
+        "type": "process"
+      },
+      "container": "cml-memoryhive-temporal-db",
+      "kubernetes": null
+    },
+    "temporal": {
+      "key": "temporal",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 7233,
+      "host_port_env": "TEMPORAL_PORT",
+      "health": {
+        "type": "tcp"
+      },
+      "container": "cml-memoryhive-temporal",
+      "kubernetes": null
+    },
+    "temporal-ui": {
+      "key": "temporal-ui",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 8088,
+      "host_port_env": "TEMPORAL_UI_PORT",
+      "health": {
+        "type": "http",
+        "path": "/"
+      },
+      "container": "cml-memoryhive-temporal-ui",
+      "kubernetes": null
+    },
+    "cml-memoryhive-backend": {
+      "key": "cml-memoryhive-backend",
+      "kind": "service",
+      "host": "127.0.0.1",
+      "port": 8000,
+      "host_port_env": "BACKEND_PORT",
+      "health": {
+        "type": "http",
+        "path": "/health/ready"
+      },
+      "container": "cml-memoryhive-backend",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-backend"
+      }
+    },
+    "cml-memoryhive-worker": {
+      "key": "cml-memoryhive-worker",
+      "kind": "process",
+      "host": "127.0.0.1",
+      "port": 0,
+      "host_port_env": null,
+      "health": {
+        "type": "process",
+        "marker": "app.worker"
+      },
+      "container": "cml-memoryhive-worker",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-worker"
+      }
+    },
+    "cml-memoryhive-temporal-worker": {
+      "key": "cml-memoryhive-temporal-worker",
+      "kind": "process",
+      "host": "127.0.0.1",
+      "port": 0,
+      "host_port_env": null,
+      "health": {
+        "type": "process",
+        "marker": "app.temporal_pipeline.worker"
+      },
+      "container": "cml-memoryhive-temporal-worker",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-temporal-worker"
+      }
+    },
+    "cml-memoryhive-temporal-scheduler": {
+      "key": "cml-memoryhive-temporal-scheduler",
+      "kind": "process",
+      "host": "127.0.0.1",
+      "port": 0,
+      "host_port_env": null,
+      "health": {
+        "type": "process",
+        "marker": "app.temporal_pipeline.scheduler"
+      },
+      "container": "cml-memoryhive-temporal-scheduler",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-temporal-scheduler"
+      }
+    },
+    "cml-memoryhive-frontend": {
+      "key": "cml-memoryhive-frontend",
+      "kind": "frontend",
+      "host": "127.0.0.1",
+      "port": 3000,
+      "host_port_env": "FRONTEND_PORT",
+      "health": {
+        "type": "http",
+        "path": "/"
+      },
+      "container": "cml-memoryhive-frontend",
+      "kubernetes": {
+        "kind": "deployment",
+        "name": "cml-memoryhive-frontend"
+      }
+    },
+    "prometheus": {
+      "key": "prometheus",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 9090,
+      "host_port_env": "PROMETHEUS_PORT",
+      "health": {
+        "type": "http",
+        "path": "/-/ready"
+      },
+      "container": "cml-memoryhive-prometheus",
+      "kubernetes": null
+    },
+    "alertmanager": {
+      "key": "alertmanager",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 9093,
+      "host_port_env": "ALERTMANAGER_PORT",
+      "health": {
+        "type": "http",
+        "path": "/-/ready"
+      },
+      "container": "cml-memoryhive-alertmanager",
+      "kubernetes": null
+    },
+    "grafana": {
+      "key": "grafana",
+      "kind": "infra",
+      "host": "127.0.0.1",
+      "port": 3001,
+      "host_port_env": "GRAFANA_PORT",
+      "health": {
+        "type": "http",
+        "path": "/api/health"
+      },
+      "container": "cml-memoryhive-grafana",
+      "kubernetes": null
+    }
+  }
+}

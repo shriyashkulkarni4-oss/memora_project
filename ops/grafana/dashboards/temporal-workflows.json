@@ -1,0 +1,15 @@
+{
+  "uid": "memoryhive-temporal",
+  "title": "Memoryhive Temporal Cluster and Workflows",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["memoryhive", "temporal", "owned"],
+  "links": [{"title": "Temporal Runbook", "url": "https://www.memoryhive.in/runbooks/observability#temporal-unavailable", "type": "link"}],
+  "panels": [
+    {"id": 1, "type": "stat", "title": "Temporal Server Up", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "up{job=\"temporal-server\"}"}], "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}},
+    {"id": 2, "type": "stat", "title": "Worker Heartbeat Age", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "time() - memoryhive_worker_last_heartbeat_unixtime{component=\"temporal_worker\"}"}], "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}},
+    {"id": 3, "type": "timeseries", "title": "Temporal Stage Outcomes", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum by (stage, outcome) (rate(memoryhive_analysis_outcomes_total{backend=\"temporal\"}[5m]))"}], "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}},
+    {"id": 4, "type": "timeseries", "title": "SDK Metrics", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "{__name__=~\"temporal_sdk_.*\"}"}], "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}}
+  ]
+}

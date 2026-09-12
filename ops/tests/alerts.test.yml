@@ -1,0 +1,39 @@
+rule_files:
+  - ../alerts.yml
+evaluation_interval: 1m
+tests:
+  - interval: 1m
+    input_series:
+      - series: memoryhive_analysis_queue_pending{backend="temporal"}
+        values: 150x15
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: MemoryhiveAnalysisBacklogGrowing
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              owner: ai-platform
+            exp_annotations:
+              summary: Analysis backlog exceeds 100 jobs
+              user_impact: Generated summaries and suggestions are delayed.
+              first_checks: Compare enqueue rate, heartbeats, poll outcomes, and provider latency.
+              recovery: Resolve the bottleneck and scale within database/provider limits.
+              runbook_url: https://www.memoryhive.in/runbooks/observability#backlog
+  - interval: 1m
+    input_series:
+      - series: memoryhive_ai_circuit_open{provider="openrouter"}
+        values: 1x5
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: MemoryhiveProviderCircuitOpen
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              owner: ai-platform
+              provider: openrouter
+            exp_annotations:
+              summary: AI provider circuit breaker is open
+              user_impact: Calls skip the provider and degrade or fall back.
+              first_checks: Inspect normalized errors, provider health, and reset interval.
+              recovery: Restore the provider and allow the bounded probe to close the circuit.
+              runbook_url: https://www.memoryhive.in/runbooks/observability#provider-circuit

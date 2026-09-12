@@ -1,0 +1,15 @@
+{
+  "uid": "memoryhive-analysis",
+  "title": "Memoryhive Analysis Pipeline",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["memoryhive", "analysis", "owned"],
+  "links": [{"title": "Analysis Runbook", "url": "https://www.memoryhive.in/runbooks/observability#backlog", "type": "link"}],
+  "panels": [
+    {"id": 1, "type": "timeseries", "title": "Queue Depth", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "memoryhive_analysis_queue_pending"}], "gridPos": {"h": 8, "w": 8, "x": 0, "y": 0}},
+    {"id": 2, "type": "timeseries", "title": "Oldest Pending Age", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "memoryhive_analysis_queue_oldest_age_seconds"}], "gridPos": {"h": 8, "w": 8, "x": 8, "y": 0}},
+    {"id": 3, "type": "stat", "title": "Stuck Analysis", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "sum(memoryhive_analysis_stuck)"}], "gridPos": {"h": 8, "w": 8, "x": 16, "y": 0}},
+    {"id": 4, "type": "timeseries", "title": "Activity p95 Duration", "datasource": {"type": "prometheus", "uid": "memoryhive-prometheus"}, "targets": [{"refId": "A", "expr": "histogram_quantile(0.95, sum by (le, stage) (rate(memoryhive_analysis_activity_duration_seconds_bucket[5m])))"}], "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8}}
+  ]
+}

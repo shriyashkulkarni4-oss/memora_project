@@ -13,13 +13,14 @@ import {
   initializeDatabase,
   listLocal,
   prepareLocalDataForUser,
+  queueSuggestionDecision,
   removeLocalTag,
   sqliteSyncRepository,
   updateLocal,
 } from "./database";
 import { clearSession, loadSession } from "./session";
 import { ApiError, synchronize } from "./sync";
-import type { Category, Item, ItemCreate, ItemUpdate, ManagedTag, User } from "./types";
+import type { AISuggestionDecision, Category, Item, ItemCreate, ItemUpdate, ManagedTag, User } from "./types";
 
 type SyncState = "offline" | "idle" | "syncing" | "error";
 
@@ -43,6 +44,7 @@ interface AppContextValue {
   capture(payload: ItemCreate, localUri?: string): Promise<Item>;
   update(id: string, payload: ItemUpdate): Promise<Item>;
   remove(id: string): Promise<void>;
+  reviewSuggestions(id: string, decisions: AISuggestionDecision[]): Promise<Item>;
   createCategory(name: string, color: string): Promise<Category>;
   deleteCategory(id: string): Promise<void>;
   deleteTag(id: string): Promise<void>;
@@ -230,6 +232,20 @@ export function AppStateProvider({ children }: React.PropsWithChildren) {
       await deleteLocal(id);
       await refresh();
       void sync();
+    },
+    async reviewSuggestions(id, decisions) {
+      markActive();
+      const current = await getLocal(id);
+      if (!current) throw new Error("Item not found");
+      const updated = await queueSuggestionDecision(id, {
+        client_id: `mobile-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        analysis_version: current.analysis_version,
+        expected_revision: current.revision,
+        decisions,
+      });
+      await refresh();
+      void sync();
+      return updated;
     },
     async createCategory(name, color) {
       markActive();

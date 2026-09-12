@@ -19,7 +19,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { adminApi } from '../services/api';
 import { useLibraryStore } from '../store/libraryStore';
-import type { AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminUser } from '../types/api';
+import type { AdminAIProviderHealth, AdminAnalysisOperations, AdminAnalysisRunSummary, AdminBackupRunResult, AdminBackupStatus, AdminDashboard, AdminProcessingJob, AdminUser } from '../types/api';
+import AnalysisOperationsPanel from './AnalysisOperationsPanel';
 import ConfirmDialog from './ConfirmDialog';
 
 type AdminAction =
@@ -47,6 +48,9 @@ export default function AdminPage() {
   const [backup, setBackup] = useState<AdminBackupStatus | null>(null);
   const [backupResult, setBackupResult] = useState<AdminBackupRunResult | null>(null);
   const [processingJobs, setProcessingJobs] = useState<AdminProcessingJob[]>([]);
+  const [analysisOperations, setAnalysisOperations] = useState<AdminAnalysisOperations | null>(null);
+  const [providerHealth, setProviderHealth] = useState<AdminAIProviderHealth[]>([]);
+  const [analysisUnavailable, setAnalysisUnavailable] = useState('');
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -56,6 +60,10 @@ export default function AdminPage() {
   const [action, setAction] = useState<AdminAction>(null);
   const [backupConfirmOpen, setBackupConfirmOpen] = useState(false);
   const [processingConfirm, setProcessingConfirm] = useState<AdminProcessingJob | null>(null);
+  const [analysisConfirm, setAnalysisConfirm] = useState<{
+    action: 'retry' | 'cancel' | 'reanalyze';
+    run: AdminAnalysisRunSummary;
+  } | null>(null);
 
   const demoDashboard = useMemo<AdminDashboard>(() => ({
     users_total: 1,
@@ -82,6 +90,16 @@ export default function AdminPage() {
         item_title: item.title || item.url || item.raw_text?.slice(0, 80) || 'Untitled item',
         item_type: item.type,
         item_processing_status: item.processing_status,
+        analysis_version: item.analysis_version,
+        execution_backend: 'database',
+        reason: 'demo',
+        temporal_workflow_id: null,
+        stage: item.processing_status,
+        content_hash: null,
+        correlation_id: `demo-${item.id}`,
+        ai_provider: null,
+        ai_model: null,
+        cancel_requested: false,
         user_id: user?.id || 'demo-user',
         user_email: user?.email || 'demo@example.com',
         status: item.processing_status === 'failed'
@@ -121,6 +139,20 @@ export default function AdminPage() {
           recent: [],
         });
         setProcessingJobs(demoProcessingJobs);
+        setAnalysisOperations({
+          queue_depth: demoDashboard.analysis_pending,
+          oldest_pending_age_seconds: null,
+          status_counts: {},
+          stage_counts: {},
+          throughput_24h: 0,
+          success_rate_24h: 1,
+          degraded_rate_24h: 0,
+          temporal_enabled: false,
+          temporal_ui_url: null,
+          providers: [],
+          recent_errors: [],
+          recent_runs: [],
+        });
         return;
       }
       const [nextDashboard, userPage, backupStatus, processingPage] = await Promise.all([
@@ -133,6 +165,18 @@ export default function AdminPage() {
       setUsers(userPage.users);
       setBackup(backupStatus);
       setProcessingJobs(processingPage.jobs);
+      const [operationsResult, healthResult] = await Promise.allSettled([
+        adminApi.analysisOperations(),
+        adminApi.providerHealth(),
+      ]);
+      if (operationsResult.status === 'fulfilled') {
+        setAnalysisOperations(operationsResult.value);
+        setAnalysisUnavailable('');
+      } else {
+        setAnalysisOperations(null);
+        setAnalysisUnavailable('Analysis operations API is unavailable. Core administration remains usable.');
+      }
+      setProviderHealth(healthResult.status === 'fulfilled' ? healthResult.value : []);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : 'Unable to load admin data');
     } finally {
@@ -215,6 +259,25 @@ export default function AdminPage() {
     }
   };
 
+  const confirmAnalysisAction = async () => {
+    if (!analysisConfirm) return;
+    setProcessingBusy(true);
+    setError('');
+    try {
+      if (!demoMode) {
+        if (analysisConfirm.action === 'retry') await adminApi.retryProcessingJob(analysisConfirm.run.job_id);
+        if (analysisConfirm.action === 'cancel') await adminApi.cancelProcessingJob(analysisConfirm.run.job_id);
+        if (analysisConfirm.action === 'reanalyze') await adminApi.reanalyzeItem(analysisConfirm.run.item_id);
+        await load();
+      }
+      setAnalysisConfirm(null);
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Analysis operation failed');
+    } finally {
+      setProcessingBusy(false);
+    }
+  };
+
   const actionLabel = (() => {
     if (!action) return '';
     if (action.kind === 'disable') return 'Disable';
@@ -272,6 +335,16 @@ export default function AdminPage() {
               ))}
             </div>
           </section>
+
+          <AnalysisOperationsPanel
+            operations={analysisOperations}
+            providerHealth={providerHealth}
+            unavailableMessage={analysisUnavailable}
+            busy={processingBusy}
+            onRetry={(run) => setAnalysisConfirm({ action: 'retry', run })}
+            onCancel={(run) => setAnalysisConfirm({ action: 'cancel', run })}
+            onReanalyze={(run) => setAnalysisConfirm({ action: 'reanalyze', run })}
+          />
 
           <section className="admin-panel" aria-labelledby="admin-backup-heading">
             <div className="section-heading">
@@ -448,6 +521,17 @@ export default function AdminPage() {
           busy={processingBusy}
           onCancel={() => setProcessingConfirm(null)}
           onConfirm={confirmProcessingRetry}
+        />
+      )}
+      {analysisConfirm && (
+        <ConfirmDialog
+          title={`${analysisConfirm.action === 'reanalyze' ? 'Reanalyze' : analysisConfirm.action === 'retry' ? 'Retry' : 'Cancel'} analysis?`}
+          description={`${analysisConfirm.run.item_reference} will be ${analysisConfirm.action === 'cancel' ? 'asked to stop' : 'queued as a new analysis version'}. This operator action is audited.`}
+          confirmLabel={analysisConfirm.action === 'reanalyze' ? 'Reanalyze' : analysisConfirm.action === 'retry' ? 'Retry' : 'Cancel'}
+          danger={analysisConfirm.action === 'cancel'}
+          busy={processingBusy}
+          onCancel={() => setAnalysisConfirm(null)}
+          onConfirm={confirmAnalysisAction}
         />
       )}
     </div>

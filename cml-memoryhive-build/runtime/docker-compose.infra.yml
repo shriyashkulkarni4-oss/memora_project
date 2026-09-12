@@ -95,7 +95,9 @@
     "redisdata": {},
     "miniodata": {},
     "temporal_pgdata": {},
-    "frontend_node_modules": {}
+    "frontend_node_modules": {},
+    "prometheus_data": {},
+    "grafana_data": {}
   },
   "networks": {
     "default": {

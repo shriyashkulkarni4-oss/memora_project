@@ -1,4 +1,4 @@
-import type { ChangePage, Item, ItemCreate, ItemUpdate, PendingMutation } from "./types";
+import type { AISuggestionDecisionPayload, ChangePage, Item, ItemCreate, ItemUpdate, PendingMutation } from "./types";
 
 export class ApiError extends Error {
   constructor(message: string, readonly status: number) {
@@ -13,6 +13,7 @@ export interface SyncApi {
   remove(id: string): Promise<void>;
   get(id: string): Promise<Item>;
   changes(since?: string, cursor?: string): Promise<ChangePage>;
+  decideSuggestions(id: string, payload: AISuggestionDecisionPayload): Promise<void>;
 }
 
 export interface SyncRepository {
@@ -52,6 +53,10 @@ async function pushMutation(
         conflict: false,
       };
     }
+    if (mutation.operation === "suggestion") {
+      await api.decideSuggestions(mutation.itemId, mutation.payload as AISuggestionDecisionPayload);
+      return { item: await api.get(mutation.itemId), conflict: false };
+    }
     await api.remove(mutation.itemId);
     return { conflict: false };
   } catch (error) {
@@ -62,6 +67,14 @@ async function pushMutation(
     const remote = await api.get(mutation.itemId);
     if (mutation.operation === "create" || mutation.operation === "screenshot") {
       return { item: remote, conflict: true };
+    }
+    if (mutation.operation === "suggestion") {
+      const payload = mutation.payload as AISuggestionDecisionPayload;
+      await api.decideSuggestions(mutation.itemId, {
+        ...payload,
+        expected_revision: remote.revision,
+      });
+      return { item: await api.get(mutation.itemId), conflict: true };
     }
     const payload = mutation.payload as ItemUpdate;
     const item = await api.update(mutation.itemId, {

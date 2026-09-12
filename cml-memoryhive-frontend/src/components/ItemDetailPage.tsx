@@ -19,6 +19,7 @@ import { FormEvent, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLibraryStore } from '../store/libraryStore';
 import ConfirmDialog from './ConfirmDialog';
+import AISuggestionsPanel from './AISuggestionsPanel';
 import TagPicker from './TagPicker';
 
 const icons = { link: Link2, screenshot: ImageIcon, text: FileText };
@@ -150,6 +151,7 @@ export default function ItemDetailPage() {
               <p>{item.summary}</p>
             </section>
           )}
+          <AISuggestionsPanel item={item} onChanged={() => store.initialize(true)} />
           {item.raw_text && (
             <section className="content-section">
               <span className="section-label">Captured text</span>

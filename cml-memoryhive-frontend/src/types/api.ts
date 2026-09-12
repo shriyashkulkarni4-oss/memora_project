@@ -11,15 +11,20 @@ export type ProcessingStatus =
 
 export type AdminProcessingJobStatus =
   | 'pending'
+  | 'scheduled'
   | 'processing'
   | 'completed'
-  | 'failed';
+  | 'failed'
+  | 'skipped'
+  | 'cancelled';
 
 export type AnalysisStatus =
   | 'not_analyzed'
   | 'pending'
+  | 'scheduled'
   | 'analyzing'
   | 'analyzed'
+  | 'degraded'
   | 'failed'
   | 'skipped';
 
@@ -46,6 +51,13 @@ export interface Asset {
   width: number | null;
   height: number | null;
   created_at: string;
+}
+
+export interface SearchMatch {
+  score: number;
+  reasons: Array<'exact' | 'phrase' | 'semantic' | 'tag' | 'source' | string>;
+  snippet: string | null;
+  semantic_score: number | null;
 }
 
 export interface Item {
@@ -85,6 +97,7 @@ export interface Item {
   deleted_at: string | null;
   created_at: string;
   updated_at: string;
+  search_match?: SearchMatch | null;
 }
 
 export interface CreateItemRequest {
@@ -194,6 +207,16 @@ export interface AdminProcessingJob {
   item_title: string | null;
   item_type: ItemType;
   item_processing_status: ProcessingStatus;
+  analysis_version: number | null;
+  execution_backend: 'database' | 'temporal';
+  reason: string;
+  temporal_workflow_id: string | null;
+  stage: string;
+  content_hash: string | null;
+  correlation_id: string;
+  ai_provider: string | null;
+  ai_model: string | null;
+  cancel_requested: boolean;
   user_id: string;
   user_email: string;
   status: AdminProcessingJobStatus;
@@ -205,6 +228,93 @@ export interface AdminProcessingJob {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
+}
+
+export interface AdminAnalysisProviderMetric {
+  provider: string;
+  runs: number;
+  successes: number;
+  failures: number;
+  average_latency_ms: number | null;
+}
+
+export interface AdminAnalysisRecentError {
+  item_reference: string;
+  job_id: string | null;
+  workflow_id: string | null;
+  correlation_id: string | null;
+  stage: string;
+  provider: string | null;
+  code: string;
+  occurred_at: string;
+}
+
+export interface AdminAnalysisRunSummary {
+  item_id: string;
+  item_reference: string;
+  job_id: string;
+  workflow_id: string | null;
+  correlation_id: string;
+  analysis_version: number | null;
+  backend: 'database' | 'temporal';
+  stage: string;
+  provider: string | null;
+  model_alias: string | null;
+  status: AdminProcessingJobStatus;
+  analysis_status: AnalysisStatus;
+  enrichment_mode: 'ai' | 'deterministic' | 'no_enrichment';
+  attempts: number;
+  max_attempts: number;
+  created_at: string;
+  updated_at: string;
+  completed_at: string | null;
+  error_code: string | null;
+}
+
+export interface AdminAnalysisOperations {
+  queue_depth: number;
+  oldest_pending_age_seconds: number | null;
+  status_counts: Record<string, number>;
+  stage_counts: Record<string, number>;
+  throughput_24h: number;
+  success_rate_24h: number;
+  degraded_rate_24h: number;
+  temporal_enabled: boolean;
+  temporal_ui_url: string | null;
+  providers: AdminAnalysisProviderMetric[];
+  recent_errors: AdminAnalysisRecentError[];
+  recent_runs: AdminAnalysisRunSummary[];
+}
+
+export interface AdminAIProviderHealth {
+  provider: string;
+  available: boolean;
+  latency_ms: number | null;
+  message: string | null;
+  capabilities: string[];
+}
+
+export interface AISuggestion {
+  suggestion_type: 'tag' | 'classification';
+  value: string;
+  confidence: number | null;
+  status: 'pending' | 'accepted' | 'rejected' | 'never';
+  can_undo: boolean;
+}
+
+export interface AISuggestionOverview {
+  item_id: string;
+  analysis_version: number;
+  item_revision: number;
+  topics: string[];
+  classification: string | null;
+  suggestions: AISuggestion[];
+}
+
+export interface AISuggestionDecision {
+  suggestion_type: 'tag' | 'classification';
+  value: string;
+  action: 'accept' | 'reject' | 'never' | 'undo';
 }
 
 export interface AdminProcessingJobsPage {

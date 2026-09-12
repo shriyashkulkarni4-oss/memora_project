@@ -1,6 +1,6 @@
 export type ItemType = "link" | "screenshot" | "text";
 export type ProcessingStatus = "pending" | "processing" | "ready" | "failed" | "skipped";
-export type AnalysisStatus = "not_analyzed" | "pending" | "analyzing" | "analyzed" | "failed" | "skipped";
+export type AnalysisStatus = "not_analyzed" | "pending" | "scheduled" | "analyzing" | "analyzed" | "degraded" | "failed" | "skipped";
 
 export interface TagReference {
   id: string;
@@ -17,6 +17,12 @@ export interface Category {
   item_count: number;
   created_at: string;
   updated_at: string;
+  search_match?: {
+    score: number;
+    reasons: string[];
+    snippet: string | null;
+    semantic_score: number | null;
+  } | null;
 }
 
 export interface ManagedTag extends TagReference {
@@ -97,13 +103,26 @@ export interface ItemUpdate {
   is_archived?: boolean;
 }
 
-export type MutationOperation = "create" | "update" | "delete" | "screenshot";
+export interface AISuggestionDecision {
+  suggestion_type: "tag" | "classification";
+  value: string;
+  action: "accept" | "reject" | "never" | "undo";
+}
+
+export interface AISuggestionDecisionPayload {
+  client_id: string;
+  analysis_version: number;
+  expected_revision: number;
+  decisions: AISuggestionDecision[];
+}
+
+export type MutationOperation = "create" | "update" | "delete" | "screenshot" | "suggestion";
 
 export interface PendingMutation {
   sequence: number;
   itemId: string;
   operation: MutationOperation;
-  payload: ItemCreate | ItemUpdate;
+  payload: ItemCreate | ItemUpdate | AISuggestionDecisionPayload;
   localUri?: string;
   attempts: number;
 }

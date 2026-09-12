@@ -1,7 +1,9 @@
 """Canonical Item capture and retrieval endpoints."""
 
+import asyncio
 import base64
 import hashlib
+import time
 import uuid
 from datetime import datetime, timezone
 from io import BytesIO
@@ -19,22 +21,35 @@ from fastapi import (
     status,
 )
 from PIL import Image, UnidentifiedImageError
-from sqlalchemy import and_, func, literal, or_, select
+from sqlalchemy import and_, delete, func, literal, or_, select
+from sqlalchemy.ext.asyncio import async_sessionmaker
 from sqlalchemy.orm import selectinload
+from temporalio.client import Client
 
+from app.ai.budgets import DatabaseBudgetGuard
+from app.ai.embedding_pipeline import EmbeddingPipeline
+from app.ai.factory import build_ai_gateway
+from app.ai.gateway import ProviderError
+from app.ai.hybrid_search import lexical_signals, reciprocal_rank_fusion
+from app.ai.retrieval_eval import cosine_similarity
 from app.config import get_settings
 from app.core.deps import CurrentUser, DbSession
 from app.models import (
     AnalysisStatus,
     Asset,
     Category,
+    DocumentChunk,
+    EnrichmentRecord,
     Item,
+    ItemEmbedding,
     ItemType,
+    ProcessingJob,
     ProcessingStatus,
     Tag,
 )
 from app.schemas.common import ErrorResponse
 from app.schemas.item import (
+    EnrichmentRecordResponse,
     ItemChangesResponse,
     ItemCreate,
     ItemListResponse,
@@ -42,11 +57,12 @@ from app.schemas.item import (
     ItemStats,
     ItemUpdate,
     ProcessingStateResponse,
+    SearchMatchResponse,
 )
-from app.services.processing import enqueue_processing_job
-from app.services.processing_worker import retry_failed_item
+from app.services.analysis_dispatch import request_item_analysis, retry_item_analysis
 from app.services.storage import StorageService, get_storage_service
 from app.services.urls import normalize_url
+from app.temporal_pipeline.workflows import AnalyzeItemWorkflow
 
 router = APIRouter()
 settings = get_settings()
@@ -120,7 +136,9 @@ def _inspect_image(content: bytes) -> tuple[str, int, int]:
     return detected_type, width, height
 
 
-def _response(item: Item) -> ItemResponse:
+def _response(
+    item: Item, search_match: SearchMatchResponse | None = None
+) -> ItemResponse:
     return ItemResponse(
         id=item.id,
         user_id=item.user_id,
@@ -158,6 +176,161 @@ def _response(item: Item) -> ItemResponse:
         deleted_at=item.deleted_at,
         created_at=item.created_at,
         updated_at=item.updated_at,
+        search_match=search_match,
+    )
+
+
+def _text_match_condition(value: str):
+    pattern = f"%{value}%"
+    searchable = [
+        Item.title,
+        Item.url,
+        Item.raw_text,
+        Item.extracted_text,
+        Item.summary,
+        Item.description,
+        Item.notes,
+        Item.source_domain,
+    ]
+    text_matches = [column.ilike(pattern) for column in searchable]
+    return searchable, text_matches, pattern
+
+
+async def _rank_search(
+    db: DbSession,
+    base_query,
+    *,
+    user_id: str,
+    value: str,
+    limit: int,
+) -> tuple[list[Item], dict[str, SearchMatchResponse], bool]:
+    current_settings = get_settings()
+    candidate_limit = max(limit + 1, current_settings.ai_search_candidate_limit)
+    searchable, text_matches, pattern = _text_match_condition(value)
+    if db.bind and db.bind.dialect.name == "postgresql":
+        document_text = func.coalesce(searchable[0], "")
+        for column in searchable[1:]:
+            document_text = document_text + literal(" ") + func.coalesce(column, "")
+        document = func.to_tsvector("simple", document_text)
+        text_matches.append(
+            document.op("@@")(func.websearch_to_tsquery("simple", value))
+        )
+    keyword_condition = or_(
+        *text_matches,
+        Item.tags.any(and_(Tag.user_id == user_id, Tag.name.ilike(pattern))),
+    )
+    keyword_result = await db.execute(
+        base_query.where(keyword_condition)
+        .order_by(Item.created_at.desc(), Item.id.desc())
+        .limit(candidate_limit)
+    )
+    keyword_items = list(keyword_result.scalars().unique())
+    lexical = [lexical_signals(item, value) for item in keyword_items]
+    semantic: list[tuple[str, float, str | None]] = []
+    eligible_by_id = {item.id: item for item in keyword_items}
+
+    if (
+        current_settings.ai_hybrid_search_enabled
+        and current_settings.ai_embeddings_route
+    ):
+        eligible_result = await db.execute(
+            base_query.order_by(Item.created_at.desc(), Item.id.desc()).limit(
+                candidate_limit
+            )
+        )
+        eligible_items = list(eligible_result.scalars().unique())
+        eligible_by_id.update({item.id: item for item in eligible_items})
+        try:
+            started = time.perf_counter()
+            async with asyncio.timeout(
+                current_settings.ai_search_latency_budget_ms / 1_000
+            ):
+                if db.bind is None:
+                    raise ValueError("database binding is unavailable")
+                session_factory = async_sessionmaker(db.bind, expire_on_commit=False)
+                query_embedding = await EmbeddingPipeline(
+                    session_factory,
+                    build_ai_gateway(current_settings),
+                    current_settings,
+                    DatabaseBudgetGuard(session_factory, current_settings),
+                ).embed_query(value, user_id=user_id)
+            if (
+                time.perf_counter() - started
+            ) * 1_000 <= current_settings.ai_search_latency_budget_ms:
+                vectors = list(
+                    await db.scalars(
+                        select(ItemEmbedding).where(
+                            ItemEmbedding.user_id == user_id,
+                            ItemEmbedding.index_id == query_embedding.index_id,
+                            ItemEmbedding.item_id.in_(eligible_by_id),
+                        )
+                    )
+                )
+                chunk_keys = {vector.chunk_id for vector in vectors}
+                chunks = (
+                    list(
+                        await db.scalars(
+                            select(DocumentChunk).where(
+                                DocumentChunk.user_id == user_id,
+                                DocumentChunk.chunk_key.in_(chunk_keys),
+                            )
+                        )
+                    )
+                    if chunk_keys
+                    else []
+                )
+                chunk_text = {
+                    (chunk.item_id, chunk.analysis_version, chunk.chunk_key): chunk.text
+                    for chunk in chunks
+                }
+                best: dict[str, tuple[float, str | None]] = {}
+                for vector in vectors:
+                    item = eligible_by_id.get(vector.item_id)
+                    if item is None or vector.analysis_version != item.analysis_version:
+                        continue
+                    similarity = cosine_similarity(
+                        query_embedding.vector, vector.vector
+                    )
+                    if similarity < current_settings.ai_search_semantic_threshold:
+                        continue
+                    snippet = chunk_text.get(
+                        (vector.item_id, vector.analysis_version, vector.chunk_id)
+                    )
+                    if (
+                        vector.item_id not in best
+                        or similarity > best[vector.item_id][0]
+                    ):
+                        best[vector.item_id] = (similarity, snippet)
+                semantic = [
+                    (item_id, score, snippet)
+                    for item_id, (score, snippet) in best.items()
+                ]
+        except (ProviderError, TimeoutError, ValueError):
+            semantic = []
+
+    ranked = reciprocal_rank_fusion(
+        lexical,
+        semantic,
+        rrf_k=current_settings.ai_search_rrf_k,
+        keyword_weight=current_settings.ai_search_keyword_weight,
+        semantic_weight=current_settings.ai_search_semantic_weight,
+    )
+    selected = ranked[: limit + 1]
+    has_more = len(selected) > limit
+    selected = selected[:limit]
+    matches = {
+        match.item_id: SearchMatchResponse(
+            score=match.score,
+            reasons=list(match.reasons),
+            snippet=match.snippet,
+            semantic_score=match.semantic_score,
+        )
+        for match in selected
+    }
+    return (
+        [eligible_by_id[match.item_id] for match in selected],
+        matches,
+        has_more,
     )
 
 
@@ -202,14 +375,6 @@ async def _resolve_tags(db: DbSession, user_id: str, names: list[str]) -> list[T
             db.add(tag)
         tags.append(tag)
     return tags
-
-
-def _mark_analysis_pending(item: Item, requested_at: datetime) -> None:
-    item.analysis_status = AnalysisStatus.PENDING
-    item.analysis_error = None
-    item.analysis_requested_at = requested_at
-    item.analysis_started_at = None
-    item.analysis_completed_at = None
 
 
 @router.get("", response_model=ItemListResponse, responses=ERROR_RESPONSES)
@@ -269,30 +434,19 @@ async def list_items(
         )
     if q:
         value = q.strip()
-        pattern = f"%{value}%"
-        searchable = [
-            Item.title,
-            Item.url,
-            Item.raw_text,
-            Item.extracted_text,
-            Item.summary,
-            Item.description,
-            Item.notes,
-            Item.source_domain,
-        ]
-        text_matches = [column.ilike(pattern) for column in searchable]
-        if db.bind and db.bind.dialect.name == "postgresql":
-            document_text = func.coalesce(searchable[0], "")
-            for column in searchable[1:]:
-                document_text = document_text + literal(" ") + func.coalesce(column, "")
-            document = func.to_tsvector(
-                "simple",
-                document_text,
-            )
-            text_matches.append(
-                document.op("@@")(func.websearch_to_tsquery("simple", value))
-            )
-        query = query.where(or_(*text_matches, Item.tags.any(Tag.name.ilike(pattern))))
+        items, search_matches, has_more = await _rank_search(
+            db,
+            query,
+            user_id=current_user.id,
+            value=value,
+            limit=limit,
+        )
+        return ItemListResponse(
+            items=[_response(item, search_matches[item.id]) for item in items],
+            next_cursor=_encode_cursor(items[-1]) if has_more and items else None,
+            has_more=has_more,
+            limit=limit,
+        )
 
     result = await db.execute(
         query.order_by(Item.created_at.desc(), Item.id.desc()).limit(limit + 1)
@@ -361,8 +515,9 @@ async def create_item(
     )
     item.tags = await _resolve_tags(db, current_user.id, data.tags)
     db.add(item)
-    if data.type != ItemType.TEXT and not settings.temporal_enabled:
-        db.add(enqueue_processing_job(item))
+    await request_item_analysis(
+        db, item, reason="capture", settings=settings, requested_at=created_at
+    )
     await db.commit()
     return _response(await _load_item(db, current_user.id, item.id))
 
@@ -392,7 +547,13 @@ async def get_item_stats(current_user: CurrentUser, db: DbSession) -> ItemStats:
             Item.processing_status == ProcessingStatus.FAILED
         ),
         pending_analysis=await count(
-            Item.analysis_status.in_([AnalysisStatus.PENDING, AnalysisStatus.ANALYZING])
+            Item.analysis_status.in_(
+                [
+                    AnalysisStatus.PENDING,
+                    AnalysisStatus.SCHEDULED,
+                    AnalysisStatus.ANALYZING,
+                ]
+            )
         ),
         failed_analysis=await count(Item.analysis_status == AnalysisStatus.FAILED),
         by_type=by_type,
@@ -520,8 +681,9 @@ async def create_screenshot_item(
         )
     )
     db.add(item)
-    if not settings.temporal_enabled:
-        db.add(enqueue_processing_job(item))
+    await request_item_analysis(
+        db, item, reason="capture", settings=settings, requested_at=now
+    )
     try:
         await db.commit()
     except Exception:
@@ -535,6 +697,28 @@ async def get_item(
     item_id: str, current_user: CurrentUser, db: DbSession
 ) -> ItemResponse:
     return _response(await _load_item(db, current_user.id, item_id))
+
+
+@router.get(
+    "/{item_id}/enrichments",
+    response_model=list[EnrichmentRecordResponse],
+    responses=ERROR_RESPONSES,
+)
+async def list_item_enrichments(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> list[EnrichmentRecordResponse]:
+    item = await _load_item(db, current_user.id, item_id)
+    records = list(
+        await db.scalars(
+            select(EnrichmentRecord)
+            .where(EnrichmentRecord.item_id == item.id)
+            .order_by(EnrichmentRecord.analysis_version.desc())
+        )
+    )
+    return [
+        EnrichmentRecordResponse.model_validate(record, from_attributes=True)
+        for record in records
+    ]
 
 
 @router.get(
@@ -563,10 +747,8 @@ async def retry_item_processing(
     item_id: str, current_user: CurrentUser, db: DbSession
 ) -> ProcessingStateResponse:
     item = await _load_item(db, current_user.id, item_id)
-    if item.type == ItemType.TEXT:
-        raise HTTPException(status_code=400, detail="Text items do not need processing")
     try:
-        await retry_failed_item(db, item)
+        await retry_item_analysis(db, item, settings=settings)
     except ValueError as exc:
         raise HTTPException(status_code=409, detail=str(exc)) from exc
     await db.commit()
@@ -574,6 +756,42 @@ async def retry_item_processing(
         item_id=item.id,
         status=item.processing_status,
         error=item.processing_error,
+        updated_at=item.updated_at,
+    )
+
+
+@router.post(
+    "/{item_id}/analysis/cancel",
+    response_model=ProcessingStateResponse,
+    responses=ERROR_RESPONSES,
+)
+async def cancel_item_analysis(
+    item_id: str, current_user: CurrentUser, db: DbSession
+) -> ProcessingStateResponse:
+    item = await _load_item(db, current_user.id, item_id)
+    job = await db.scalar(
+        select(ProcessingJob).where(
+            ProcessingJob.item_id == item.id,
+            ProcessingJob.analysis_version == item.analysis_version,
+            ProcessingJob.execution_backend == "temporal",
+            ProcessingJob.status.in_(("pending", "scheduled", "processing")),
+        )
+    )
+    if job is None or not job.temporal_workflow_id:
+        raise HTTPException(
+            status_code=409, detail="Item has no running Temporal analysis"
+        )
+    client = await Client.connect(
+        settings.temporal_address, namespace=settings.temporal_namespace
+    )
+    handle = client.get_workflow_handle(job.temporal_workflow_id)
+    await handle.signal(AnalyzeItemWorkflow.request_cancel)
+    job.cancel_requested = True
+    await db.commit()
+    return ProcessingStateResponse(
+        item_id=item.id,
+        status=item.processing_status,
+        error="Analysis cancellation requested",
         updated_at=item.updated_at,
     )
 
@@ -618,9 +836,20 @@ async def update_item(
         raise HTTPException(status_code=400, detail="Text items require raw text")
     if tag_names is not None:
         item.tags = await _resolve_tags(db, current_user.id, tag_names)
+        # An explicit tag save is a manual override; future suggestion undo must
+        # never remove a tag the user has since affirmed manually.
+        item.item_metadata = {
+            **(item.item_metadata or {}),
+            "ai_applied_tags": {},
+        }
     if analysis_content_changed:
-        item.analysis_version += 1
-        _mark_analysis_pending(item, datetime.now(timezone.utc))
+        await request_item_analysis(
+            db,
+            item,
+            reason="content_updated",
+            settings=settings,
+            increment_version=True,
+        )
     item.revision += 1
     item.updated_at = datetime.now(timezone.utc)
     await db.commit()
@@ -681,6 +910,8 @@ async def restore_item(
 @router.delete("/{item_id}", status_code=204, responses=ERROR_RESPONSES)
 async def delete_item(item_id: str, current_user: CurrentUser, db: DbSession) -> None:
     item = await _load_item(db, current_user.id, item_id)
+    await db.execute(delete(ItemEmbedding).where(ItemEmbedding.item_id == item.id))
+    await db.execute(delete(DocumentChunk).where(DocumentChunk.item_id == item.id))
     item.deleted_at = datetime.now(timezone.utc)
     item.revision += 1
     item.updated_at = item.deleted_at

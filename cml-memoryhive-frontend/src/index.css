@@ -661,6 +661,152 @@ select { height: 39px; padding: 0 32px 0 11px; font-size: 12px; }
   .admin-row-actions .button { flex: 1 1 96px; }
 }
 
+/* ── Review Reminder Banner ──────────────────────────────────────── */
+.review-reminder-section {
+  margin: 0 0 20px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 2px 12px rgba(180, 130, 10, 0.1);
+  overflow: hidden;
+  animation: review-remind-in 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes review-remind-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.review-reminder-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 16px;
+  background: rgba(245, 158, 11, 0.14);
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2);
+  font-size: 13px;
+  font-weight: 600;
+  color: #92400e;
+}
+.review-reminder-header svg { flex-shrink: 0; color: #d97706; }
+
+.review-reminder-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* ── Card row ── */
+.review-reminder-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 16px;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.15);
+  transition: background 0.12s;
+}
+.review-reminder-card:last-child { border-bottom: none; }
+.review-reminder-card:hover { background: rgba(245, 158, 11, 0.05); }
+.review-reminder-card.confirming { background: rgba(239, 68, 68, 0.04); }
+
+.review-reminder-card-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.review-reminder-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1c1917;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.review-reminder-meta {
+  font-size: 11px;
+  color: #a16207;
+}
+
+/* ── Action buttons area ── */
+.review-reminder-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Base button style ── */
+.rrb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+  white-space: nowrap;
+}
+.rrb-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Keep — green teal */
+.rrb-keep {
+  background: var(--teal);
+  border-color: var(--teal-dark);
+  color: white;
+}
+.rrb-keep:hover:not(:disabled) { background: var(--teal-dark); border-color: var(--teal-dark); }
+
+/* Delete prompt — outlined red */
+.rrb-delete-prompt {
+  background: transparent;
+  border-color: #f87171;
+  color: #dc2626;
+}
+.rrb-delete-prompt:hover:not(:disabled) { background: #fef2f2; border-color: #dc2626; }
+
+/* Confirmation strip */
+.rrb-confirm-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: #b91c1c;
+  margin-right: 2px;
+}
+.rrb-confirm-yes {
+  background: #dc2626;
+  border-color: #b91c1c;
+  color: white;
+}
+.rrb-confirm-yes:hover:not(:disabled) { background: #b91c1c; }
+.rrb-confirm-no {
+  background: transparent;
+  border-color: #d1d5db;
+  color: #374151;
+}
+.rrb-confirm-no:hover:not(:disabled) { background: #f3f4f6; }
+
+/* Overflow row */
+.review-reminder-overflow {
+  padding: 9px 16px;
+  font-size: 12px;
+  color: #a16207;
+  font-style: italic;
+  border-top: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+  .review-reminder-card { flex-wrap: wrap; gap: 8px; }
+  .review-reminder-actions { width: 100%; justify-content: flex-end; }
+  .rrb-confirm-text { font-size: 11px; }
+  .rrb-btn { padding: 4px 9px; font-size: 11px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+

@@ -16,6 +16,7 @@ import FilterPills, { type FilterPill } from './FilterPills';
 import GroundedRecallPanel from './GroundedRecallPanel';
 import ItemCard from './ItemCard';
 import ResurfacingPanel from './ResurfacingPanel';
+import ReviewReminderBanner from './ReviewReminderBanner';
 
 type LibraryMode = 'library' | 'favorites' | 'archive';
 type SummaryFilter = 'saved' | 'favorites' | 'processing' | 'archived';
@@ -178,6 +179,7 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       </header>
       {mode === 'library' ? <GroundedRecallPanel /> : null}
       {mode === 'library' ? <ResurfacingPanel /> : null}
+      {mode === 'library' ? <ReviewReminderBanner items={store.items} /> : null}
 
       {mode === 'library' && (
         <div className="library-summary" aria-label="Library summary">

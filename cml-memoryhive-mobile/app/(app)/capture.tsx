@@ -61,6 +61,16 @@ export default function Capture() {
     if (!result.canceled) setImageUri(result.assets[0].uri);
   }
 
+  async function takePhoto() {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (permission.status !== "granted") {
+      setError("Camera permission is required to take photos.");
+      return;
+    }
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ["images"], quality: 0.9 });
+    if (!result.canceled) setImageUri(result.assets[0].uri);
+  }
+
   async function submit() {
     setError("");
     if (type === "link") {
@@ -121,9 +131,22 @@ export default function Capture() {
         {type === "link" ? <Field autoCapitalize="none" keyboardType="url" label="URL" onChangeText={setContent} placeholder="https://example.com/article" value={content} /> : null}
         {type === "text" ? <Field label="Text" multiline onChangeText={setContent} placeholder="What do you want to remember?" value={content} /> : null}
         {type === "screenshot" ? (
-          <Pressable onPress={() => void selectImage()} style={styles.imagePicker}>
-            {imageUri ? <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.preview} /> : <><Ionicons color={colors.primary} name="image-outline" size={31} /><Text style={styles.imageTitle}>Choose screenshot</Text><Text style={styles.imageBody}>PNG, JPEG, GIF, or WebP</Text></>}
-          </Pressable>
+          imageUri ? (
+            <Pressable onPress={() => void selectImage()} style={styles.imagePicker}>
+              <Image resizeMode="cover" source={{ uri: imageUri }} style={styles.preview} />
+            </Pressable>
+          ) : (
+            <View style={styles.imageActions}>
+              <Pressable onPress={() => void takePhoto()} style={styles.imagePickerHalf}>
+                <Ionicons color={colors.primary} name="camera-outline" size={31} />
+                <Text style={styles.imageTitle}>Take photo</Text>
+              </Pressable>
+              <Pressable onPress={() => void selectImage()} style={styles.imagePickerHalf}>
+                <Ionicons color={colors.primary} name="image-outline" size={31} />
+                <Text style={styles.imageTitle}>Choose image</Text>
+              </Pressable>
+            </View>
+          )
         ) : null}
         <Field label="Notes (optional)" multiline onChangeText={setNotes} placeholder="Why is this worth keeping?" value={notes} />
         <CategoryPicker categories={categories} selectedId={categoryId} onChange={setCategoryId} />
@@ -158,6 +181,8 @@ const styles = StyleSheet.create({
   segmentTextActive: { color: "#FFFFFF" },
   lead: { color: colors.textMuted, fontSize: 15, lineHeight: 22 },
   imagePicker: { alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 7, borderStyle: "dashed", borderWidth: 1, gap: 6, justifyContent: "center", minHeight: 190, overflow: "hidden" },
+  imageActions: { flexDirection: "row", gap: 12 },
+  imagePickerHalf: { flex: 1, alignItems: "center", backgroundColor: colors.surface, borderColor: colors.border, borderRadius: 7, borderStyle: "dashed", borderWidth: 1, gap: 6, justifyContent: "center", minHeight: 150 },
   preview: { height: 250, width: "100%" },
   imageTitle: { color: colors.text, fontSize: 16, fontWeight: "700" },
   imageBody: { color: colors.textMuted, fontSize: 13 },

@@ -23,6 +23,7 @@ type SummaryFilter = 'saved' | 'favorites' | 'processing' | 'archived';
 const typeOptions: { value: ItemType | 'all'; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'link', label: 'Links' },
+  { value: 'document', label: 'Documents' },
   { value: 'screenshot', label: 'Screenshots' },
   { value: 'text', label: 'Text' },
 ];

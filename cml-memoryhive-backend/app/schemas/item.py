@@ -126,6 +126,7 @@ class ItemResponse(BaseModel):
     extracted_text: str | None
     language: str | None
     summary: str | None
+    summary_attribution: str | None = None
     metadata: dict[str, Any] | None
     processing_status: ProcessingStatus
     processing_error: str | None

@@ -30,13 +30,13 @@ class Settings(BaseSettings):
 
     # Database
     database_url: str = (
-        "postgresql+asyncpg://memoryhive:memoryhive@localhost:5432/memoryhive"
+        "postgresql+asyncpg://memoryhive:memoryhive123@localhost:5432/memoryhive"
     )
 
     # MinIO / S3 Storage
     minio_endpoint: str = "localhost:9000"
     minio_access_key: str = "minioadmin"
-    minio_secret_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin123"
     minio_bucket: str = "memoryhive-uploads"
     minio_secure: bool = False
 

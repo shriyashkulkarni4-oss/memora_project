@@ -185,7 +185,10 @@ async def run_forever(limit: int) -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for event in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(event, stop.set)
+        try:
+            loop.add_signal_handler(event, stop.set)
+        except NotImplementedError:
+            signal.signal(event, lambda _sig, _frame: stop.set())
     while not stop.is_set():
         await run_once(limit)
         try:

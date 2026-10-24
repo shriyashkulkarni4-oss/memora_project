@@ -183,6 +183,8 @@ class ProcessingWorker:
                     await persist_enrichment_record(
                         session, item, result, completed_at=now
                     )
+                    attribution = (item.item_metadata or {}).get("summary_attribution", "Summary updated")
+                    logger.info("Item %s: %s", item.id, attribution)
             job.status = "completed"
             job.locked_at = None
             job.last_error = None

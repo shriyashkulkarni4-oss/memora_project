@@ -131,7 +131,10 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     try {
       if (file) set({ uploadProgress: 0 });
       let item = demoMode ? demoItem(data, file) : data.type === 'screenshot' && file
-        ? await itemsApi.createScreenshot(data, file, (uploadProgress) => set({ uploadProgress })) : await itemsApi.create(data);
+        ? await itemsApi.createScreenshot(data, file, (uploadProgress) => set({ uploadProgress }))
+        : data.type === 'document' && file
+        ? await itemsApi.createDocument(data, file, (uploadProgress) => set({ uploadProgress }))
+        : await itemsApi.create(data);
       [item] = await withPreviews([item]);
       set((state) => ({ items: [item, ...state.items], captureOpen: false, notice: 'Item saved', error: null, uploadProgress: null }));
       if (!demoMode) {

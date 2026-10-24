@@ -1,6 +1,6 @@
 /** Canonical /api/v1 contracts. Keep field names aligned with OpenAPI. */
 
-export type ItemType = 'link' | 'screenshot' | 'text';
+export type ItemType = 'link' | 'screenshot' | 'text' | 'document';
 
 export type ProcessingStatus =
   | 'pending'
@@ -77,6 +77,7 @@ export interface Item {
   extracted_text: string | null;
   language: string | null;
   summary: string | null;
+  summary_attribution?: string;
   metadata: Record<string, unknown> | null;
   processing_status: ProcessingStatus;
   processing_error: string | null;

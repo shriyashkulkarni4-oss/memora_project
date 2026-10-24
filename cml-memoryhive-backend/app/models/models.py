@@ -37,6 +37,7 @@ class ItemType(str, enum.Enum):
     LINK = "link"
     SCREENSHOT = "screenshot"
     TEXT = "text"
+    DOCUMENT = "document"
 
 
 class ProcessingStatus(str, enum.Enum):
@@ -505,6 +506,10 @@ class AIRun(Base):
     encrypted_debug_payload: Mapped[str | None] = mapped_column(Text)
     debug_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
+    field_provenances: Mapped[list["AIFieldProvenance"]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
 
 class AdminAnalysisAction(Base):
     """Immutable, content-free audit trail for operator analysis actions."""
@@ -654,6 +659,8 @@ class AIFieldProvenance(Base):
     run_id: Mapped[str] = mapped_column(
         String(36), ForeignKey("ai_runs.id", ondelete="CASCADE")
     )
+
+    run: Mapped["AIRun"] = relationship(back_populates="field_provenances")
     user_id: Mapped[str | None] = mapped_column(
         String(36), ForeignKey("users.id", ondelete="CASCADE")
     )

@@ -158,6 +158,7 @@ class AIRunRecorder:
         )
         async with self.session_factory() as session:
             session.add(run)
+            await session.flush()
             session.add(field)
             await session.commit()
         return run.id

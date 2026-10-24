@@ -86,6 +86,13 @@ def apply_processing_result(
         provider = enrichment.get("provider") or "deterministic"
         model = enrichment.get("model")
         source = "model" if result.enrichment_succeeded else "deterministic"
+        if result.enrichment_succeeded and enrichment.get("summary"):
+            if "ollama" in str(provider).lower():
+                item.item_metadata["summary_attribution"] = f"Ollama generated this summary ({model})" if model else "Ollama generated this summary"
+            else:
+                item.item_metadata["summary_attribution"] = f"{provider} generated this summary ({model})" if model else f"{provider} generated this summary"
+        else:
+            item.item_metadata["summary_attribution"] = "Simple extractor generated this summary"
         provenance = {
             field: {
                 "source": (

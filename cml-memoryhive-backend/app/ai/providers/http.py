@@ -50,11 +50,14 @@ class HttpProviderAdapter:
 
     async def _request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
         kwargs["follow_redirects"] = False
+        if "timeout" not in kwargs and hasattr(self, "limits") and self.limits and self.limits.timeout_seconds:
+            kwargs["timeout"] = self.limits.timeout_seconds
         try:
             if self.client:
                 response = await self.client.request(method, url, **kwargs)
             else:
-                async with httpx.AsyncClient() as client:
+                timeout_val = kwargs.get("timeout", 60.0)
+                async with httpx.AsyncClient(timeout=timeout_val) as client:
                     response = await client.request(method, url, **kwargs)
         except httpx.TimeoutException:
             raise ProviderError(ProviderErrorCode.TIMEOUT, self.provider_type) from None

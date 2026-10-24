@@ -13,7 +13,10 @@ from io import BytesIO
 from typing import Awaitable, Callable
 from urllib.parse import urljoin, urlparse
 
+import os
 import httpx
+import pypdf
+import pypdfium2
 import pytesseract
 from langdetect import DetectorFactory, LangDetectException, detect
 from PIL import Image
@@ -215,6 +218,8 @@ class ContentProcessor:
         self.fetcher = fetcher or SecureLinkFetcher(self.settings)
         if self.settings.tesseract_cmd:
             pytesseract.pytesseract.tesseract_cmd = self.settings.tesseract_cmd
+        elif os.name == "nt" and os.path.exists(r"C:\Program Files\Tesseract-OCR\tesseract.exe"):
+            pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
         self.ocr = ocr or pytesseract.image_to_string
         self.enrichment_client = enrichment_client
         self.ai_gateway = ai_gateway or build_ai_gateway(
@@ -235,12 +240,138 @@ class ContentProcessor:
     async def extract(self, value: ExtractionInput) -> ExtractedDocument:
         if value.item_type == ItemType.SCREENSHOT:
             return await self._screenshot(value)
+        elif value.item_type == ItemType.DOCUMENT:
+            return await self._document(value)
         elif value.item_type == ItemType.LINK and value.url:
             return await self._link(value)
         elif value.item_type == ItemType.TEXT and value.raw_text:
             return self._text(value)
         return ExtractedDocument(
             item_id=value.item_id, analysis_version=value.analysis_version
+        )
+
+    async def _document(self, value: ExtractionInput) -> ExtractedDocument:
+        if not value.asset_keys:
+            raise ValueError("Document has no source asset")
+        content = await asyncio.to_thread(
+            self.storage.get_file_bytes, value.asset_keys[0]
+        )
+        if not content:
+            return ExtractedDocument(
+                item_id=value.item_id,
+                analysis_version=value.analysis_version,
+            )
+
+        is_pdf = content.startswith(b"%PDF")
+        if is_pdf:
+            return await self._process_pdf_document(content, value)
+        else:
+            return self._process_text_document(content, value)
+
+    def _process_text_document(
+        self, content: bytes, value: ExtractionInput
+    ) -> ExtractedDocument:
+        try:
+            text = content.decode("utf-8")
+        except UnicodeDecodeError:
+            try:
+                text = content.decode("latin-1")
+            except Exception:
+                text = content.decode("utf-8", errors="replace")
+        extracted = normalize_extracted_text(text)
+        return ExtractedDocument(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
+            extracted_text=extracted or None,
+            normalized_text=extracted.casefold() or None,
+            language=detect_language(extracted),
+            metadata={"document_type": "text", "size_bytes": len(content)},
+        )
+
+    async def _process_pdf_document(
+        self, content: bytes, value: ExtractionInput
+    ) -> ExtractedDocument:
+        pdf_title: str | None = None
+        pdf_author: str | None = None
+        page_texts: list[str] = []
+        pages_digital = 0
+        pages_ocr = 0
+
+        total_pages = 0
+        try:
+            reader = pypdf.PdfReader(BytesIO(content))
+            total_pages = len(reader.pages)
+            if reader.metadata:
+                pdf_title = getattr(reader.metadata, "title", None)
+                pdf_author = getattr(reader.metadata, "author", None)
+        except Exception as exc:
+            logger.warning(f"Could not read PDF metadata or structure: {exc}")
+
+        max_pages = getattr(self.settings, "document_max_pages", 50)
+        pages_to_process = min(total_pages, max_pages) if total_pages > 0 else 0
+
+        pdfium_doc = None
+        try:
+            pdfium_doc = pypdfium2.PdfDocument(content)
+        except Exception as exc:
+            logger.warning(f"Could not load PDF in pdfium: {exc}")
+
+        min_chars_per_page = getattr(self.settings, "document_ocr_min_chars_per_page", 40)
+
+        for page_idx in range(pages_to_process):
+            page_text = ""
+            if page_idx < total_pages:
+                try:
+                    page_text = reader.pages[page_idx].extract_text() or ""
+                except Exception:
+                    page_text = ""
+
+            cleaned_page = page_text.strip()
+            # If digital extraction yielded insufficient text, run OCR fallback on this page!
+            if len(cleaned_page) < min_chars_per_page and pdfium_doc is not None:
+                def render_and_ocr(idx: int) -> str:
+                    try:
+                        page = pdfium_doc.get_page(idx)
+                        pil_image = page.render(scale=2.0).to_pil()
+                        return self.ocr(pil_image)
+                    except Exception as err:
+                        logger.warning(f"Failed to render or OCR page {idx}: {err}")
+                        return ""
+
+                ocr_result = await asyncio.to_thread(render_and_ocr, page_idx)
+                if ocr_result and len(ocr_result.strip()) > len(cleaned_page):
+                    cleaned_page = ocr_result.strip()
+                    pages_ocr += 1
+                else:
+                    if cleaned_page:
+                        pages_digital += 1
+            else:
+                pages_digital += 1
+
+            if cleaned_page:
+                page_texts.append(cleaned_page)
+
+        combined_text = "\n\n".join(page_texts)
+        extracted = normalize_extracted_text(combined_text)
+
+        metadata = {
+            "document_type": "pdf",
+            "total_pages": total_pages,
+            "processed_pages": pages_to_process,
+            "digital_pages": pages_digital,
+            "ocr_pages": pages_ocr,
+            "ocr_engine": "tesseract" if pages_ocr > 0 else "none",
+        }
+
+        return ExtractedDocument(
+            item_id=value.item_id,
+            analysis_version=value.analysis_version,
+            title=pdf_title or None,
+            author=pdf_author or None,
+            extracted_text=extracted or None,
+            normalized_text=extracted.casefold() or None,
+            language=detect_language(extracted),
+            metadata=metadata,
         )
 
     def _text(self, value: ExtractionInput) -> ExtractedDocument:

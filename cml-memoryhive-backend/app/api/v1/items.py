@@ -159,6 +159,17 @@ def _inspect_image(content: bytes) -> tuple[str, int, int]:
 def _response(
     item: Item, search_match: SearchMatchResponse | None = None
 ) -> ItemResponse:
+    meta = item.item_metadata or {}
+    attribution = meta.get("summary_attribution")
+    if not attribution and item.summary:
+        enrichment = meta.get("enrichment") or {}
+        provider = str(enrichment.get("provider") or "")
+        model = enrichment.get("model")
+        if enrichment.get("summary_source") == "model" or (enrichment.get("summary") and provider and provider != "deterministic"):
+            attribution = f"Ollama generated this summary ({model})" if "ollama" in provider.lower() else f"{provider} generated this summary"
+        else:
+            attribution = "Simple extractor generated this summary"
+
     return ItemResponse(
         id=item.id,
         user_id=item.user_id,
@@ -176,6 +187,7 @@ def _response(
         extracted_text=item.extracted_text,
         language=item.language,
         summary=item.summary,
+        summary_attribution=attribution,
         metadata=item.item_metadata,
         processing_status=item.processing_status,
         processing_error=item.processing_error,
@@ -1011,6 +1023,103 @@ async def create_screenshot_item(
             sha256=hashlib.sha256(content).hexdigest(),
             width=width,
             height=height,
+        )
+    )
+    db.add(item)
+    await request_item_analysis(
+        db, item, reason="capture", settings=settings, requested_at=now
+    )
+    try:
+        await db.commit()
+    except Exception:
+        storage.delete_file(uploaded["file_key"])
+        raise
+    return _response(await _load_item(db, current_user.id, item.id))
+
+
+@router.post(
+    "/document",
+    response_model=ItemResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=ERROR_RESPONSES,
+)
+async def create_document_item(
+    current_user: CurrentUser,
+    db: DbSession,
+    storage: Storage,
+    file: UploadFile = File(...),
+    id: str | None = Form(default=None),
+    title: str | None = Form(default=None),
+    description: str | None = Form(default=None),
+    notes: str | None = Form(default=None),
+    source: str | None = Form(default="document"),
+    category_id: str | None = Form(default=None),
+    tags: str | None = Form(default=None),
+) -> ItemResponse:
+    try:
+        item_id = str(uuid.UUID(id)) if id else str(uuid.uuid4())
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail="Invalid item UUID") from exc
+    if await db.scalar(select(Item.id).where(Item.id == item_id)):
+        raise HTTPException(status_code=409, detail="Item identifier already exists")
+
+    max_size = settings.max_upload_size_mb * 1024 * 1024
+    content = await file.read(max_size + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="Document file is empty")
+    if len(content) > max_size:
+        raise HTTPException(status_code=413, detail="Document exceeds upload limit")
+
+    filename = file.filename or "document"
+    content_type = file.content_type or ""
+
+    if content.startswith(b"%PDF") or filename.lower().endswith(".pdf"):
+        detected_type = "application/pdf"
+    elif filename.lower().endswith((".txt", ".md", ".markdown", ".csv", ".json", ".log")) or content_type.startswith("text/"):
+        detected_type = "text/plain" if not content_type.startswith("text/") else content_type
+    else:
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported document format. Please upload a PDF (.pdf) or text document (.txt, .md).",
+        )
+
+    owned_category = await _resolve_category(db, current_user.id, category_id)
+    tag_names = [
+        part.strip().lower() for part in (tags or "").split(",") if part.strip()
+    ]
+    uploaded = storage.upload_bytes(
+        content,
+        content_type=detected_type,
+        original_filename=file.filename,
+        user_id=current_user.id,
+    )
+    now = datetime.now(timezone.utc)
+    item_title = title.strip() if title and title.strip() else filename
+    item = Item(
+        id=item_id,
+        user_id=current_user.id,
+        type=ItemType.DOCUMENT,
+        title=item_title,
+        description=description,
+        notes=notes,
+        source=source,
+        category_id=owned_category,
+        processing_status=ProcessingStatus.PENDING,
+        analysis_status=AnalysisStatus.PENDING,
+        analysis_requested_at=now,
+        created_at=now,
+        updated_at=now,
+    )
+    item.tags = await _resolve_tags(db, current_user.id, tag_names)
+    item.assets.append(
+        Asset(
+            id=str(uuid.uuid4()),
+            user_id=current_user.id,
+            object_key=uploaded["file_key"],
+            original_filename=file.filename,
+            mime_type=detected_type,
+            size_bytes=len(content),
+            sha256=hashlib.sha256(content).hexdigest(),
         )
     )
     db.add(item)

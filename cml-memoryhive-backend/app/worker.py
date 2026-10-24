@@ -32,16 +32,26 @@ async def run() -> None:
     stop = asyncio.Event()
     loop = asyncio.get_running_loop()
     for event in (signal.SIGINT, signal.SIGTERM):
-        loop.add_signal_handler(event, stop.set)
+        try:
+            loop.add_signal_handler(event, stop.set)
+        except NotImplementedError:
+            signal.signal(event, lambda _sig, _frame: stop.set())
     logger.info("Memoryhive processing worker started")
-    while not stop.is_set():
-        if not await worker.run_once():
-            try:
-                await asyncio.wait_for(stop.wait(), settings.processing_poll_seconds)
-            except TimeoutError:
-                pass
-    logger.info("Memoryhive processing worker stopped")
+    try:
+        while not stop.is_set():
+            if not await worker.run_once():
+                try:
+                    await asyncio.wait_for(stop.wait(), settings.processing_poll_seconds)
+                except TimeoutError:
+                    pass
+    except (KeyboardInterrupt, SystemExit):
+        pass
+    finally:
+        logger.info("Memoryhive processing worker stopped")
 
 
 if __name__ == "__main__":
-    asyncio.run(run())
+    try:
+        asyncio.run(run())
+    except KeyboardInterrupt:
+        pass

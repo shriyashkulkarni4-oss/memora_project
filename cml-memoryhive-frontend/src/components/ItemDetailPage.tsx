@@ -5,6 +5,7 @@ import {
   Check,
   ExternalLink,
   FileText,
+  Files,
   Globe2,
   Image as ImageIcon,
   Link2,
@@ -23,7 +24,7 @@ import AISuggestionsPanel from './AISuggestionsPanel';
 import TagPicker from './TagPicker';
 import MemoryConnectionsPanel from './MemoryConnectionsPanel';
 
-const icons = { link: Link2, screenshot: ImageIcon, text: FileText };
+const icons = { link: Link2, screenshot: ImageIcon, text: FileText, document: Files };
 type DetailConfirmation = 'favorite' | 'archive' | 'delete' | null;
 
 export default function ItemDetailPage() {
@@ -148,7 +149,23 @@ export default function ItemDetailPage() {
           )}
           {item.summary && (
             <section className="content-section summary-section">
-              <span className="section-label">Summary</span>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <span className="section-label">Summary</span>
+                {item.summary_attribution && (
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      background: item.summary_attribution.includes('Ollama') ? '#e0f2fe' : '#f1f5f9',
+                      color: item.summary_attribution.includes('Ollama') ? '#0369a1' : '#475569',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {item.summary_attribution}
+                  </span>
+                )}
+              </div>
               <p>{item.summary}</p>
             </section>
           )}

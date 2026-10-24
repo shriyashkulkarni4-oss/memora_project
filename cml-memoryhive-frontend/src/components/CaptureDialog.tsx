@@ -2,6 +2,7 @@ import {
   AlertCircle,
   ChevronDown,
   FileText,
+  Files,
   Image as ImageIcon,
   Link2,
   Upload,
@@ -15,6 +16,7 @@ import TagPicker from './TagPicker';
 
 const modes: { value: ItemType; label: string; icon: typeof Link2 }[] = [
   { value: 'link', label: 'Link', icon: Link2 },
+  { value: 'document', label: 'Document', icon: Files },
   { value: 'screenshot', label: 'Screenshot', icon: ImageIcon },
   { value: 'text', label: 'Text', icon: FileText },
 ];
@@ -184,6 +186,23 @@ export default function CaptureDialog() {
                 placeholder="Write or paste text"
                 required
               />
+            </label>
+          )}
+
+          {type === 'document' && (
+            <label className={`drop-field${file ? ' has-file' : ''}`}>
+              <input
+                ref={(node) => {
+                  firstField.current = node;
+                }}
+                type="file"
+                accept="application/pdf,.pdf,text/plain,.txt,text/markdown,.md"
+                onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+                required
+              />
+              {file ? <Files size={24} /> : <Upload size={24} />}
+              <strong>{file?.name || 'Choose a document'}</strong>
+              <span>{file ? `${Math.ceil(file.size / 1024)} KB` : 'PDF (multi-page with OCR) or Text document'}</span>
             </label>
           )}
 

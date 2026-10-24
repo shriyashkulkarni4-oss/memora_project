@@ -4,6 +4,7 @@ import {
   Eye,
   ExternalLink,
   FileText,
+  Files,
   Image as ImageIcon,
   Link2,
   RotateCcw,
@@ -15,7 +16,7 @@ import { useLibraryStore } from '../store/libraryStore';
 import type { Item } from '../types/api';
 import ConfirmDialog from './ConfirmDialog';
 
-const typeIcons = { link: Link2, screenshot: ImageIcon, text: FileText };
+const typeIcons = { link: Link2, screenshot: ImageIcon, text: FileText, document: Files };
 type CardConfirmation = 'favorite' | 'archive' | null;
 
 export default function ItemCard({
@@ -77,7 +78,22 @@ export default function ItemCard({
         {item.type === 'text' ? (
           <blockquote>{item.raw_text}</blockquote>
         ) : (
-          <p>{item.summary || item.description || item.url}</p>
+          <div>
+            {item.summary && item.summary_attribution && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  display: 'inline-block',
+                  marginBottom: '4px',
+                  color: item.summary_attribution.includes('Ollama') ? '#0284c7' : '#64748b',
+                  fontWeight: 600,
+                }}
+              >
+                ✦ {item.summary_attribution}
+              </span>
+            )}
+            <p>{item.summary || item.description || item.url}</p>
+          </div>
         )}
 
         {item.search_match ? (

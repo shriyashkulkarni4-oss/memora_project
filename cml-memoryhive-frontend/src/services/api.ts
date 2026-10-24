@@ -198,6 +198,18 @@ export const itemsApi = {
     if (data.tags?.length) form.set('tags', data.tags.join(','));
     return upload<Item>('/items/screenshot', form, onProgress);
   },
+  createDocument: (data: CreateItemRequest, file: File, onProgress?: (percent: number) => void) => {
+    const form = new FormData();
+    form.set('file', file);
+    if (data.id) form.set('id', data.id);
+    if (data.title) form.set('title', data.title);
+    if (data.description) form.set('description', data.description);
+    if (data.notes) form.set('notes', data.notes);
+    if (data.source) form.set('source', data.source);
+    if (data.category_id) form.set('category_id', data.category_id);
+    if (data.tags?.length) form.set('tags', data.tags.join(','));
+    return upload<Item>('/items/document', form, onProgress);
+  },
   update: (id: string, data: UpdateItemRequest) => request<Item>(`/items/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
   retryProcessing: (id: string) => request(`/items/${id}/processing/retry`, { method: 'POST' }),
   related: (id: string) => request<MemoryMatch[]>(`/items/${id}/related`),

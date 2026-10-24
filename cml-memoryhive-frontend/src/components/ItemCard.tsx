@@ -21,10 +21,12 @@ type CardConfirmation = 'favorite' | 'archive' | null;
 export default function ItemCard({
   item,
   compact = false,
+  index = 0,
   onTagClick,
 }: {
   item: Item;
   compact?: boolean;
+  index?: number;
   onTagClick?: (tag: string) => void;
 }) {
   const toggleFavorite = useLibraryStore((state) => state.toggleFavorite);
@@ -48,7 +50,7 @@ export default function ItemCard({
   };
 
   return (
-    <article className={`item-card ${compact ? 'compact' : ''}`}>
+    <article className={`item-card ${compact ? 'compact' : ''}`} style={{ animationDelay: `${index * 30}ms` }}>
       {item.type === 'screenshot' && previewUrl && (
         <Link to={`/items/${item.id}`} className="item-preview" tabIndex={-1} aria-hidden="true">
           <img src={previewUrl} alt="" />

@@ -12,6 +12,7 @@ import {
   Star,
   UserRound,
   X,
+  CheckCircle2,
 } from 'lucide-react';
 import { useCallback, useEffect, useRef } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
@@ -87,6 +88,13 @@ export default function AppShell() {
     };
   }, [initialize, signOut, user]);
 
+  // Auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (!error && !notice) return undefined;
+    const timer = window.setTimeout(dismissMessage, 3000);
+    return () => window.clearTimeout(timer);
+  }, [error, notice, dismissMessage]);
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -145,7 +153,7 @@ export default function AppShell() {
       <main className="workspace" id="main-content">
         {(error || notice) && (
           <div className={`app-message ${error ? 'error' : 'success'}`} role={error ? 'alert' : 'status'}>
-            {error && <AlertCircle size={17} />}
+            {error ? <AlertCircle size={17} /> : <CheckCircle2 size={17} />}
             <span>{error || notice}</span>
             <button type="button" onClick={dismissMessage} aria-label="Dismiss message"><X size={16} /></button>
           </div>

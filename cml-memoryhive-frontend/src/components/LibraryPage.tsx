@@ -1,5 +1,6 @@
 import {
   Archive,
+  Bookmark,
   Grid2X2,
   List,
   Plus,
@@ -182,7 +183,7 @@ export default function LibraryPage({ mode = 'library' }: { mode?: LibraryMode }
       {mode === 'library' && (
         <div className="library-summary" aria-label="Library summary">
           <button type="button" className={summaryFilter === null || summaryFilter === 'saved' ? 'active' : ''} onClick={() => updateFilters({ summary: null })}>
-            <strong>{activeItems.length}</strong> saved
+            <Bookmark size={15} /> <strong>{activeItems.length}</strong> saved
           </button>
           <button type="button" className={summaryFilter === 'favorites' ? 'active' : ''} onClick={() => updateFilters({ summary: 'favorites' })}>
             <Star size={15} /> <strong>{favorites}</strong> favorites

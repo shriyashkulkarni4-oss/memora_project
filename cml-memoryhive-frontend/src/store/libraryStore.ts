@@ -133,7 +133,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
       let item = demoMode ? demoItem(data, file) : data.type === 'screenshot' && file
         ? await itemsApi.createScreenshot(data, file, (uploadProgress) => set({ uploadProgress })) : await itemsApi.create(data);
       [item] = await withPreviews([item]);
-      set((state) => ({ items: [item, ...state.items], captureOpen: false, notice: 'Item saved', error: null, uploadProgress: null }));
+      set((state) => ({ items: [item, ...state.items], captureOpen: false, notice: data.type === 'screenshot' ? '\u{1F4F8} Screenshot saved' : data.type === 'text' ? '\u{1F4DD} Note saved' : '\u{1F517} Link captured', error: null, uploadProgress: null }));
       if (!demoMode) {
         const [tags, categories] = await Promise.all([tagsApi.list(), categoriesApi.list()]);
         set({ tags, categories });
@@ -153,7 +153,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
         tags: data.tags ? data.tags.map((name) => ({ id: crypto.randomUUID(), name, color: '#64748b' })) : current.tags,
       } as Item : await itemsApi.update(id, data);
       updated = keepPreview(updated, current);
-      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: 'Changes saved', error: null }));
+      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: '\u2713 Changes saved', error: null }));
       return updated;
     } catch (error) {
       set({ error: message(error) });
@@ -181,20 +181,20 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     if (demoMode) return;
     try {
       const updated = keepPreview(await itemsApi.archive(id, value), current);
-      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: value ? 'Item archived' : 'Item restored' }));
+      set((state) => ({ items: state.items.map((item) => item.id === id ? updated : item), notice: value ? '\u{1F4E6} Moved to archive' : '\u21A9 Restored to library' }));
     } catch (error) { set({ items: before, error: message(error) }); }
   },
   deleteItem: async (id) => {
     const before = get().items;
     set({ items: before.filter((item) => item.id !== id), error: null });
     if (demoMode) return;
-    try { await itemsApi.remove(id); set({ notice: 'Item deleted' }); }
+    try { await itemsApi.remove(id); set({ notice: '\u{1F5D1} Item deleted' }); }
     catch (error) { set({ items: before, error: message(error) }); throw error; }
   },
   retryProcessing: async (id) => {
     try {
       await itemsApi.retryProcessing(id);
-      set({ notice: 'Processing queued', error: null });
+      set({ notice: '\u2699 Processing queued', error: null });
       await get().initialize(true);
     } catch (error) {
       set({ error: message(error) });
@@ -207,7 +207,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
         id: crypto.randomUUID(), name: name.trim(), color, icon: 'folder', description: null,
         item_count: 0, created_at: new Date().toISOString(), updated_at: new Date().toISOString(),
       } : await categoriesApi.create({ name: name.trim(), color, icon: 'folder' });
-      set((state) => ({ categories: [...state.categories, category], notice: 'Category created', error: null }));
+      set((state) => ({ categories: [...state.categories, category], notice: '\u2713 Category created', error: null }));
     } catch (error) { set({ error: message(error) }); throw error; }
   },
   deleteCategory: async (id) => {
@@ -215,7 +215,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const beforeItems = get().items;
     set((state) => ({ categories: before.filter((item) => item.id !== id), items: state.items.map((item) => item.category_id === id ? { ...item, category_id: null } : item) }));
     if (demoMode) return;
-    try { await categoriesApi.remove(id); set({ notice: 'Category deleted' }); }
+    try { await categoriesApi.remove(id); set({ notice: '\u2713 Category deleted' }); }
     catch (error) { set({ categories: before, items: beforeItems, error: message(error) }); }
   },
   deleteTag: async (id) => {
@@ -223,7 +223,7 @@ export const useLibraryStore = create<LibraryState>((set, get) => ({
     const beforeItems = get().items;
     set((state) => ({ tags: before.filter((tag) => tag.id !== id), items: state.items.map((item) => ({ ...item, tags: item.tags.filter((tag) => tag.id !== id) })) }));
     if (demoMode) return;
-    try { await tagsApi.remove(id); set({ notice: 'Tag deleted' }); }
+    try { await tagsApi.remove(id); set({ notice: '\u2713 Tag deleted' }); }
     catch (error) { set({ tags: before, items: beforeItems, error: message(error) }); }
   },
 }));

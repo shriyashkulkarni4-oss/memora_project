@@ -3,12 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Memoryhive personal capture and recall library" />
-    <meta name="theme-color" content="#0f766e" />
-    <title>Memoryhive</title>
-    <meta property="og:title" content="Memoryhive" />
-    <meta property="og:description" content="A private library for links, screenshots, and text" />
+    <meta name="description" content="Memora — Save. Remember. Relive. A private library for links, screenshots, and text" />
+    <meta name="theme-color" content="#013E37" />
+    <title>Memora — Save. Remember. Relive.</title>
+    <meta property="og:title" content="Memora" />
+    <meta property="og:description" content="Save. Remember. Relive. A private library for links, screenshots, and text" />
     <meta property="og:type" content="website" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Apply saved theme before paint to prevent flash
+      (function() {
+        var t = localStorage.getItem('memoryhive-theme');
+        if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

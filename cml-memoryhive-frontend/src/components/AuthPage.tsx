@@ -34,12 +34,15 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
   return (
     <main className="auth-page">
       <section className="auth-brand-panel">
-        <Brand />
-        <div>
-          <span className="eyebrow">Capture. Understand. Recall.</span>
-          <h1>Your useful things, kept within reach.</h1>
+        <Brand showTagline />
+        <div className="auth-brand-hero">
+          <div className="auth-logo-showcase">
+            <img src="/memora-logo.png" alt="Memora" className="auth-hero-logo" />
+          </div>
+          <span className="eyebrow">SAVE. REMEMBER. RELIVE.</span>
+          <h1>Your memories, beautifully kept within reach.</h1>
           <div className="auth-proof">
-            <span><i />Links</span><span><i />Screenshots</span><span><i />Text</span>
+            <span><i />Links</span><span><i />Screenshots</span><span><i />Notes</span>
           </div>
         </div>
         <p>Private by default</p>
@@ -47,8 +50,8 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
       <section className="auth-form-panel">
         <form onSubmit={submit}>
           <header>
-            <h2>{mode === 'login' ? 'Welcome back' : 'Create your library'}</h2>
-            <p>{mode === 'login' ? 'Sign in to continue.' : 'Start with a private workspace.'}</p>
+            <h2>{mode === 'login' ? 'Welcome back' : 'Create your Memora'}</h2>
+            <p>{mode === 'login' ? 'Sign in to access your memories.' : 'Start with your private workspace.'}</p>
           </header>
           {routeNotice && !error && <div className="form-success" role="status">{routeNotice}</div>}
           {error && <div className="form-error" role="alert"><AlertCircle size={17} />{error}</div>}
@@ -62,7 +65,7 @@ export default function AuthPage({ mode }: { mode: 'login' | 'register' }) {
             {!busy && <ArrowRight size={18} />}
           </button>
           <p className="auth-switch">
-            {mode === 'login' ? 'New to Memoryhive?' : 'Already have an account?'}{' '}
+            {mode === 'login' ? 'New to Memora?' : 'Already have an account?'}{' '}
             <Link to={mode === 'login' ? '/register' : '/login'}>{mode === 'login' ? 'Create account' : 'Sign in'}</Link>
           </p>
           <p className="auth-links">

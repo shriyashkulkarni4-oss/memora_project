@@ -52,6 +52,7 @@ def main():
         host=args.host,
         port=args.port,
         reload=args.reload,
+        reload_dirs=["app"] if args.reload else None,
         workers=args.workers if not args.reload else 1,
         log_level=args.log_level,
     )

@@ -22,7 +22,7 @@ export default function SettingsPage() {
   const clear = useLibraryStore((state) => state.clear);
   const [sync, setSync] = useState(true);
   const [processing, setProcessing] = useState(true);
-  const [dark, setDark] = useState(false);
+  const [dark, setDark] = useState(() => localStorage.getItem('memoryhive-theme') === 'dark');
   const [exporting, setExporting] = useState(false);
   const [changeOpen, setChangeOpen] = useState(false);
   const [changeConfirmOpen, setChangeConfirmOpen] = useState(false);
@@ -143,7 +143,12 @@ export default function SettingsPage() {
         <div className="settings-controls">
           <SettingToggle label="Cloud sync" checked={sync} onChange={() => setSync(!sync)} />
           <SettingToggle label="Content processing" checked={processing} onChange={() => setProcessing(!processing)} />
-          <SettingToggle label="Dark appearance" checked={dark} onChange={() => setDark(!dark)} />
+          <SettingToggle label="Dark appearance" checked={dark} onChange={() => {
+            const next = !dark;
+            setDark(next);
+            document.documentElement.setAttribute('data-theme', next ? 'dark' : 'light');
+            localStorage.setItem('memoryhive-theme', next ? 'dark' : 'light');
+          }} />
         </div>
       </section>
 
@@ -152,7 +157,7 @@ export default function SettingsPage() {
         <div className="settings-controls">
           <SettingToggle label={privacyBusy ? 'Updating external AI processing' : 'Allow approved external AI providers'} checked={Boolean(user?.ai_external_processing_allowed)} onChange={() => { if (!privacyBusy) void toggleExternalAI(); }} />
         </div>
-        <p className="privacy-note">When off, Memoryhive permits only local or self-hosted AI routes. Turning it on allows the operator-approved third-party providers listed in the privacy policy. Capture and keyword search continue either way.</p>
+        <p className="privacy-note">When off, Memora permits only local or self-hosted AI routes. Turning it on allows the operator-approved third-party providers listed in the privacy policy. Capture and keyword search continue either way.</p>
       </section>
 
       <section className="settings-section">

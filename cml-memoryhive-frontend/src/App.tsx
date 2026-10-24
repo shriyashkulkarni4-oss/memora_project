@@ -14,7 +14,7 @@ import { AuthProvider, useAuth } from './hooks/useAuth';
 
 function LoadingScreen() {
   return (
-    <main className="loading-screen" aria-label="Loading Memoryhive">
+    <main className="loading-screen" aria-label="Loading Memora">
       <span className="brand-loader" />
     </main>
   );
